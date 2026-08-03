@@ -1,0 +1,13 @@
+name: Socket Security
+
+on: push
+
+jobs:
+  safe-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: SocketDev/action@v1
+        with:
+          mode: firewall
+      - run: sfw npm install
