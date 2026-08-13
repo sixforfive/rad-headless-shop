@@ -36,7 +36,7 @@ Assets CDN: `cdn.prod.website-files.com`. Prefer `.avif`, ~200kb max, 1200px+ wi
 | Path | Title | Page ID |
 |---|---|---|
 | `/` | Collection (home) | `6a4bd150a2579cbf8be38b05` |
-| `/shop-gallery` | Shop Gallery | `6a58b76fe9bb8994dff07072` |
+| `/shop` | Shop | `6a58b76fe9bb8994dff07072` |
 | `/shop-list` | Shop List | `6a4e541a18fbfcc161b236bc` |
 | `/merch` | Merch | `6a58bfe87ee41d056da42ed5` |
 | `/faq` | FAQ | `6a58ef1b391253a6b96326f8` |
@@ -48,7 +48,7 @@ Assets CDN: `cdn.prod.website-files.com`. Prefer `.avif`, ~200kb max, 1200px+ wi
 
 System/draft: `/404`, `/401`, `/style-guide` (draft), unused static template (draft).
 
-Shop has two product views: **Gallery** (`/shop-gallery`) and **List** (`/shop-list`). Home `/` is the collection landing page.
+Shop `/shop` is the product grid. Gallery and List are views on that page (`.is-gallery` on `.product-list`). Home `/` is the collection landing page. `/shop-list` is leftover.
 
 ## CMS collections
 
@@ -121,7 +121,7 @@ Privacy policy references PostHog Cloud EU (no IP, no session recordings, consen
 | `navbar` | Global | 4 link props |
 | `footer` | Global | link + "back to top" text |
 | `drawer-wrapper` | Global | mobile nav + brand copy + legal links |
-| `second-menu` | — | variant `Collection`; Gallery/List toggle |
+| `second-menu` | — | variant `Collection`; Gallery/List toggle (`data-view` on `.switch-btn`) |
 | `Global / Styles` | Global | |
 | `Template / Section` | Template | |
 | `Template / Core Structure` | Template | |
@@ -130,6 +130,6 @@ Privacy policy references PostHog Cloud EU (no IP, no session recordings, consen
 
 - Map CMS field slugs exactly when typing API responses or building fetch layers.
 - `sold-out` is a CMS switch, not inventory tracking — headless checkout must respect it.
-- Gallery layout uses per-item `column-start` / `column-end` / `list-column-start` — preserve in headless grid if mirroring Webflow layout.
+- Gallery layout uses per-item `column-start` / `column-end` / `list-column-start`. Shop thumbs expose those as attributes `gallery-column-start`, `gallery-column-end`, `list-column`.
 - No registered site scripts in Webflow; custom logic lives in this repo.
 - Contact: `contact@rad.ltd`

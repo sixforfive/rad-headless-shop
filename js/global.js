@@ -7,9 +7,7 @@ const FAVICON_LIGHT =
 const FAVICON_DARK =
   "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a7dc0753a43cc0b6b1bac60_fav_dark.png";
 
-/**
- * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
- */
+/** setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG) */
 function setFavicon(isDark) {
   const href = isDark ? FAVICON_DARK : FAVICON_LIGHT;
   const links = document.querySelectorAll(
@@ -31,9 +29,7 @@ const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
 setFavicon(colorScheme.matches);
 colorScheme.addEventListener("change", (event) => setFavicon(event.matches));
 
-/**
- * scrollToTop — #back-to-top click → window to top (smooth, or instant if reduced-motion)
- */
+/** scrollToTop — #back-to-top click → window to top (smooth, or instant if reduced-motion) */
 function scrollToTop(event) {
   event.preventDefault();
   const reduceMotion = window.matchMedia(
