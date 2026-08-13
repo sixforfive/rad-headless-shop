@@ -1,3 +1,18 @@
+/*Global styles*/
+html {
+  overscroll-behavior: none;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Sold out styles */
 .sold-out {
   position: absolute;
   inset: 0;
