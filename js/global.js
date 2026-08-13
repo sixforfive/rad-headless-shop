@@ -3,9 +3,9 @@
  */
 
 const FAVICON_LIGHT =
-  "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a7dc0759cccd58e2b9cd738_fav_light.png";
+  "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a7df4917fdbe70d72a2f8b3_dot_light.png";
 const FAVICON_DARK =
-  "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a7dc0753a43cc0b6b1bac60_fav_dark.png";
+  "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a7df491b55a7d0896c30e38_dot_dark.png";
 
 /** setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG) */
 function setFavicon(isDark) {
