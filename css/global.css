@@ -5,14 +5,13 @@
     linear-gradient(
       to top right,
       transparent calc(50% - 0.5px),
-      #e5e5e5,
+      var(--_theme---border--primary),
       transparent calc(50% + 0.5px)
     ),
     linear-gradient(
       to bottom right,
       transparent calc(50% - 0.5px),
-      #e5e5e5,
+      var(--_theme---border--primary),
       transparent calc(50% + 0.5px)
     );
-  border: 1px solid #e5e5e5;
 }
