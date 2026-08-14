@@ -52,7 +52,7 @@ const drawerWrapper = document.querySelector(".drawer-wrapper");
 const menuDrawer = document.querySelector(".menu-drawer");
 const cartDrawer = document.querySelector(".cart-drawer");
 const mainWrapper = document.querySelector(".main-wrapper");
-const notificationHolder = document.querySelector(".notification-holder");
+const notificationBarBox = document.querySelector(".notification-bar-box");
 const menuOpen = document.getElementById("menu-open");
 const menuClose = document.getElementById("menu-close");
 const cartOpen = document.getElementById("cart-open");
@@ -94,7 +94,7 @@ function openDrawer(kind, event) {
   activeDrawer = kind;
   setDrawerButtons(kind);
   showDrawerPanel(kind);
-  notificationHolder?.classList.add("is-none");
+  notificationBarBox?.classList.add("is-none");
   document.body.classList.add("is-scroll-locked");
 
   if (overlayOpen) return;
@@ -114,7 +114,7 @@ function closeDrawer(event) {
   setDrawerButtons(null);
   drawerWrapper?.classList.remove("is-visible");
   mainWrapper?.classList.remove("is-dimmed");
-  notificationHolder?.classList.remove("is-none");
+  notificationBarBox?.classList.remove("is-none");
 
   const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)",

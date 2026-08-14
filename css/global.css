@@ -79,7 +79,7 @@
 }
 
 .link-cart.is-none,
-.notification-holder.is-none {
+.notification-bar-box.is-none {
   display: none;
 }
 
