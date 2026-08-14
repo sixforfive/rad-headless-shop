@@ -1,5 +1,13 @@
 /**
  * global.js — Site-wide behavior shared across all RAD pages.
+ * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
+ * scrollToTop — #back-to-top click → window to top (smooth, or instant if reduced-motion)
+ * setDrawerButtons — is-none on the open/close pair for the active drawer
+ * showDrawerPanel — display:flex on the active drawer, none on the other
+ * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
+ * openDrawer — fade overlay in, or swap panel if the other is already open
+ * closeDrawer — fade overlay out, then hideDrawerOverlay
+ * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
  */
 
 const FAVICON_LIGHT =
@@ -39,3 +47,99 @@ function scrollToTop(event) {
 }
 
 document.getElementById("back-to-top")?.addEventListener("click", scrollToTop);
+
+const drawerWrapper = document.querySelector(".drawer-wrapper");
+const menuDrawer = document.querySelector(".menu-drawer");
+const cartDrawer = document.querySelector(".cart-drawer");
+const mainWrapper = document.querySelector(".main-wrapper");
+const notificationHolder = document.querySelector(".notification-holder");
+const menuOpen = document.getElementById("menu-open");
+const menuClose = document.getElementById("menu-close");
+const cartOpen = document.getElementById("cart-open");
+const cartClose = document.getElementById("cart-close");
+
+let activeDrawer = null;
+
+/** setDrawerButtons — is-none on the matching open control; close controls hidden unless that drawer is active */
+function setDrawerButtons(kind) {
+  menuOpen?.classList.toggle("is-none", kind === "menu");
+  menuClose?.classList.toggle("is-none", kind !== "menu");
+  cartOpen?.classList.toggle("is-none", kind === "cart");
+  cartClose?.classList.toggle("is-none", kind !== "cart");
+}
+
+/** showDrawerPanel — flex on the active drawer, none on the other */
+function showDrawerPanel(kind) {
+  const show = kind === "menu" ? menuDrawer : cartDrawer;
+  const hide = kind === "menu" ? cartDrawer : menuDrawer;
+  if (hide) hide.style.display = "none";
+  if (show) show.style.display = "flex";
+}
+
+/** hideDrawerOverlay — display none after fade-out; no-op if a drawer reopened mid-fade */
+function hideDrawerOverlay() {
+  if (activeDrawer !== null) return;
+  if (drawerWrapper) drawerWrapper.style.display = "none";
+  if (menuDrawer) menuDrawer.style.display = "none";
+  if (cartDrawer) cartDrawer.style.display = "none";
+  document.body.classList.remove("is-scroll-locked");
+}
+
+/** openDrawer — kind is "menu" | "cart"; swap if the other is already open */
+function openDrawer(kind, event) {
+  event.preventDefault();
+  if (!drawerWrapper) return;
+
+  const overlayOpen = activeDrawer !== null;
+  activeDrawer = kind;
+  setDrawerButtons(kind);
+  showDrawerPanel(kind);
+  notificationHolder?.classList.add("is-none");
+  document.body.classList.add("is-scroll-locked");
+
+  if (overlayOpen) return;
+
+  drawerWrapper.style.display = "grid";
+  void drawerWrapper.offsetHeight;
+  drawerWrapper.classList.add("is-visible");
+  mainWrapper?.classList.add("is-dimmed");
+}
+
+/** closeDrawer — fade overlay out, then hideDrawerOverlay */
+function closeDrawer(event) {
+  event.preventDefault();
+  if (activeDrawer === null) return;
+
+  activeDrawer = null;
+  setDrawerButtons(null);
+  drawerWrapper?.classList.remove("is-visible");
+  mainWrapper?.classList.remove("is-dimmed");
+  notificationHolder?.classList.remove("is-none");
+
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  if (reduceMotion || !drawerWrapper) {
+    hideDrawerOverlay();
+    return;
+  }
+
+  drawerWrapper.addEventListener("transitionend", function onFadeOut(event) {
+    if (event.target !== drawerWrapper || event.propertyName !== "opacity") {
+      return;
+    }
+    drawerWrapper.removeEventListener("transitionend", onFadeOut);
+    hideDrawerOverlay();
+  });
+}
+
+/** onDrawerBackdrop — empty grid cells of .drawer-wrapper close the overlay */
+function onDrawerBackdrop(event) {
+  if (event.target === drawerWrapper) closeDrawer(event);
+}
+
+menuOpen?.addEventListener("click", (event) => openDrawer("menu", event));
+cartOpen?.addEventListener("click", (event) => openDrawer("cart", event));
+menuClose?.addEventListener("click", closeDrawer);
+cartClose?.addEventListener("click", closeDrawer);
+drawerWrapper?.addEventListener("click", onDrawerBackdrop);

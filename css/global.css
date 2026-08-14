@@ -58,3 +58,38 @@
       transparent calc(50% + 1px)
     );
 }
+
+/* Drawer overlay */
+.drawer-wrapper {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.drawer-wrapper.is-visible {
+  opacity: 1;
+}
+
+.main-wrapper {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.main-wrapper.is-dimmed {
+  opacity: 0.5;
+}
+
+.link-cart.is-none,
+.notification-holder.is-none {
+  display: none;
+}
+
+body.is-scroll-locked {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-wrapper,
+  .main-wrapper {
+    transition-duration: 0s;
+  }
+}
