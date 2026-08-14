@@ -115,7 +115,9 @@ body * {
 }
 
 .link-cart.is-none,
-.notification-bar-box.is-none {
+.notification-bar-box.is-none,
+.text-meta.is-plus.is-none,
+.dark-mode .text-meta.is-plus {
   display: none;
 }
 
