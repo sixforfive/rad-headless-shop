@@ -114,11 +114,15 @@ Detail URL pattern: `/merch/{slug}`
 
 Privacy policy references PostHog Cloud EU (no IP, no session recordings, consent-based analytics).
 
+### Notifications (slug: `notifications`)
+
+Navbar collection list, limit 1. Two `.notification-text` nodes in the item bind the same field. No published item → `.notification-bar-box` gets `.is-none`.
+
 ## Webflow components
 
 | Name | Group | Notes |
 |---|---|---|
-| `navbar` | Global | 4 link props |
+| `navbar` | Global | 4 link props; notification bar bound to Notifications (limit 1) |
 | `footer` | Global | link + "back to top" text |
 | `drawer-wrapper` | Global | mobile nav + brand copy + legal links |
 | `second-menu` | — | variant `Collection`; Gallery/List toggle (`data-view` on `.switch-btn`) |

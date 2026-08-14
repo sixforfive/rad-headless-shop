@@ -1,6 +1,6 @@
 ## Purpose
 
-Scrolls the navbar notification message in a seamless infinite loop between the bracket marks, pausing only while the pointer is over the clip.
+Scrolls the navbar notification message in a seamless infinite loop between the bracket marks, pausing only while the pointer is over the clip. Hides the whole bar when the Notifications collection has no published item.
 
 ## ADDED Requirements
 
@@ -40,3 +40,24 @@ While a pointer is over `.notification-holder`, the notification scroll SHALL pa
 
 - **WHEN** the pointer leaves `.notification-holder` after a pause
 - **THEN** the notification message continues from where it stopped
+
+### Requirement: Hide bar when collection is empty
+
+When `.notification-bar-box` contains no `.notification-item`, the bar SHALL have class `is-none`. When a `.notification-item` is present, the bar SHALL NOT receive `is-none` for emptiness.
+
+Closing a drawer SHALL restore the bar only if a `.notification-item` is present. Closing a drawer SHALL NOT remove `is-none` from an empty bar.
+
+#### Scenario: No published item
+
+- **WHEN** the page loads and `.notification-bar-box` has no `.notification-item`
+- **THEN** `.notification-bar-box` has class `is-none`
+
+#### Scenario: Published item present
+
+- **WHEN** the page loads and `.notification-bar-box` contains a `.notification-item`
+- **THEN** `.notification-bar-box` does not have class `is-none` for emptiness
+
+#### Scenario: Drawer close with empty collection
+
+- **WHEN** a drawer closes and `.notification-bar-box` has no `.notification-item`
+- **THEN** `.notification-bar-box` still has class `is-none`

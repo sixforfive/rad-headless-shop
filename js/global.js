@@ -7,6 +7,7 @@
  * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
  * openDrawer — fade overlay in, or swap panel if the other is already open
  * closeDrawer — fade overlay out, then hideDrawerOverlay
+ * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
  */
 
@@ -59,6 +60,16 @@ const cartOpen = document.getElementById("cart-open");
 const cartClose = document.getElementById("cart-close");
 
 let activeDrawer = null;
+
+/** hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item */
+function hideNotificationIfEmpty() {
+  if (!notificationBarBox) return;
+  if (!notificationBarBox.querySelector(".notification-item")) {
+    notificationBarBox.classList.add("is-none");
+  }
+}
+
+hideNotificationIfEmpty();
 
 /** setDrawerButtons — is-none on the matching open control; close controls hidden unless that drawer is active */
 function setDrawerButtons(kind) {
@@ -114,7 +125,9 @@ function closeDrawer(event) {
   setDrawerButtons(null);
   drawerWrapper?.classList.remove("is-visible");
   mainWrapper?.classList.remove("is-dimmed");
-  notificationBarBox?.classList.remove("is-none");
+  if (notificationBarBox?.querySelector(".notification-item")) {
+    notificationBarBox.classList.remove("is-none");
+  }
 
   const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)",

@@ -4,7 +4,7 @@ See proposal.md for motivation. Published navbar markup is already the clip + tw
 
 `.notification-bar-box` → `[` `.text-meta` / `.notification-collection` / `.notification-holder` (overflow hidden, nowrap) / `.notification-item` (`flex: none`, two `.notification-text` siblings) / `]` `.text-meta`.
 
-`.notification-holder` width follows the grid (narrower on desktop, full row at ≤767px). Copy length is letter-limited in CMS. `css/global.css` is already loaded site-wide.
+`.notification-holder` width follows the grid (narrower on desktop, full row at ≤767px). Copy length is letter-limited in CMS. Collection slug is `notifications`. `css/global.css` and `js/global.js` are already loaded site-wide.
 
 ## Goals / Non-Goals
 
@@ -12,12 +12,14 @@ See proposal.md for motivation. Published navbar markup is already the clip + tw
 
 - Loop by translating the item, not the clip.
 - Keep the loop distance independent of holder width so breakpoints do not need extra rules.
+- Hide the bar when the published list has no item, without fighting drawer `.is-none`.
 
 **Non-Goals:**
 
-- JavaScript, GSAP, or Webflow interactions.
+- GSAP or Webflow interactions.
 - Pause-when-fits logic.
-- Changing Webflow layout, CMS, or collection limit.
+- Changing Webflow layout, CMS fields, or collection limit.
+- Fetching the collection from the Webflow Data API.
 - `prefers-reduced-motion` handling.
 
 ## Decisions
@@ -40,6 +42,14 @@ One duration (start at 20s) is enough because CMS copy is letter-capped. Tune th
 
 Holder width only changes the clip. Loop math is `%` of the item. Do not add media queries for the marquee.
 
+### Hide empty bar from the published DOM
+
+`hideNotificationIfEmpty` checks `.notification-bar-box` for a `.notification-item` and adds `.is-none` if none. Unpublished CMS items never appear in the published list, so the DOM is the source of truth. CSS for `.notification-bar-box.is-none` already exists.
+
+`closeDrawer` currently always removes `.is-none`. Only remove it when a `.notification-item` exists, or empty brackets reappear after menu/cart close.
+
+Alternative considered: a separate empty class — extra CSS for the same `display: none`. Data API by slug `notifications` — overkill for a bound Collection List already on the page.
+
 ## Risks / Trade-offs
 
 - [`.notification-item` shrinks to the holder] → Loop uses half the clip, not half the text, and jumps. Webflow already sets `flex: none`; if a jump appears, add `flex: none` / `width: max-content` in `css/global.css`.
@@ -50,5 +60,6 @@ Holder width only changes the clip. Loop math is `%` of the item. Do not add med
 ## Migration Plan
 
 1. Add the keyframes and rules to `css/global.css`.
-2. Point the site-wide Head `<link>` at the new commit SHA and publish Webflow.
-3. Rollback: revert the CSS; the banner is static again. Markup stays.
+2. Add `hideNotificationIfEmpty` in `js/global.js` and gate drawer close on `.notification-item`.
+3. Point the site-wide Head `<link>` and Footer `<script>` at the new commit SHA and publish Webflow.
+4. Rollback: revert the CSS and JS; the banner is static again and empty brackets show. Markup stays.
