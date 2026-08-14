@@ -40,10 +40,46 @@
   }
 }
 
+/* Lights: product thumbs */
+.thumb-light,
+.thumb-dark {
+  width: 100%;
+  transition: opacity 0.3s ease;
+}
+
+.thumb-dark {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  opacity: 0;
+}
+
+.thumb-dark.w-dyn-bind-empty {
+  display: none;
+}
+
+.dark-mode .thumb-dark:not(.w-dyn-bind-empty) {
+  opacity: 1;
+}
+
+.dark-mode .thumb-img-holder:has(.thumb-dark:not(.w-dyn-bind-empty)) .thumb-light {
+  opacity: 0;
+}
+
+/* Lights: color fade */
+body,
+body * {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
 /* Sold out styles */
 .sold-out {
   position: absolute;
   inset: 0;
+  z-index: 1;
   background:
     linear-gradient(
       to top right,
@@ -107,7 +143,11 @@ body.is-scroll-locked {
 
 @media (prefers-reduced-motion: reduce) {
   .drawer-wrapper,
-  .main-wrapper {
+  .main-wrapper,
+  body,
+  body *,
+  .thumb-light,
+  .thumb-dark {
     transition-duration: 0s;
   }
 }

@@ -1,6 +1,8 @@
 /**
  * global.js — Site-wide behavior shared across all RAD pages.
  * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
+ * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none
+ * storedLightsDark — true only when rad-lights is exactly "dark"
  * scrollToTop — #back-to-top click → window to top (smooth, or instant if reduced-motion)
  * setDrawerButtons — is-none on the open/close pair for the active drawer
  * showDrawerPanel — display:flex on the active drawer, none on the other
@@ -37,6 +39,38 @@ function setFavicon(isDark) {
 const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
 setFavicon(colorScheme.matches);
 colorScheme.addEventListener("change", (event) => setFavicon(event.matches));
+
+const LIGHTS_KEY = "rad-lights";
+const lightsSwitchBtn = document.getElementById("lights-switch-btn");
+const lightsPlus = lightsSwitchBtn?.querySelector(".text-meta.is-plus");
+const lightsMinus = lightsSwitchBtn?.querySelector(".text-meta.is-minus");
+
+/** applyLights — .dark-mode on html/body, persist rad-lights, swap plus/minus is-none */
+function applyLights(dark) {
+  document.documentElement.classList.toggle("dark-mode", dark);
+  document.body.classList.toggle("dark-mode", dark);
+  try {
+    localStorage.setItem(LIGHTS_KEY, dark ? "dark" : "light");
+  } catch (e) {}
+  lightsPlus?.classList.toggle("is-none", dark);
+  lightsMinus?.classList.toggle("is-none", !dark);
+}
+
+/** storedLightsDark — true only when rad-lights is exactly "dark" */
+function storedLightsDark() {
+  try {
+    return localStorage.getItem(LIGHTS_KEY) === "dark";
+  } catch (e) {
+    return false;
+  }
+}
+
+applyLights(storedLightsDark());
+
+lightsSwitchBtn?.addEventListener("click", (event) => {
+  event.preventDefault();
+  applyLights(!document.body.classList.contains("dark-mode"));
+});
 
 /** scrollToTop — #back-to-top click → window to top (smooth, or instant if reduced-motion) */
 function scrollToTop(event) {
