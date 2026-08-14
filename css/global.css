@@ -8,7 +8,7 @@
   display: none;
 }
 
-/* Shop grid placement */
+/* Grid placement */
 .product-list.is-gallery .product-thumb {
   grid-column-start: var(--gallery-column-start);
   grid-column-end: var(--gallery-column-end);
@@ -16,6 +16,16 @@
 
 .product-list:not(.is-gallery):not(.is-merch) .product-thumb {
   grid-column: var(--list-column);
+}
+
+.product-list.is-merch .product-thumb {
+  grid-column: var(--merch-column);
+}
+
+@media screen and (max-width: 991px) {
+  .product-list.is-merch .product-thumb {
+    grid-column: auto;
+  }
 }
 
 @media screen and (max-width: 767px) {
