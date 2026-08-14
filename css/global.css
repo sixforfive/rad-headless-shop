@@ -94,7 +94,7 @@
 }
 
 .notification-item {
-  animation: notification-marquee 20s linear infinite;
+  animation: notification-marquee 30s linear infinite;
 }
 
 .notification-holder:hover .notification-item {
