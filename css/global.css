@@ -83,6 +83,24 @@
   display: none;
 }
 
+/* Notification marquee */
+@keyframes notification-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.notification-item {
+  animation: notification-marquee 20s linear infinite;
+}
+
+.notification-holder:hover .notification-item {
+  animation-play-state: paused;
+}
+
 body.is-scroll-locked {
   overflow: hidden;
 }
