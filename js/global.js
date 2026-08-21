@@ -4,7 +4,7 @@
  * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none
  * storedLightsDark — true only when rad-lights is exactly "dark"
  * scrollToTop — #back-to-top click → window to top (smooth, or instant if reduced-motion)
- * setDrawerButtons — is-none on the open/close pair for the active drawer
+ * setDrawerButtons — is-none on open/close plus lights, cart-title, currency
  * showDrawerPanel — display:flex on the active drawer, none on the other
  * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
  * openDrawer — fade overlay in, or swap panel if the other is already open
@@ -92,6 +92,8 @@ const menuOpen = document.getElementById("menu-open");
 const menuClose = document.getElementById("menu-close");
 const cartOpen = document.getElementById("cart-open");
 const cartClose = document.getElementById("cart-close");
+const cartTitle = document.getElementById("cart-title");
+const currencyBtn = document.getElementById("currency-btn");
 
 let activeDrawer = null;
 
@@ -105,12 +107,16 @@ function hideNotificationIfEmpty() {
 
 hideNotificationIfEmpty();
 
-/** setDrawerButtons — is-none on the matching open control; close controls hidden unless that drawer is active */
+/** setDrawerButtons — is-none on open/close plus lights, cart-title, currency */
 function setDrawerButtons(kind) {
-  menuOpen?.classList.toggle("is-none", kind === "menu");
+  const drawerOpen = kind !== null;
+  menuOpen?.classList.toggle("is-none", drawerOpen);
   menuClose?.classList.toggle("is-none", kind !== "menu");
-  cartOpen?.classList.toggle("is-none", kind === "cart");
+  cartOpen?.classList.toggle("is-none", drawerOpen);
   cartClose?.classList.toggle("is-none", kind !== "cart");
+  lightsSwitchBtn?.classList.toggle("is-none", drawerOpen);
+  cartTitle?.classList.toggle("is-none", kind !== "cart");
+  currencyBtn?.classList.toggle("is-none", kind !== "cart");
 }
 
 /** showDrawerPanel — flex on the active drawer, none on the other */
