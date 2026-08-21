@@ -3,6 +3,17 @@ html {
   background-color: var(--_theme---background--primary);
 }
 
+/* Blend backdrop: the canvas is composited under the blend group, so difference
+   blending needs a painted element that stays put during elastic overscroll. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--_theme---background--primary);
+  transition: background-color 0.3s ease;
+}
+
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -173,6 +184,7 @@ body.is-scroll-locked {
   .main-wrapper,
   body,
   body *,
+  body::before,
   .thumb-light,
   .thumb-dark {
     transition-duration: 0s;
