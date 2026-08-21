@@ -17,6 +17,11 @@
 
 .navbar.is-normal {
   mix-blend-mode: normal;
+  color: var(--_theme---text--primary);
+}
+
+.navbar.is-normal .menu-link {
+  color: var(--_theme---text--primary);
 }
 
 /* Grid placement */

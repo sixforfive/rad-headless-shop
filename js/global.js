@@ -120,7 +120,9 @@ function setMarqueeRate(rate) {
 }
 
 const notificationHolder = document.querySelector(".notification-holder");
-notificationHolder?.addEventListener("mouseenter", () => setMarqueeRate(30 / 45));
+notificationHolder?.addEventListener("mouseenter", () =>
+  setMarqueeRate(30 / 60),
+);
 notificationHolder?.addEventListener("mouseleave", () => setMarqueeRate(1));
 
 /** setDrawerButtons — is-none on open/close plus lights, cart-title, currency; is-normal on .navbar */
