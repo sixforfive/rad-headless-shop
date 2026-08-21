@@ -1,7 +1,7 @@
 /**
  * shop.js — Shop page (/shop).
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
- * setView — add/remove is-gallery on .product-list from data-view
+ * setView — add/remove is-gallery on .product-list from data-view; jump to top when the view changes
  * syncActive — is-active on the switch button that matches the current view
  */
 
@@ -24,14 +24,19 @@ function hydrateThumbs() {
   });
 }
 
-/** setView — gallery adds is-gallery; list removes it; is-active follows data-view */
+/** setView — gallery adds is-gallery; list removes it; is-active follows data-view; jump to top on change */
 function setView(view) {
-  shopLists().forEach((list) => {
-    list.classList.toggle("is-gallery", view === "gallery");
+  const list = document.querySelector(".product-list:not(.is-merch)");
+  const current = list?.classList.contains("is-gallery") ? "gallery" : "list";
+  if (current === view) return;
+
+  shopLists().forEach((el) => {
+    el.classList.toggle("is-gallery", view === "gallery");
   });
   document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
     btn.classList.toggle("is-active", btn.getAttribute("data-view") === view);
   });
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 /** syncActive — is-active matches whether the grid currently has is-gallery */
