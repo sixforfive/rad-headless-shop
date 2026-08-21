@@ -1,4 +1,8 @@
 /*Global styles*/
+html {
+  background-color: var(--_theme---background--primary);
+}
+
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
