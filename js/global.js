@@ -7,9 +7,10 @@
  * setDrawerButtons — is-none on open/close plus lights, cart-title, currency
  * showDrawerPanel — display:flex on the active drawer, none on the other
  * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
- * openDrawer — fade overlay in, or swap panel if the other is already open
- * closeDrawer — fade overlay out, then hideDrawerOverlay
+ * openDrawer — fade overlay in, or swap panel if the other is already open; is-hidden on notification
+ * closeDrawer — fade overlay out, then hideDrawerOverlay; remove is-hidden on notification
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
+ * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
  */
 
@@ -107,6 +108,20 @@ function hideNotificationIfEmpty() {
 
 hideNotificationIfEmpty();
 
+/** setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave) */
+function setMarqueeRate(rate) {
+  const item = notificationBarBox?.querySelector(".notification-item");
+  item?.getAnimations().forEach((animation) => {
+    if (animation.animationName === "notification-marquee") {
+      animation.playbackRate = rate;
+    }
+  });
+}
+
+const notificationHolder = document.querySelector(".notification-holder");
+notificationHolder?.addEventListener("mouseenter", () => setMarqueeRate(30 / 45));
+notificationHolder?.addEventListener("mouseleave", () => setMarqueeRate(1));
+
 /** setDrawerButtons — is-none on open/close plus lights, cart-title, currency */
 function setDrawerButtons(kind) {
   const drawerOpen = kind !== null;
@@ -145,7 +160,7 @@ function openDrawer(kind, event) {
   activeDrawer = kind;
   setDrawerButtons(kind);
   showDrawerPanel(kind);
-  notificationBarBox?.classList.add("is-none");
+  notificationBarBox?.classList.add("is-hidden");
   document.body.classList.add("is-scroll-locked");
 
   if (overlayOpen) return;
@@ -165,9 +180,7 @@ function closeDrawer(event) {
   setDrawerButtons(null);
   drawerWrapper?.classList.remove("is-visible");
   mainWrapper?.classList.remove("is-dimmed");
-  if (notificationBarBox?.querySelector(".notification-item")) {
-    notificationBarBox.classList.remove("is-none");
-  }
+  notificationBarBox?.classList.remove("is-hidden");
 
   const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)",

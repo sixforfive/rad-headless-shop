@@ -145,8 +145,9 @@ body * {
   animation: notification-marquee 30s linear infinite;
 }
 
-.notification-holder:hover .notification-item {
-  animation-duration: 45s;
+.notification-bar-box.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 body.is-scroll-locked {
