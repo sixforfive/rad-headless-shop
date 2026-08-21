@@ -116,7 +116,7 @@ Privacy policy references PostHog Cloud EU (no IP, no session recordings, consen
 
 ### Notifications (slug: `notifications`)
 
-Navbar collection list, limit 1. Two `.notification-text` nodes in the item bind the same field. No published item → `.notification-bar-box` gets `.is-none`.
+Navbar collection list, limit 1. Three `.notification-text` nodes in the item bind the same field. No published item → `.notification-bar-box` gets `.is-none`.
 
 ## Webflow components
 

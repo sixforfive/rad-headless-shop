@@ -2,6 +2,7 @@
 
 - [x] 1.1 In `css/global.css`, animate `.notification-item` from `translateX(0)` to `translateX(-50%)`, linear, infinite, 20s
 - [x] 1.2 Pause that animation while `.notification-holder` is hovered (`animation-play-state: paused`)
+- [x] 1.3 Change the keyframe to `translateX(calc(-100% / 3))` for three `.notification-text` copies; keep 30s
 
 ## 2. Empty bar
 

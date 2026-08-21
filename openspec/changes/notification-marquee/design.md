@@ -1,8 +1,8 @@
 ## Context
 
-See proposal.md for motivation. Published navbar markup is already the clip + two identical copies:
+See proposal.md for motivation. Published navbar markup is the clip + three identical copies:
 
-`.notification-bar-box` → `[` `.text-meta` / `.notification-collection` / `.notification-holder` (overflow hidden, nowrap) / `.notification-item` (`flex: none`, two `.notification-text` siblings) / `]` `.text-meta`.
+`.notification-bar-box` → `[` `.text-meta` / `.notification-collection` / `.notification-holder` (overflow hidden, nowrap) / `.notification-item` (`flex: none`, three `.notification-text` siblings) / `]` `.text-meta`.
 
 `.notification-holder` width follows the grid (narrower on desktop, full row at ≤767px). Copy length is letter-limited in CMS. Collection slug is `notifications`. `css/global.css` and `js/global.js` are already loaded site-wide.
 
@@ -24,11 +24,11 @@ See proposal.md for motivation. Published navbar markup is already the clip + tw
 
 ## Decisions
 
-### CSS `translateX(-50%)` on `.notification-item`
+### CSS `translateX(calc(-100% / 3))` on `.notification-item`
 
-Animate `.notification-item` from `translateX(0)` to `translateX(-50%)`, `linear`, `infinite`. `-50%` is half of the item (one copy). The holder stays put and clips.
+Animate `.notification-item` from `translateX(0)` to `translateX(calc(-100% / 3))`, `linear`, `infinite`, 30s. `-100%/3` is one of three identical copies. Duration stays 30s so px/s matches the two-copy `-50%` loop. The holder stays put and clips.
 
-Alternative considered: GSAP / WAAPI with pixel `x` and ResizeObserver — needed if duration should track copy width; rejected as heavier than CSS for a letter-capped line. Animating `.notification-holder` itself — moves the clip. DOM recycle of the first copy — unnecessary with two identical nodes.
+Alternative considered: GSAP / WAAPI with pixel `x` and ResizeObserver — needed if duration should track copy width; rejected as heavier than CSS for a letter-capped line. Animating `.notification-holder` itself — moves the clip. `-50%` with three copies — jumps 1.5 copies. Two copies — too short to fill the wide-screen clip.
 
 ### Pause with `animation-play-state` on holder hover
 
