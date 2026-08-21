@@ -30,13 +30,18 @@ function setView(view) {
   const current = list?.classList.contains("is-gallery") ? "gallery" : "list";
   if (current === view) return;
 
+  document.documentElement.style.overflowAnchor = "none";
   shopLists().forEach((el) => {
     el.classList.toggle("is-gallery", view === "gallery");
   });
   document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
     btn.classList.toggle("is-active", btn.getAttribute("data-view") === view);
   });
-  window.scrollTo({ top: 0, behavior: "auto" });
+  window.scrollTo(0, 0);
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.style.overflowAnchor = "";
+  });
 }
 
 /** syncActive — is-active matches whether the grid currently has is-gallery */
