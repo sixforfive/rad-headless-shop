@@ -4,7 +4,7 @@
  * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none
  * storedLightsDark — true only when rad-lights is exactly "dark"
  * scrollToTop — #back-to-top click → window to top (smooth, or instant if reduced-motion)
- * setDrawerButtons — is-none on open/close plus lights, cart-title, currency
+ * setDrawerButtons — is-none on open/close plus lights, cart-title, currency; is-normal on .navbar
  * showDrawerPanel — display:flex on the active drawer, none on the other
  * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
  * openDrawer — fade overlay in, or swap panel if the other is already open; is-hidden on notification
@@ -15,9 +15,9 @@
  */
 
 const FAVICON_LIGHT =
-  "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a7df4917fdbe70d72a2f8b3_d3c42f96cc6ace35efd517729f3e888b_dot_light.png";
+  "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a7df4917fdbe70d72a2f8b3_e94400e352562e23bfd289e3ebc31aab_dot_light.png";
 const FAVICON_DARK =
-  "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a7df491b55a7d0896c30e38_04ea4bffdedf9aacb7d8829386cfe7fa_dot_dark.png";
+  "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a7df491b55a7d0896c30e38_2c889d7c193b288aeb5063de8d0ae934_dot_dark.png";
 
 /** setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG) */
 function setFavicon(isDark) {
@@ -95,6 +95,7 @@ const cartOpen = document.getElementById("cart-open");
 const cartClose = document.getElementById("cart-close");
 const cartTitle = document.getElementById("cart-title");
 const currencyBtn = document.getElementById("currency-btn");
+const navbar = document.querySelector(".navbar");
 
 let activeDrawer = null;
 
@@ -122,7 +123,7 @@ const notificationHolder = document.querySelector(".notification-holder");
 notificationHolder?.addEventListener("mouseenter", () => setMarqueeRate(30 / 45));
 notificationHolder?.addEventListener("mouseleave", () => setMarqueeRate(1));
 
-/** setDrawerButtons — is-none on open/close plus lights, cart-title, currency */
+/** setDrawerButtons — is-none on open/close plus lights, cart-title, currency; is-normal on .navbar */
 function setDrawerButtons(kind) {
   const drawerOpen = kind !== null;
   menuOpen?.classList.toggle("is-none", drawerOpen);
@@ -132,6 +133,7 @@ function setDrawerButtons(kind) {
   lightsSwitchBtn?.classList.toggle("is-none", drawerOpen);
   cartTitle?.classList.toggle("is-none", kind !== "cart");
   currencyBtn?.classList.toggle("is-none", kind !== "cart");
+  navbar?.classList.toggle("is-normal", drawerOpen);
 }
 
 /** showDrawerPanel — flex on the active drawer, none on the other */

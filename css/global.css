@@ -15,6 +15,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.navbar.is-normal {
+  mix-blend-mode: normal;
+}
+
 /* Grid placement */
 .product-list.is-gallery .product-thumb {
   grid-column-start: var(--gallery-column-start);
@@ -120,7 +124,7 @@ body * {
 }
 
 .main-wrapper.is-dimmed {
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .link-cart.is-none,
