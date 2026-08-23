@@ -1,6 +1,6 @@
 ## Purpose
 
-Opens the product full-screen image gallery on `/product/{slug}` with different chrome at desktop vs mobile, difference blend on named desktop chrome (not the layer, so the CTA stays unblended), and click-through so actions and [close] still work.
+Opens the product full-screen image gallery on `/product/{slug}` with different chrome at desktop vs mobile, difference blend on the layer itself, and click-through so actions and [close] still work.
 
 ## ADDED Requirements
 
@@ -64,19 +64,19 @@ If the gallery is open and the viewport crosses 767px, the open classes SHALL ma
 - **WHEN** the gallery is open and the viewport changes between wider than 767px and 767px or narrower
 - **THEN** the open classes match the new breakpoint
 
-### Requirement: Desktop open blends named chrome, not the layer
+### Requirement: Desktop open blends the layer
 
-When `.layer` has class `is-blend`, `.layer` SHALL NOT use `mix-blend-mode: difference`. `.product-info-col`, `.price-tag`, `.product-details-wrapper`, and `.footer` inside that layer SHALL use `mix-blend-mode: difference`. `.cta-wrapper` SHALL NOT use `mix-blend-mode: difference`.
+When `.layer` has class `is-blend`, `.layer` SHALL use `mix-blend-mode: difference`. No element inside that layer SHALL set its own `mix-blend-mode`.
 
-#### Scenario: Named chrome blends
-
-- **WHEN** the gallery is open on a viewport wider than 767px
-- **THEN** `.layer` does not use `difference`, and `.product-info-col`, `.price-tag`, `.product-details-wrapper`, and `.footer` use `difference`
-
-#### Scenario: CTA does not blend
+#### Scenario: Layer blends
 
 - **WHEN** the gallery is open on a viewport wider than 767px
-- **THEN** `.cta-wrapper` does not use `difference`
+- **THEN** `.layer` uses `difference` and `.product-info-col`, `.price-tag`, `.product-details-wrapper`, and `.footer` do not set their own blend mode
+
+#### Scenario: CTA inverts with the layer
+
+- **WHEN** the gallery is open on a viewport wider than 767px
+- **THEN** `.cta-wrapper` composites inside the layer's blend group and inverts with it
 
 ### Requirement: Desktop open keeps actions clickable
 

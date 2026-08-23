@@ -6,6 +6,7 @@
 - [x] 1.4 Add `pointer-events: auto` on `.layer.is-blend` for `#close-product`, `#download-spec`, `#add-to-cart`, and `#quantity`
 - [x] 1.5 Add `body.is-full-screen { color: #fff }` in `css/global.css`
 - [x] 1.6 Remove `mix-blend-mode` from `.layer.is-blend` and from `.cta-wrapper`; set `difference` on `.product-info-col`, `.price-tag`, `.product-details-wrapper`, and `.footer`
+- [x] 1.7 Reverse 1.6: restore `mix-blend-mode: difference` on `.layer.is-blend` and delete the `.product-info-col` / `.price-tag` / `.product-details-wrapper` / `.footer` difference rule, keeping the 1.4 pointer-events list and the 1.5 `body.is-full-screen` rule
 
 ## 2. JS (shipped)
 

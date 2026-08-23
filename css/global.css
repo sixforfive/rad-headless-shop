@@ -159,6 +159,7 @@ body * {
 }
 
 .layer.is-blend {
+  mix-blend-mode: difference;
   pointer-events: none;
 }
 
@@ -170,13 +171,6 @@ body * {
 .layer.is-blend #add-to-cart,
 .layer.is-blend #quantity {
   pointer-events: auto;
-}
-
-.layer.is-blend .product-info-col,
-.layer.is-blend .price-tag,
-.layer.is-blend .product-details-wrapper,
-.layer.is-blend .footer {
-  mix-blend-mode: difference;
 }
 
 body.is-full-screen {

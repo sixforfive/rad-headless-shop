@@ -1,8 +1,8 @@
 ## Context
 
-See proposal.md for motivation. Shipped code is [`js/product.js`](../../../js/product.js) and [`css/global.css`](../../../css/global.css). Split is `max-width: 767px`. In-page collection uses combo `is-default`. `.gallery-full-screen` is a preceding sibling of `.layer`. Desktop keeps `.layer` visible, so it sits on top of the gallery unless pointer-events are punched through.
+See proposal.md for motivation. Shipped code is [`js/product.js`](../../../js/product.js) and [`css/global.css`](../../../css/global.css). Split is `max-width: 767px`. In-page collection uses combo `is-default`.
 
-`fullscreen-keep-layer` described hide-default-collection only, with no breakpoint split or hit-testing. This snapshot replaces that as the contract.
+Two structural facts from Webflow shape every decision below. `.gallery-full-screen` is a preceding sibling of `.layer`, not a child. And `.layer` is `position: fixed; inset: 0 0 auto` above 767px, `position: static` at or below it. Desktop therefore keeps `.layer` on top of the gallery, which is why hit-testing has to be punched through it.
 
 ## Goals / Non-Goals
 
@@ -16,6 +16,7 @@ See proposal.md for motivation. Shipped code is [`js/product.js`](../../../js/pr
 - Repositioning `.gallery-full-screen` in Webflow.
 - Merch template.
 - Showing [close] on desktop in Webflow (z-index is in CSS; visibility is Designer).
+- Unblending the CTA while the gallery is open.
 
 ## Decisions
 
@@ -33,9 +34,13 @@ Closed: gallery `is-none`; layer neither `is-none` nor `is-blend`; default colle
 
 Open (either breakpoint): `body.is-full-screen`. CSS: `body.is-full-screen { color: #fff }`. Closed color stays Webflow `var(--_theme---text--primary)` — do not hardcode it. Not `:has()`.
 
-### Blend named chrome, not `.layer`
+### Blend `.layer`, not its children
 
-`mix-blend-mode: difference` on a parent composites the whole subtree, so `isolation` / `normal` on `.cta-wrapper` cannot un-blend `#add-to-cart` / `#quantity`. Do not set `mix-blend-mode` on `.layer.is-blend`. Set `difference` only on `.product-info-col`, `.price-tag`, `.product-details-wrapper`, and `.footer`. `.cta-wrapper` is a sibling of `.price-tag` and `.product-details-wrapper` under `.product-details-col`, so it stays out. Navbar already uses `difference` on its own.
+`position: fixed` always creates a stacking context, and `mix-blend-mode` on a descendant blends only within the nearest ancestor stacking context. Since the gallery sits outside `.layer`, a descendant blend finds a transparent backdrop, the source color passes through unchanged, and it reads as no blend at all. The fixed element is the deepest node that can blend against the gallery, so `difference` goes on `.layer.is-blend` and nothing inside sets `mix-blend-mode`. `.navbar` and `.gallery-full-screen_close` are outside `.layer` and blend on their own.
+
+`.layer` cannot stop being fixed to escape this — the gallery scrolls behind it, so a static or absolute layer would scroll away with the page.
+
+The consequence is that `.cta-wrapper` inverts along with everything else; a descendant cannot opt out of an ancestor's blend group, so `isolation: isolate` / `mix-blend-mode: normal` on it does nothing. Alternatives considered and not adopted: an opaque black box outside `.layer` behind the CTA, since `difference(Cs, black) = Cs` and `.button` is opaque enough to hide it; a duplicate CTA outside `.layer` toggled with `is-none`, matching the pattern already used for `.product-gallery-collection.is-default` vs `.gallery-full-screen`; and `backdrop-filter: invert(1)`, which escapes the stacking context but inverts the whole element box rather than per glyph.
 
 ### Hit-testing on `.layer.is-blend`
 
@@ -46,8 +51,8 @@ Open (either breakpoint): `body.is-full-screen`. CSS: `body.is-full-screen { col
 - [`is-default` missing] → default collection never hides on desktop. Webflow combo required.
 - [Webflow hides [close] on desktop] → close is still click-through on the image list; [close] works when visible.
 - [Token-bound `color` on children] → `body.is-full-screen` does not override elements that set their own color.
-- [Gallery col / other chrome] → not in the blend list, so they stay uninverted while the gallery is open.
+- [CTA inverts over the photos] → accepted; unblending needs one of the alternatives above and is out of scope here.
 
 ## Migration Plan
 
-Already shipped. New thread: treat this change as the spec; archive after review. Do not implement `fullscreen-keep-layer` on top of this.
+Restoring the blend on `.layer.is-blend` is the only unshipped item; the rest of this change is already in `css/global.css` and `js/product.js`. Webflow loads the stylesheet pinned to a commit hash (`cdn.jsdelivr.net/gh/sixforfive/rad-headless-shop@<hash>/css/global.css`), so nothing changes live until that hash is bumped after the commit lands. Rollback is re-pinning the previous hash.
