@@ -1,7 +1,7 @@
 /**
  * product.js — Product detail page (/product/{slug}).
  * isMobileViewport — true at max-width 767px
- * setFullScreenGallery — open: hide default collection + blend layer (>767); hide layer (≤767)
+ * setFullScreenGallery — open: hide default collection + blend layer (>767); hide layer (≤767); body.is-full-screen
  */
 
 /** isMobileViewport — true at max-width 767px */
@@ -23,6 +23,7 @@ function setFullScreenGallery(open) {
   if (!galleryFullScreen) return;
   galleryOpen = open;
   galleryFullScreen.classList.toggle("is-none", !open);
+  document.body.classList.toggle("is-full-screen", open);
   if (isMobileViewport()) {
     layer?.classList.toggle("is-none", open);
     layer?.classList.remove("is-blend");
