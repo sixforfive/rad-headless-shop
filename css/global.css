@@ -153,8 +153,18 @@ body * {
 .notification-bar-box.is-none,
 .text-meta.is-plus.is-none,
 .dark-mode .text-meta.is-plus,
-.layer.is-none {
+.layer.is-none,
+.product-gallery-collection.is-none {
   display: none;
+}
+
+.layer.is-blend {
+  mix-blend-mode: difference;
+}
+
+.layer.is-blend .cta-wrapper {
+  isolation: isolate;
+  mix-blend-mode: normal;
 }
 
 /* Notification marquee */
