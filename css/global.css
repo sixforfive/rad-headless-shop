@@ -25,7 +25,8 @@ body::before {
 
 /* Navbar styles */
 .navbar,
-.second-menu {
+.second-men,
+.layer.is-blend {
   mix-blend-mode: difference;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
