@@ -152,7 +152,8 @@ body * {
 .link-secondary.is-none,
 .notification-bar-box.is-none,
 .text-meta.is-plus.is-none,
-.dark-mode .text-meta.is-plus {
+.dark-mode .text-meta.is-plus,
+.layer.is-none {
   display: none;
 }
 
