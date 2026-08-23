@@ -160,11 +160,23 @@ body * {
 
 .layer.is-blend {
   mix-blend-mode: difference;
+  pointer-events: none;
+}
+
+.layer.is-blend .navbar,
+.layer.is-blend .cta-wrapper,
+.layer.is-blend .footer {
+  pointer-events: auto;
 }
 
 .layer.is-blend .cta-wrapper {
   isolation: isolate;
   mix-blend-mode: normal;
+}
+
+.gallery-full-screen:not(.is-none) .gallery-full-screen_close {
+  z-index: 6;
+  pointer-events: auto;
 }
 
 /* Notification marquee */

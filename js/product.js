@@ -62,6 +62,5 @@ document.getElementById("full-screen-open")?.addEventListener("click", (event) =
 
 document.getElementById("full-screen-close")?.addEventListener("click", (event) => {
   event.preventDefault();
-  if (!isMobileViewport()) return;
   setFullScreenGallery(false);
 });
