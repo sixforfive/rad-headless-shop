@@ -65,6 +65,15 @@ body::before {
   .product-list:not(.is-gallery):not(.is-merch) .product-thumb {
     grid-column: auto;
   }
+
+  .product-gallery-collection.is-default .product-gallery-list {
+    scroll-snap-type: x mandatory;
+    scroll-snap-stop: always;
+  }
+
+  .product-gallery-collection.is-default .product-gallery-item {
+    scroll-snap-align: start;
+  }
 }
 
 @media screen and (max-width: 479px) {
@@ -146,7 +155,7 @@ body * {
 }
 
 .main-wrapper.is-dimmed {
-  opacity: 0.2;
+  opacity: 0.15;
 }
 
 .link-cart.is-none,
@@ -155,7 +164,8 @@ body * {
 .text-meta.is-plus.is-none,
 .dark-mode .text-meta.is-plus,
 .layer.is-none,
-.product-gallery-collection.is-none {
+.product-gallery-collection.is-none,
+.pagination-bar.is-none {
   display: none;
 }
 
