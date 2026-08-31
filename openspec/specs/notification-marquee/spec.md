@@ -1,8 +1,10 @@
+# notification-marquee Specification
+
 ## Purpose
 
 Scrolls the navbar notification message in a seamless infinite loop between the bracket marks, pausing only while the pointer is over the clip. Hides the whole bar when the Notifications collection has no published item.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Infinite loop between brackets
 

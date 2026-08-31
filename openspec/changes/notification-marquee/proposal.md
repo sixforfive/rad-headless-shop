@@ -8,7 +8,7 @@ The navbar notification sits between `[` `]` brackets with three identical CMS c
 - Hover on `.notification-holder` pauses the animation.
 - Motion always runs (letter-limited copy; no “fits so stop” check).
 - JS in `js/global.js` adds `.is-none` to `.notification-bar-box` when no `.notification-item` is in the DOM. Closing a drawer does not remove `.is-none` in that case.
-- When the bar is empty, `.menu-cart-wrapper` uses `padding-top: var(--_layout---spacing--space-400)`.
+- When the bar is empty and the viewport is 767px or narrower, `.menu-wrapper` and `.cart-wrapper` use `padding-top: var(--_layout---spacing--space-400)`.
 - Record CMS collection slug `notifications` in the Webflow rule.
 
 ## Capabilities
