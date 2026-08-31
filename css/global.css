@@ -212,6 +212,10 @@ body.is-full-screen {
   pointer-events: none;
 }
 
+body:has(.notification-bar-box.is-none) .menu-cart-wrapper {
+  padding-top: var(--_layout---spacing--space-400);
+}
+
 body.is-scroll-locked {
   overflow: hidden;
 }

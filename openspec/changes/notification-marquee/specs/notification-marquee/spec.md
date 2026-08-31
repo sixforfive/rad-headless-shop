@@ -61,3 +61,17 @@ Closing a drawer SHALL restore the bar only if a `.notification-item` is present
 
 - **WHEN** a drawer closes and `.notification-bar-box` has no `.notification-item`
 - **THEN** `.notification-bar-box` still has class `is-none`
+
+### Requirement: Drawer padding when the bar is empty
+
+When `.notification-bar-box` has class `is-none`, `.menu-cart-wrapper` SHALL have `padding-top: var(--_layout---spacing--space-400)`. When `.notification-bar-box` does not have `is-none`, `.menu-cart-wrapper` SHALL keep its Webflow `padding-top`.
+
+#### Scenario: No published item
+
+- **WHEN** the page loads and `.notification-bar-box` has no `.notification-item`
+- **THEN** `.menu-cart-wrapper` has `padding-top: var(--_layout---spacing--space-400)`
+
+#### Scenario: Published item present
+
+- **WHEN** the page loads and `.notification-bar-box` contains a `.notification-item`
+- **THEN** `.menu-cart-wrapper` keeps its Webflow `padding-top`

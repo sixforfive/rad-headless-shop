@@ -110,3 +110,17 @@ When the gallery is open at any viewport, `body` SHALL have class `is-full-scree
 
 - **WHEN** the gallery closes
 - **THEN** `body` does not have `is-full-screen`
+
+### Requirement: Full-screen images cover the viewport height
+
+When the gallery is open, each `.product-gallery-img.is-full` SHALL be `width: 100%` and `min-height: 100dvh` with `object-fit: cover`. This SHALL live in Webflow, not in `css/global.css`.
+
+#### Scenario: Single image shorter than the viewport
+
+- **WHEN** the gallery is open and the list contains one image whose intrinsic height at `width: 100%` is shorter than the viewport
+- **THEN** that image is at least `100dvh` tall and covers the viewport
+
+#### Scenario: Multiple images
+
+- **WHEN** the gallery is open and the list contains two or more images
+- **THEN** each `.product-gallery-img.is-full` is at least `100dvh` tall
