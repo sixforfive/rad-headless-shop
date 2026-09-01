@@ -213,8 +213,8 @@ body.is-full-screen {
 }
 
 @media (max-width: 767px) {
-  body:has(.notification-bar-box.is-none) .menu-wrapper,
-  body:has(.notification-bar-box.is-none) .cart-wrapper {
+  body:has(.notification-bar-box.is-none) .menu-wrapper > .menu-list,
+  body:has(.notification-bar-box.is-none) .cart-wrapper > .cart-list {
     padding-top: var(--_layout---spacing--space-400);
   }
 }

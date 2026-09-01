@@ -52,9 +52,9 @@ Alternative considered: a separate empty class — extra CSS for the same `displ
 
 ### Drawer padding via `:has(.notification-bar-box.is-none)` at ≤767px
 
-When the bar is `display: none`, Webflow’s `padding-top: var(--_layout---spacing--space-600)` on `.menu-wrapper` and `.cart-wrapper` at `max-width: 767px` leaves a gap. Override with `padding-top: var(--_layout---spacing--space-400)` on `body:has(.notification-bar-box.is-none) .menu-wrapper` / `.cart-wrapper` inside `@media (max-width: 767px)`. No extra class or JS: `hideNotificationIfEmpty` already sets `is-none`. Wider viewports keep Webflow padding. Drawer open uses `.is-hidden`, not `.is-none`, so a live banner keeps Webflow padding.
+When the bar is `display: none`, Webflow’s `padding-top: var(--_layout---spacing--space-600)` on `.menu-wrapper > .menu-list` and `.cart-wrapper > .cart-list` at `max-width: 767px` leaves a gap. Override with `padding-top: var(--_layout---spacing--space-400)` on `body:has(.notification-bar-box.is-none) .menu-wrapper > .menu-list` / `.cart-wrapper > .cart-list` inside `@media (max-width: 767px)`. No extra class or JS: `hideNotificationIfEmpty` already sets `is-none`. Wider viewports keep Webflow padding. Drawer open uses `.is-hidden`, not `.is-none`, so a live banner keeps Webflow padding.
 
-Alternative considered: a body class from JS — duplicate of the existing empty check. `.menu-cart-wrapper` — not in the published DOM.
+Alternative considered: a body class from JS — duplicate of the existing empty check. Padding on the wrappers themselves — padding now lives on the child lists.
 
 ## Risks / Trade-offs
 

@@ -9,4 +9,4 @@
 - [x] 2.1 In `js/global.js`, add `hideNotificationIfEmpty`: if `.notification-bar-box` has no `.notification-item`, add `.is-none`; call on load
 - [x] 2.2 In `closeDrawer`, remove `.is-none` from `.notification-bar-box` only when a `.notification-item` exists
 - [x] 2.3 Record Notifications collection slug `notifications` (navbar list, limit 1) in `.cursor/rules/webflow-rad.mdc`
-- [x] 2.4 In `css/global.css`, at `max-width: 767px`, set `.menu-wrapper` and `.cart-wrapper` `padding-top` to `var(--_layout---spacing--space-400)` when `body:has(.notification-bar-box.is-none)`
+- [x] 2.4 In `css/global.css`, at `max-width: 767px`, set `.menu-wrapper > .menu-list` and `.cart-wrapper > .cart-list` `padding-top` to `var(--_layout---spacing--space-400)` when `body:has(.notification-bar-box.is-none)`

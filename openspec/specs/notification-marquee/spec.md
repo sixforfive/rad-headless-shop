@@ -66,19 +66,19 @@ Closing a drawer SHALL restore the bar only if a `.notification-item` is present
 
 ### Requirement: Drawer padding when the bar is empty
 
-When `.notification-bar-box` has class `is-none` and the viewport is 767px wide or narrower, `.menu-wrapper` and `.cart-wrapper` SHALL have `padding-top: var(--_layout---spacing--space-400)`. When the viewport is wider than 767px, or when `.notification-bar-box` does not have `is-none`, those wrappers SHALL keep their Webflow `padding-top`.
+When `.notification-bar-box` has class `is-none` and the viewport is 767px wide or narrower, `.menu-wrapper > .menu-list` and `.cart-wrapper > .cart-list` SHALL have `padding-top: var(--_layout---spacing--space-400)`. When the viewport is wider than 767px, or when `.notification-bar-box` does not have `is-none`, those lists SHALL keep their Webflow `padding-top`.
 
 #### Scenario: No published item, 767px and down
 
 - **WHEN** the page loads, `.notification-bar-box` has no `.notification-item`, and the viewport is 767px wide or narrower
-- **THEN** `.menu-wrapper` and `.cart-wrapper` have `padding-top: var(--_layout---spacing--space-400)`
+- **THEN** `.menu-wrapper > .menu-list` and `.cart-wrapper > .cart-list` have `padding-top: var(--_layout---spacing--space-400)`
 
 #### Scenario: No published item, wider than 767px
 
 - **WHEN** the page loads, `.notification-bar-box` has no `.notification-item`, and the viewport is wider than 767px
-- **THEN** `.menu-wrapper` and `.cart-wrapper` keep their Webflow `padding-top`
+- **THEN** `.menu-wrapper > .menu-list` and `.cart-wrapper > .cart-list` keep their Webflow `padding-top`
 
 #### Scenario: Published item present
 
 - **WHEN** the page loads and `.notification-bar-box` contains a `.notification-item`
-- **THEN** `.menu-wrapper` and `.cart-wrapper` keep their Webflow `padding-top`
+- **THEN** `.menu-wrapper > .menu-list` and `.cart-wrapper > .cart-list` keep their Webflow `padding-top`
