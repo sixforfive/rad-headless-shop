@@ -1,26 +1,11 @@
-/* Canvas color so elastic overscroll is not the browser default white. */
+/* Theme canvas behind the page. */
 html {
   background-color: var(--_theme---background--primary);
 }
 
-/* Collection is a locked viewport; 100vh on .layout is taller than the
-   visible window on iOS, so the page actually scrolls and shows body below. */
-html:has(.section_home-page),
-body:has(.section_home-page) {
-  height: 100dvh;
-  overflow: hidden;
+html,
+body {
   overscroll-behavior: none;
-}
-
-/* Blend backdrop: the canvas is composited under the blend group, so difference
-   blending needs a painted element that stays put during elastic overscroll. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background-color: var(--_theme---background--primary);
-  transition: background-color 0.3s ease;
 }
 
 /* Hide native scrollbars; scrolling still works. */
@@ -248,7 +233,6 @@ body.is-scroll-locked {
   .main-wrapper,
   body,
   body *,
-  body::before,
   .thumb-light,
   .thumb-dark {
     transition-duration: 0s;
