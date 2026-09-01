@@ -161,8 +161,9 @@ body * {
 .link-cart.is-none,
 .link-secondary.is-none,
 .notification-bar-box.is-none,
-.text-meta.is-plus.is-none,
-.dark-mode .text-meta.is-plus,
+.meta-link.is-plus.is-none,
+.meta-link.is-minus.is-none,
+.dark-mode .meta-link.is-plus,
 .layer.is-none,
 .product-gallery-collection.is-none,
 .pagination-bar.is-none {

@@ -41,19 +41,19 @@ Clicking `#lights-switch-btn` SHALL switch to the opposite mode and persist it a
 
 ### Requirement: Lights glyphs
 
-Inside `#lights-switch-btn .link-sec-brack`, `.text-meta.is-plus` SHALL be visible in light mode and have class `is-none` in dark mode. `.text-meta.is-minus` SHALL be visible in dark mode and have class `is-none` in light mode.
+Inside `#lights-switch-btn .link-sec-brack`, `.meta-link.is-plus` SHALL be visible in light mode and have class `is-none` in dark mode. `.meta-link.is-minus` SHALL be visible in dark mode and have class `is-none` in light mode.
 
 Other `.link-sec-brack` nodes SHALL NOT receive this glyph swap.
 
 #### Scenario: Light glyphs
 
 - **WHEN** the page is in light mode
-- **THEN** `.text-meta.is-plus` does not have class `is-none` and `.text-meta.is-minus` has class `is-none`
+- **THEN** `.meta-link.is-plus` does not have class `is-none` and `.meta-link.is-minus` has class `is-none`
 
 #### Scenario: Dark glyphs
 
 - **WHEN** the page is in dark mode
-- **THEN** `.text-meta.is-minus` does not have class `is-none` and `.text-meta.is-plus` has class `is-none`
+- **THEN** `.meta-link.is-minus` does not have class `is-none` and `.meta-link.is-plus` has class `is-none`
 
 ### Requirement: Product thumbs follow the mode
 

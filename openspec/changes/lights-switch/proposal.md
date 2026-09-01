@@ -6,7 +6,7 @@ The site has a published lights control and Webflow dark-mode tokens, but nothin
 
 - Clicking `#lights-switch-btn` toggles `.dark-mode` on `body` (and `html` so first paint matches).
 - Last mode is stored in `localStorage` (`rad-lights`). Missing or invalid value → light.
-- Navbar `.text-meta.is-plus` shows in light; `.text-meta.is-minus` shows in dark, via `.is-none`.
+- Navbar `.meta-link.is-plus` shows in light; `.meta-link.is-minus` shows in dark, via `.is-none`.
 - Product `.thumb-light` / `.thumb-dark` crossfade with the mode. Empty dark field (`.w-dyn-bind-empty`) keeps the light thumb.
 - Color and thumb transitions are `0.3s ease`, off under `prefers-reduced-motion`.
 - A tiny Webflow Head snippet applies stored dark mode before first paint.

@@ -5,7 +5,7 @@
 
 ## 2. Lights JS
 
-- [x] 2.1 In `js/global.js`, add `applyLights`: toggle `.dark-mode` on `body` and `html`, write `rad-lights` (`light` | `dark`), set `.is-none` on `#lights-switch-btn` `.text-meta.is-plus` / `.is-minus`
+- [x] 2.1 In `js/global.js`, add `applyLights`: toggle `.dark-mode` on `body` and `html`, write `rad-lights` (`light` | `dark`), set `.is-none` on `#lights-switch-btn` `.meta-link.is-plus` / `.is-minus`
 - [x] 2.2 On load, `applyLights` from `rad-lights` (`dark` only when the value is exactly `dark`; otherwise light). On `#lights-switch-btn` click, `preventDefault` and flip
 
 ## 3. First paint

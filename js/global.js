@@ -43,8 +43,8 @@ colorScheme.addEventListener("change", (event) => setFavicon(event.matches));
 
 const LIGHTS_KEY = "rad-lights";
 const lightsSwitchBtn = document.getElementById("lights-switch-btn");
-const lightsPlus = lightsSwitchBtn?.querySelector(".text-meta.is-plus");
-const lightsMinus = lightsSwitchBtn?.querySelector(".text-meta.is-minus");
+const lightsPlus = lightsSwitchBtn?.querySelector(".meta-link.is-plus");
+const lightsMinus = lightsSwitchBtn?.querySelector(".meta-link.is-minus");
 
 /** applyLights — .dark-mode on html/body, persist rad-lights, swap plus/minus is-none */
 function applyLights(dark) {

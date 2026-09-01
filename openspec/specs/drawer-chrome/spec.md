@@ -44,7 +44,7 @@ When both drawers are closed, `#lights-switch-btn`, `#menu-open`, and `#cart-ope
 
 ### Requirement: Lights hide with `.is-none` on the button
 
-`#lights-switch-btn` with class `is-none` SHALL not be displayed. Adding `is-none` to `#lights-switch-btn` SHALL NOT change `.is-none` on its inner `.text-meta.is-plus` / `.is-minus` glyphs.
+`#lights-switch-btn` with class `is-none` SHALL not be displayed. Adding `is-none` to `#lights-switch-btn` SHALL NOT change `.is-none` on its inner `.meta-link.is-plus` / `.is-minus` glyphs.
 
 #### Scenario: Lights button hidden while a drawer is open
 

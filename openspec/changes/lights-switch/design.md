@@ -1,6 +1,6 @@
 ## Context
 
-See proposal.md for motivation. Published markup already has `#lights-switch-btn` (plus/minus in `.link-sec-brack`), shop thumbs as `.thumb-light` + `.thumb-dark` in `.thumb-img-holder`, and Webflow `.dark-mode { --_theme---… }` (not `body`-scoped). Empty dark CMS images publish as `.thumb-dark.w-dyn-bind-empty` with a placeholder SVG. `css/global.css` and `js/global.js` load site-wide; JS is Footer-only.
+See proposal.md for motivation. Published markup already has `#lights-switch-btn` (`.meta-link.is-plus` / `.meta-link.is-minus` in `.link-sec-brack`), shop thumbs as `.thumb-light` + `.thumb-dark` in `.thumb-img-holder`, and Webflow `.dark-mode { --_theme---… }` (not `body`-scoped). Empty dark CMS images publish as `.thumb-dark.w-dyn-bind-empty` with a placeholder SVG. `css/global.css` and `js/global.js` load site-wide; JS is Footer-only.
 
 ## Goals / Non-Goals
 
