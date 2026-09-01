@@ -27,17 +27,20 @@ Alternative considered: a second copy of the dim block — two values to keep in
 
 ### Always toggle both nodes in `openDrawer` / `closeDrawer`
 
-Query `.main-wrapper` and `.gallery-full-screen` in `global.js`. Add `is-dimmed` to each on open; remove on close. Optional chaining when the gallery node is missing.
+Query `.main-wrapper` and `.gallery-full-screen` in `global.js`. Bind the gallery node to `dimGallery`, not `galleryFullScreen`: both scripts are classic (no `type="module"`), so a second `const galleryFullScreen` in `product.js` throws and the gallery never opens. Add `is-dimmed` to each on open; remove on close. Optional chaining when the gallery node is missing.
 
 Do not gate the gallery toggle on `is-none` or `body.is-full-screen`. If the visitor opens the gallery after the drawer, or closes the gallery while the drawer is still open, the class is already on the node that becomes visible.
 
-Alternative considered: dim only the visible surface — would need `product.js` to copy `is-dimmed` on gallery open/close.
-
 Leave the overlay-swap early return in `openDrawer` as it is; dim already ran on the first open.
+
+Alternative considered: dim only the visible surface — would need `product.js` to copy `is-dimmed` on gallery open/close. Rejected: `product.js` is product/merch detail only; drawer open/close is site-wide.
+
+Alternative considered: move the gallery dim into `product.js`. Same reason — shop, collection, FAQ, merch listing would not dim, and one class would have two owners.
 
 ## Risks / Trade-offs
 
 - [Gallery query omitted] → Photos stay bright. Mitigation: the JS task is required.
+- [`const galleryFullScreen` in `global.js`] → `product.js` never runs (`Identifier already been declared`). Mitigation: name the lookup `dimGallery`.
 - [Desktop `.layer.is-blend` over dimmed photos] → CTA/footer still full opacity and still blend. Accepted; dimming `.layer` is out of scope.
 - [jsDelivr cache] → New SHA in the Webflow `<link>` / `<script>`; do not rely on `@main`.
 

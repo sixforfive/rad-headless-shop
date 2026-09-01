@@ -21,5 +21,5 @@ Opening menu or cart dims `.main-wrapper` only. On product and merch detail, `.g
 ## Impact
 
 - `css/global.css` (dim selectors + reduced-motion).
-- `js/global.js` (`openDrawer` / `closeDrawer`).
-- No Webflow markup. No `js/product.js`. No new dependencies. No Shopify.
+- `js/global.js` (`openDrawer` / `closeDrawer`). Gallery node is `dimGallery` so it does not collide with `product.js`.
+- No Webflow markup. No `js/product.js` edits. No new dependencies. No Shopify.
