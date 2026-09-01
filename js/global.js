@@ -88,6 +88,7 @@ const drawerWrapper = document.querySelector(".drawer-wrapper");
 const menuDrawer = document.querySelector(".menu-drawer");
 const cartDrawer = document.querySelector(".cart-drawer");
 const mainWrapper = document.querySelector(".main-wrapper");
+const galleryFullScreen = document.querySelector(".gallery-full-screen");
 const notificationBarBox = document.querySelector(".notification-bar-box");
 const menuOpen = document.getElementById("menu-open");
 const menuClose = document.getElementById("menu-close");
@@ -173,6 +174,7 @@ function openDrawer(kind, event) {
   void drawerWrapper.offsetHeight;
   drawerWrapper.classList.add("is-visible");
   mainWrapper?.classList.add("is-dimmed");
+  galleryFullScreen?.classList.add("is-dimmed");
 }
 
 /** closeDrawer — fade overlay out, then hideDrawerOverlay */
@@ -184,6 +186,7 @@ function closeDrawer(event) {
   setDrawerButtons(null);
   drawerWrapper?.classList.remove("is-visible");
   mainWrapper?.classList.remove("is-dimmed");
+  galleryFullScreen?.classList.remove("is-dimmed");
   notificationBarBox?.classList.remove("is-hidden");
 
   const reduceMotion = window.matchMedia(

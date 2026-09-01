@@ -146,12 +146,14 @@ body * {
   opacity: 1;
 }
 
-.main-wrapper {
+.main-wrapper,
+.gallery-full-screen {
   opacity: 1;
   transition: opacity 0.3s ease;
 }
 
-.main-wrapper.is-dimmed {
+.main-wrapper.is-dimmed,
+.gallery-full-screen.is-dimmed {
   opacity: 0.15;
 }
 
@@ -231,6 +233,7 @@ body.is-scroll-locked {
 @media (prefers-reduced-motion: reduce) {
   .drawer-wrapper,
   .main-wrapper,
+  .gallery-full-screen,
   body,
   body *,
   .thumb-light,
