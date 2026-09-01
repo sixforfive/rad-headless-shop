@@ -18,15 +18,17 @@ See proposal.md for motivation. Open gallery already toggles `body.is-full-scree
 
 ## Decisions
 
-### `body.is-full-screen, body.is-full-screen * { border-color: #fff }`
+### `body.is-full-screen, body.is-full-screen * { border-color: #fff !important }`
 
 Webflow sets `border-color` per element. A rule on `body` alone would miss chrome. Same `body *` pattern as the theme-swap transition already in `css/global.css`. Keep `color: #fff` on `body` only; do not widen the text override.
 
-Alternative considered: `body.is-full-screen { border-color: #fff }` only. Rejected: not inherited, token-bound children would stay on theme.
+`!important` is required: combo classes such as `.button.is-secondary` (two classes) beat `body.is-full-screen *` (one class + one element). Without it, those borders stay on the theme token.
+
+Alternative considered: `body.is-full-screen { border-color: #fff }` only. Rejected: not inherited, token-bound children would stay on theme. Alternative considered: raise selector specificity without `!important`. Rejected: Webflow combo count is unbounded.
 
 ## Risks / Trade-offs
 
-- [Token-bound borders with `!important` in Webflow] → repo rule loses; raise specificity only if that shows up.
+- [Webflow combo classes beat `body.is-full-screen *`] → `!important` on the override. If a token still wins, it is using `!important` too; raise nothing further until that shows up.
 - [jsDelivr pin] → CSS does not go live until the Head `<link>` SHA moves.
 
 ## Migration Plan

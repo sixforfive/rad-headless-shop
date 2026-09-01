@@ -186,9 +186,14 @@ body * {
   pointer-events: auto;
 }
 
-/* Fullscreen gallery: force white text over photos, not the theme token. */
+/* Fullscreen gallery: force white text and borders over photos, not the theme token. */
 body.is-full-screen {
   color: #fff;
+}
+
+body.is-full-screen,
+body.is-full-screen * {
+  border-color: #fff !important;
 }
 
 /* Close sits above the blend stack and must receive clicks. */
