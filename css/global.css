@@ -1,6 +1,15 @@
-/*Global styles*/
+/* Canvas color so elastic overscroll is not the browser default white. */
 html {
   background-color: var(--_theme---background--primary);
+}
+
+/* Collection is a locked viewport; 100vh on .layout is taller than the
+   visible window on iOS, so the page actually scrolls and shows body below. */
+html:has(.section_home-page),
+body:has(.section_home-page) {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* Blend backdrop: the canvas is composited under the blend group, so difference
@@ -14,6 +23,7 @@ body::before {
   transition: background-color 0.3s ease;
 }
 
+/* Hide native scrollbars; scrolling still works. */
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -23,7 +33,7 @@ body::before {
   display: none;
 }
 
-/* Navbar styles */
+/* White chrome inverts against page content. Antialias: blend + subpixel is muddy. */
 .navbar,
 .second-men,
 .layer.is-blend {
@@ -32,6 +42,7 @@ body::before {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Drawer open: drop difference so links stay readable on the overlay. */
 .navbar.is-normal {
   mix-blend-mode: normal;
   color: var(--_theme---text--primary);
@@ -41,7 +52,7 @@ body::before {
   color: var(--_theme---text--primary);
 }
 
-/* Grid placement */
+/* CMS column attrs as vars; auto when Webflow collapses the grid. */
 .product-list.is-gallery .product-thumb {
   grid-column-start: var(--gallery-column-start);
   grid-column-end: var(--gallery-column-end);
@@ -66,6 +77,7 @@ body::before {
     grid-column: auto;
   }
 
+  /* In-page default gallery: one image per slot after a swipe. */
   .product-gallery-collection.is-default .product-gallery-list {
     scroll-snap-type: x mandatory;
     scroll-snap-stop: always;
@@ -82,7 +94,7 @@ body::before {
   }
 }
 
-/* Lights: product thumbs */
+/* Stack dark over light; empty CMS bind is a placeholder SVG — hide it. */
 .thumb-light,
 .thumb-dark {
   width: 100%;
@@ -110,7 +122,7 @@ body::before {
   opacity: 0;
 }
 
-/* Lights: color fade */
+/* Theme swap: Webflow paints color on descendants, so body * is required. */
 body,
 body * {
   transition:
@@ -119,7 +131,7 @@ body * {
     border-color 0.3s ease;
 }
 
-/* Sold out styles */
+/* X mark from two 1px diagonals; no extra DOM. */
 .sold-out {
   position: absolute;
   inset: 0;
@@ -139,7 +151,7 @@ body * {
     );
 }
 
-/* Drawer overlay */
+/* Overlay fades in; page behind dims. JS toggles the is-* classes. */
 .drawer-wrapper {
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -158,6 +170,7 @@ body * {
   opacity: 0.15;
 }
 
+/* Repo hide class. Dark mode always hides the lights plus, not the minus. */
 .link-cart.is-none,
 .link-secondary.is-none,
 .notification-bar-box.is-none,
@@ -169,6 +182,7 @@ body * {
   display: none;
 }
 
+/* Blend layer is a click-through overlay; listed chrome stays clickable. */
 .layer.is-blend {
   mix-blend-mode: difference;
   pointer-events: none;
@@ -184,16 +198,18 @@ body * {
   pointer-events: auto;
 }
 
+/* Fullscreen gallery: force white text over photos, not the theme token. */
 body.is-full-screen {
   color: #fff;
 }
 
+/* Close sits above the blend stack and must receive clicks. */
 .gallery-full-screen:not(.is-none) .gallery-full-screen_close {
   z-index: 6;
   pointer-events: auto;
 }
 
-/* Notification marquee */
+/* Three copies of the notice; shift by one third so the loop has no jump. */
 @keyframes notification-marquee {
   from {
     transform: translateX(0);
@@ -207,11 +223,13 @@ body.is-full-screen {
   animation: notification-marquee 30s linear infinite;
 }
 
+/* Drawer open: hide the bar without is-none, so empty-bar padding does not apply. */
 .notification-bar-box.is-hidden {
   opacity: 0;
   pointer-events: none;
 }
 
+/* Empty bar is display:none; Webflow still leaves space-600, drop to 400. */
 @media (max-width: 767px) {
   body:has(.notification-bar-box.is-none) .menu-wrapper > .menu-list,
   body:has(.notification-bar-box.is-none) .cart-wrapper > .cart-list {
@@ -219,10 +237,12 @@ body.is-full-screen {
   }
 }
 
+/* Drawer open: lock page scroll. */
 body.is-scroll-locked {
   overflow: hidden;
 }
 
+/* Kill the 0.3s fades; marquee is left running (infinite, not a transition). */
 @media (prefers-reduced-motion: reduce) {
   .drawer-wrapper,
   .main-wrapper,
