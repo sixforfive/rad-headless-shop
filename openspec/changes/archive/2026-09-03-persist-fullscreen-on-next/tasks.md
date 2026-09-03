@@ -11,7 +11,7 @@
 
 ## 3. Webflow
 
-- [ ] 3.1 Paste this in Head custom code on Products Template and Merch Template:
+- [x] 3.1 Paste this in Head custom code on Products Template and Merch Template:
 
 ```html
 <script>
