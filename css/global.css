@@ -179,20 +179,45 @@ body * {
 .layer.is-blend .navbar,
 .layer.is-blend .cta-wrapper,
 .layer.is-blend .footer,
-.layer.is-blend #close-product,
+.layer.is-blend .close-product,
 .layer.is-blend #download-spec,
 .layer.is-blend #add-to-cart-landscape,
-.layer.is-blend #quantity {
+.layer.is-blend #quantity,
+.layer.is-blend #next-product {
   pointer-events: auto;
 }
 
 /* Fullscreen gallery: white text and borders on layer chrome only. */
+html.is-full-screen .layer *,
 body.is-full-screen .layer * {
   color: #fff !important;
   border-color: #fff !important;
 }
 
+/* Head hook: paint open gallery before product.js. */
+html.is-full-screen .gallery-full-screen {
+  display: block !important;
+}
+
+@media (min-width: 768px) {
+  html.is-full-screen .product-gallery-collection.is-default {
+    display: none;
+  }
+
+  html.is-full-screen .layer {
+    mix-blend-mode: difference;
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 767px) {
+  html.is-full-screen .layer {
+    display: none;
+  }
+}
+
 /* Close sits above the blend stack and must receive clicks. */
+html.is-full-screen .gallery-full-screen .gallery-full-screen_close,
 .gallery-full-screen:not(.is-none) .gallery-full-screen_close {
   z-index: 6;
   pointer-events: auto;

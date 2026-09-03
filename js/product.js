@@ -1,7 +1,8 @@
 /**
- * product.js — Product detail page (/product/{slug}).
+ * product.js — Product and merch detail (/product/{slug}, /merch/{slug}).
  * isMobileViewport — true at max-width 767px
- * setFullScreenGallery — open: hide default collection + blend layer (>767); hide layer (≤767); body.is-full-screen
+ * setFullScreenGallery — open: hide default collection + blend layer (>767); hide layer (≤767); html+body.is-full-screen
+ * persistGalleryFlag — #next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
  * setChosenTick — is-choosen on the tick at Math.round(scrollLeft / clientWidth)
  */
@@ -23,12 +24,14 @@ const defaultGalleryList = defaultGalleryCollection?.querySelector(
 const paginationBar = document.querySelector(".pagination-bar");
 
 let galleryOpen = false;
+const GALLERY_FLAG = "rad-fs-gallery";
 
 /** setFullScreenGallery — desktop keep-chrome; mobile hide .layer */
 function setFullScreenGallery(open) {
   if (!galleryFullScreen) return;
   galleryOpen = open;
   galleryFullScreen.classList.toggle("is-none", !open);
+  document.documentElement.classList.toggle("is-full-screen", open);
   document.body.classList.toggle("is-full-screen", open);
   if (isMobileViewport()) {
     layer?.classList.toggle("is-none", open);
@@ -71,6 +74,21 @@ document.getElementById("full-screen-close")?.addEventListener("click", (event) 
   event.preventDefault();
   setFullScreenGallery(false);
 });
+
+/** persistGalleryFlag — write on #next-product; restore once on boot */
+document.getElementById("next-product")?.addEventListener("click", () => {
+  try {
+    if (galleryOpen) sessionStorage.setItem(GALLERY_FLAG, "1");
+    else sessionStorage.removeItem(GALLERY_FLAG);
+  } catch (e) {}
+});
+
+try {
+  if (sessionStorage.getItem(GALLERY_FLAG) === "1") {
+    setFullScreenGallery(true);
+  }
+  sessionStorage.removeItem(GALLERY_FLAG);
+} catch (e) {}
 
 /** setChosenTick — is-choosen on the tick at Math.round(scrollLeft / clientWidth) */
 function setChosenTick() {
