@@ -2,21 +2,21 @@
 
 ### Requirement: Next-product keeps gallery open or closed
 
-Clicking `#next-product` SHALL carry the current gallery open/closed state to the next `/product/{slug}` or `/merch/{slug}` page as a one-shot flag. The next detail page SHALL open the gallery if it was open, and SHALL leave it closed if it was closed. Arriving by any other navigation SHALL leave the gallery closed. The flag SHALL be consumed on that next detail load so a later refresh or shop visit does not reopen it.
+Clicking `.next-product` SHALL carry the current gallery open/closed state to the next `/product/{slug}` or `/merch/{slug}` page as a one-shot flag. The next detail page SHALL open the gallery if it was open, and SHALL leave it closed if it was closed. Arriving by any other navigation SHALL leave the gallery closed. The flag SHALL be consumed on that next detail load so a later refresh or shop visit does not reopen it.
 
 #### Scenario: Next while open
 
-- **WHEN** the gallery is open and the user clicks `#next-product`
+- **WHEN** the gallery is open and the user clicks `.next-product`
 - **THEN** the next product or merch detail page loads with the gallery open
 
 #### Scenario: Next while closed
 
-- **WHEN** the gallery is closed and the user clicks `#next-product`
+- **WHEN** the gallery is closed and the user clicks `.next-product`
 - **THEN** the next product or merch detail page loads with the gallery closed
 
 #### Scenario: Other navigation stays closed
 
-- **WHEN** the user opens a product or merch detail page by any means other than `#next-product`
+- **WHEN** the user opens a product or merch detail page by any means other than `.next-product`
 - **THEN** the gallery is closed
 
 ### Requirement: Incoming open gallery paints before script
@@ -41,7 +41,7 @@ When the gallery is closed, `.gallery-full-screen` SHALL have class `is-none`. `
 
 ### Requirement: Desktop open keeps actions clickable
 
-When `.layer` has class `is-blend`, pointer events SHALL pass through `.layer` except `.navbar`, `.cta-wrapper`, `.footer`, `.close-product`, `#download-spec`, `#add-to-cart-landscape`, `#quantity`, and `#next-product`, which SHALL receive clicks. `#add-to-cart-desktop` SHALL live in `.layer-cta` outside `.layer` and SHALL receive clicks. `#full-screen-close` SHALL receive clicks while the gallery is open. Clicks on the full-screen image list that are not captured by those controls SHALL close the gallery.
+When `.layer` has class `is-blend`, pointer events SHALL pass through `.layer` except `.navbar`, `.cta-wrapper`, `.footer`, `.close-product`, `#download-spec`, `#add-to-cart-landscape`, `#quantity`, and `.next-product`, which SHALL receive clicks. `#add-to-cart-desktop` SHALL live in `.layer-cta` outside `.layer` and SHALL receive clicks. `#full-screen-close` SHALL receive clicks while the gallery is open. Clicks on the full-screen image list that are not captured by those controls SHALL close the gallery.
 
 #### Scenario: Nav stays usable
 
@@ -50,7 +50,7 @@ When `.layer` has class `is-blend`, pointer events SHALL pass through `.layer` e
 
 #### Scenario: Product controls stay usable
 
-- **WHEN** the gallery is open on a viewport wider than 767px and the user clicks `.close-product`, `#download-spec`, `#add-to-cart-landscape`, `#quantity`, or `#next-product`
+- **WHEN** the gallery is open on a viewport wider than 767px and the user clicks `.close-product`, `#download-spec`, `#add-to-cart-landscape`, `#quantity`, or `.next-product`
 - **THEN** that control receives the click and the gallery does not close from that click
 
 #### Scenario: Desktop add to cart stays usable
@@ -60,7 +60,7 @@ When `.layer` has class `is-blend`, pointer events SHALL pass through `.layer` e
 
 #### Scenario: Click through chrome closes
 
-- **WHEN** the gallery is open on a viewport wider than 767px and the user clicks blended chrome that is not `.navbar`, `.cta-wrapper`, `.footer`, `.close-product`, `#download-spec`, `#add-to-cart-landscape`, `#quantity`, or `#next-product`
+- **WHEN** the gallery is open on a viewport wider than 767px and the user clicks blended chrome that is not `.navbar`, `.cta-wrapper`, `.footer`, `.close-product`, `#download-spec`, `#add-to-cart-landscape`, `#quantity`, or `.next-product`
 - **THEN** the gallery closes
 
 ### Requirement: Open gallery forces white body text

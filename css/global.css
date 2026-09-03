@@ -183,7 +183,7 @@ body * {
 .layer.is-blend #download-spec,
 .layer.is-blend #add-to-cart-landscape,
 .layer.is-blend #quantity,
-.layer.is-blend #next-product {
+.layer.is-blend .next-product {
   pointer-events: auto;
 }
 

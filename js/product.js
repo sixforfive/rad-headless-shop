@@ -2,7 +2,7 @@
  * product.js — Product and merch detail (/product/{slug}, /merch/{slug}).
  * isMobileViewport — true at max-width 767px
  * setFullScreenGallery — open: hide default collection + blend layer (>767); hide layer (≤767); html+body.is-full-screen
- * persistGalleryFlag — #next-product click writes rad-fs-gallery; boot restores then removes
+ * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
  * setChosenTick — is-choosen on the tick at Math.round(scrollLeft / clientWidth)
  */
@@ -75,12 +75,14 @@ document.getElementById("full-screen-close")?.addEventListener("click", (event) 
   setFullScreenGallery(false);
 });
 
-/** persistGalleryFlag — write on #next-product; restore once on boot */
-document.getElementById("next-product")?.addEventListener("click", () => {
-  try {
-    if (galleryOpen) sessionStorage.setItem(GALLERY_FLAG, "1");
-    else sessionStorage.removeItem(GALLERY_FLAG);
-  } catch (e) {}
+/** persistGalleryFlag — write on .next-product; restore once on boot */
+document.querySelectorAll(".next-product").forEach((el) => {
+  el.addEventListener("click", () => {
+    try {
+      if (galleryOpen) sessionStorage.setItem(GALLERY_FLAG, "1");
+      else sessionStorage.removeItem(GALLERY_FLAG);
+    } catch (e) {}
+  });
 });
 
 try {
