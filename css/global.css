@@ -224,6 +224,10 @@ body.is-full-screen .layer * {
   body:has(.notification-bar-box.is-none) .cart-wrapper > .cart-list {
     padding-top: var(--_layout---spacing--space-400);
   }
+
+  body:has(.notification-bar-box.is-none) .product-gallery-col {
+    padding-top: var(--_layout---spacing--space-300);
+  }
 }
 
 /* Drawer open: lock page scroll. */
