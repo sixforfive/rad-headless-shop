@@ -218,14 +218,14 @@ body.is-full-screen .layer * {
   pointer-events: none;
 }
 
-/* Empty bar is display:none; Webflow still leaves space-600, drop to 400. */
+/* No notification item: reduce mobile top spacing. */
 @media (max-width: 767px) {
-  body:has(.notification-bar-box.is-none) .menu-wrapper > .menu-list,
-  body:has(.notification-bar-box.is-none) .cart-wrapper > .cart-list {
+  body:not(:has(.notification-item)) .menu-wrapper > .menu-list,
+  body:not(:has(.notification-item)) .cart-wrapper > .cart-list {
     padding-top: var(--_layout---spacing--space-400);
   }
 
-  body:has(.notification-bar-box.is-none) .product-gallery-col {
+  body:not(:has(.notification-item)) .product-gallery-col {
     padding-top: var(--_layout---spacing--space-300);
   }
 }
