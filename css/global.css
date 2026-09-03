@@ -187,9 +187,16 @@ body * {
 }
 
 /* Fullscreen gallery: white text and borders on layer chrome only. */
-body.is-full-screen .layer * {
+body.is-full-screen .layer *,
+body.is-full-screen .layer-cta .qty-dropdown,
+body.is-full-screen .layer-cta .qty-dropdown * {
   color: #fff !important;
   border-color: #fff !important;
+}
+
+/* Desktop CTA layer sits outside .layer; blend the dropdown, not the solid button. */
+body.is-full-screen .layer-cta .qty-dropdown {
+  mix-blend-mode: difference;
 }
 
 /* Close sits above the blend stack and must receive clicks. */
