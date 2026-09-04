@@ -17,20 +17,39 @@ Webflow runs the pages and CMS. Shopify handles cart and payment. This repo is t
 | `js/merch.js` | Merch listing grid (`merch-column`) |
 | `js/faq.js` | FAQ accordion/list |
 | `js/cart.js` | Cart state and UI |
-| `js/shopify.js` | Shopify Storefront API |
+| `js/shopify.js` | Storefront API client; hydrates price and availability onto `[data-variant-id]` wrappers |
 | `scripts/purge.sh` | CSS purge after markup changes |
 
-## Env vars
+## Why the Shopify config is not in this repo
 
-| Variable | Where | Purpose |
+`js/shopify.js` reads the store domain and Storefront token off `window.RAD_SHOPIFY`, set in the Webflow **Site Settings > Custom Code > Footer** above the `shopify.js` tag:
+
+```html
+<script>
+  window.RAD_SHOPIFY = {
+    domain: "your-store.myshopify.com",
+    token: "xxxxxxxx",
+    apiVersion: "2026-07",
+  };
+</script>
+```
+
+| Key | Required | Purpose |
 |---|---|---|
-| `SHOPIFY_STORE_DOMAIN` | Webflow embed / runtime | Storefront API host |
-| `SHOPIFY_STOREFRONT_TOKEN` | Webflow embed / runtime | Public Storefront access token |
+| `domain` | yes | Storefront API host |
+| `token` | yes | Public Storefront access token |
+| `apiVersion` | no | Defaults to `2026-07` in the repo |
+
+The token is publishable, so having it in the browser is fine — that is not why it lives in Webflow. This repo is public and git history is permanent, so a committed token would outlive every rotation and follow every fork. Keeping it in the embed also means a Shopify quarterly version bump is a Webflow edit and a publish, not a commit and a new jsDelivr URL.
+
+When the object is missing, `hydrateVariants` returns without a request, so pages that never got the embed just render their static markup.
 
 ## Limits
 
-- Product content and prices come from Webflow CMS at runtime, not this repo.
-- `sold-out` is a CMS switch — cart logic must respect it before checkout.
+- Prices and `availableForSale` come from Shopify at runtime; everything else (copy, images, grid placement) still comes from Webflow CMS.
+- The CMS `sold-out` switch is retired. State is `data-available` on the `[data-variant-id]` wrapper.
+- One currency per request — `@inContext` is scoped to the whole GraphQL operation, so dual EUR/PLN needs one request per market. Not wired yet; `formatPrice` is the swap point.
+- On a failed request no wrapper gets `data-available`, so both branches stay hidden and nothing is offered for sale against unknown stock.
 
 ## Security
 

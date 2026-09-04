@@ -136,6 +136,16 @@ body * {
     );
 }
 
+/* Availability comes from Shopify, so hide both branches until shopify.js answers. */
+[data-variant-id]:not([data-available]) [data-when] {
+  display: none;
+}
+
+[data-available="true"] [data-when="sold-out"],
+[data-available="false"] [data-when="available"] {
+  display: none;
+}
+
 /* Overlay fades in; page behind dims. JS toggles the is-* classes. */
 .drawer-wrapper {
   opacity: 0;
