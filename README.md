@@ -16,7 +16,7 @@ Webflow runs the pages and CMS. Shopify handles cart and payment. This repo is t
 | `js/product.js` | Product and merch detail (fullscreen gallery, snap, ticks) |
 | `js/merch.js` | Merch listing grid (`merch-column`) |
 | `js/faq.js` | FAQ accordion/list |
-| `js/cart.js` | Cart state and UI |
+| `js/cart.js` | Cart identity: restore `rad-cart-id` on load, lazy `cartCreate` via `ensureCart` |
 | `js/shopify.js` | Storefront API client; hydrates price and availability onto `[data-variant-id]` wrappers |
 | `scripts/purge.sh` | CSS purge after markup changes |
 
