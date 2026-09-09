@@ -1,19 +1,22 @@
 /**
- * cart.js — Shopify cart identity and add to cart.
+ * cart.js — Shopify cart identity, add to cart, and drawer render.
  * readCartId — rad-cart-id from localStorage, or ""
  * writeCartId — persist a cart gid under rad-cart-id
  * clearCartId — remove rad-cart-id
  * fetchCart — cart(id) → cart or null
  * createCart — cartCreate with no lines → cart id or ""
- * restoreCart — validate a stored id; clear if expired; keep the key on throw
+ * restoreCart — validate a stored id; set restoredCart; clear if expired; keep the key on throw
  * ensureCart — restore if valid, otherwise create and persist
  * readQuantity — quantity from select.value, [data-quantity] or #quantity, or 1
- * addCartLines — cartLinesAdd → cart id or ""
- * onAddToCart — click → variant + qty → ensureCart → addCartLines
+ * addCartLines — cartLinesAdd → cart or ""
+ * fillLine — sku, image, qty, line price into a cloned row
+ * renderCart — empty state or cloned lines + subtotal in .cart-drawer
+ * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
  */
 
 const CART_KEY = "rad-cart-id";
+let restoredCart = null;
 
 /** readCartId — rad-cart-id from localStorage, or "" */
 function readCartId() {
@@ -38,10 +41,44 @@ function clearCartId() {
   } catch (e) {}
 }
 
+const CART_FIELDS = `
+      id
+      totalQuantity
+      cost {
+        subtotalAmount {
+          amount
+          currencyCode
+        }
+      }
+      lines(first: 50) {
+        nodes {
+          quantity
+          cost {
+            totalAmount {
+              amount
+              currencyCode
+            }
+          }
+          merchandise {
+            ... on ProductVariant {
+              sku
+              product {
+                title
+              }
+              image {
+                url
+                altText
+              }
+            }
+          }
+        }
+      }
+`;
+
 const CART_QUERY = `
   query cart($id: ID!) {
     cart(id: $id) {
-      id
+${CART_FIELDS}
     }
   }
 `;
@@ -64,7 +101,7 @@ const CART_LINES_ADD = `
   mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
     cartLinesAdd(cartId: $cartId, lines: $lines) {
       cart {
-        id
+${CART_FIELDS}
       }
       userErrors {
         field
@@ -102,7 +139,11 @@ async function restoreCart() {
   if (!id) return "";
   try {
     const cart = await fetchCart(id);
-    if (cart?.id) return cart.id;
+    if (cart?.id) {
+      restoredCart = cart;
+      return cart.id;
+    }
+    restoredCart = null;
     clearCartId();
     return "";
   } catch (e) {
@@ -163,7 +204,80 @@ async function addCartLines(cartId, merchandiseId, quantity) {
   const payload = data?.cartLinesAdd;
   if (!payload?.cart?.id) return "";
   if (payload.userErrors?.length) return "";
-  return payload.cart.id;
+  return payload.cart;
+}
+
+/** fillLine — sku, image, qty, line price into a cloned row */
+function fillLine(el, line) {
+  const merch = line.merchandise || {};
+  const sku = merch.sku || merch.product?.title || "";
+  const skuEl = el.querySelector("[data-cart-sku]");
+  if (skuEl) skuEl.textContent = sku;
+
+  const img = el.querySelector("[data-cart-image]");
+  if (img) {
+    const url = merch.image?.url || "";
+    if (url) {
+      img.src = url;
+      img.alt = merch.image?.altText || sku;
+    } else {
+      img.removeAttribute("src");
+      img.alt = sku;
+    }
+  }
+
+  const qtyEl = el.querySelector("[data-cart-quantity]");
+  if (qtyEl) qtyEl.textContent = String(line.quantity ?? "");
+
+  const priceEl = el.querySelector("[data-cart-line-price]");
+  if (priceEl) {
+    priceEl.textContent = formatPrice(
+      line.cost?.totalAmount?.amount,
+      line.cost?.totalAmount?.currencyCode,
+    );
+  }
+}
+
+/** renderCart — empty state or cloned lines + subtotal in .cart-drawer */
+function renderCart(cart) {
+  const list = document.querySelector(".cart-list");
+  const empty = document.querySelector(".empty-cart");
+  const template = document.querySelector("[data-cart-line-template]");
+  const summary = list?.querySelector(".cart-summary");
+
+  list
+    ?.querySelectorAll(".cart-product:not([data-cart-line-template])")
+    .forEach((row) => row.remove());
+  if (template) template.style.display = "none";
+
+  const lines = cart?.lines?.nodes || [];
+  if (!lines.length) {
+    if (empty) empty.style.display = "flex";
+    if (list) list.style.display = "none";
+    return;
+  }
+
+  if (empty) empty.style.display = "none";
+  if (list) list.style.display = "flex";
+  if (!template || !list) return;
+
+  const anchor = list.querySelector(".spacer-tiny") || summary;
+  lines.forEach((line) => {
+    const clone = template.cloneNode(true);
+    clone.removeAttribute("data-cart-line-template");
+    clone.style.display = "";
+    fillLine(clone, line);
+    if (anchor) list.insertBefore(clone, anchor);
+    else list.appendChild(clone);
+  });
+
+  const subtotalEl = document.querySelector("[data-cart-subtotal]");
+  if (subtotalEl) {
+    subtotalEl.textContent = formatPrice(
+      cart.cost?.subtotalAmount?.amount,
+      cart.cost?.subtotalAmount?.currencyCode,
+    );
+  }
 }
 
 /** onAddToCart — no request when the wrapper has no usable variant id */
@@ -177,7 +291,14 @@ async function onAddToCart(event) {
   if (!merchandiseId) return;
   const cartId = await ensureCart();
   if (!cartId) return;
-  await addCartLines(cartId, merchandiseId, readQuantity(wrapper));
+  const cart = await addCartLines(
+    cartId,
+    merchandiseId,
+    readQuantity(wrapper),
+  );
+  if (!cart) return;
+  renderCart(cart);
+  openDrawer("cart", event);
 }
 
 /** bindAddToCart — one listener; listings with no buttons never fire it */
@@ -188,5 +309,5 @@ function bindAddToCart() {
   });
 }
 
-restoreCart();
+restoreCart().then(() => renderCart(restoredCart));
 bindAddToCart();
