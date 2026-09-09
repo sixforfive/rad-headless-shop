@@ -4,8 +4,8 @@
 
 ## 2. Webflow (manual, outside this repo)
 
-- [ ] 2.1 Point the Footer `js/cart.js` tag at the new commit SHA and publish
+- [x] 2.1 Point the Footer `js/cart.js` tag at the new commit SHA and publish
 
 ## 3. Verify
 
-- [ ] 3.1 On `/product/{slug}`, choose qty `3`, click Add to cart; confirm `cartLinesAdd` `lines[0].quantity` is `3`
+- [x] 3.1 On `/product/{slug}`, choose qty `3`, click Add to cart; confirm `cartLinesAdd` `lines[0].quantity` is `3`
