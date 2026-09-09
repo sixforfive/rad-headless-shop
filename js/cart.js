@@ -1,5 +1,5 @@
 /**
- * cart.js — Shopify cart identity for the storefront.
+ * cart.js — Shopify cart identity and add to cart.
  * readCartId — rad-cart-id from localStorage, or ""
  * writeCartId — persist a cart gid under rad-cart-id
  * clearCartId — remove rad-cart-id
@@ -7,6 +7,10 @@
  * createCart — cartCreate with no lines → cart id or ""
  * restoreCart — validate a stored id; clear if expired; keep the key on throw
  * ensureCart — restore if valid, otherwise create and persist
+ * readQuantity — quantity from [data-quantity] or #quantity, or 1
+ * addCartLines — cartLinesAdd → cart id or ""
+ * onAddToCart — click → variant + qty → ensureCart → addCartLines
+ * bindAddToCart — document click on [data-add-to-cart]
  */
 
 const CART_KEY = "rad-cart-id";
@@ -45,6 +49,20 @@ const CART_QUERY = `
 const CART_CREATE = `
   mutation cartCreate {
     cartCreate {
+      cart {
+        id
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const CART_LINES_ADD = `
+  mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+    cartLinesAdd(cartId: $cartId, lines: $lines) {
       cart {
         id
       }
@@ -102,4 +120,67 @@ async function ensureCart() {
   return id;
 }
 
+/** readQuantity — [data-quantity] else #quantity; positive int or 1 */
+function readQuantity(wrapper) {
+  const el =
+    wrapper.querySelector("[data-quantity]") ||
+    wrapper.querySelector("#quantity");
+  if (!el) return 1;
+
+  const toggle = el.querySelector(".w-dropdown-toggle");
+  if (toggle) {
+    const n = parseInt(toggle.textContent.trim(), 10);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  }
+
+  for (let i = el.children.length - 1; i >= 0; i--) {
+    const text = el.children[i].textContent.trim();
+    if (!/^\d+$/.test(text)) continue;
+    const n = parseInt(text, 10);
+    if (n > 0) return n;
+  }
+  return 1;
+}
+
+/** addCartLines — userErrors come back in data, not as GraphQL errors */
+async function addCartLines(cartId, merchandiseId, quantity) {
+  if (!SHOPIFY.domain || !SHOPIFY.token) return "";
+  let data;
+  try {
+    data = await shopifyFetch(CART_LINES_ADD, {
+      cartId,
+      lines: [{ merchandiseId, quantity }],
+    });
+  } catch (e) {
+    return "";
+  }
+  const payload = data?.cartLinesAdd;
+  if (!payload?.cart?.id) return "";
+  if (payload.userErrors?.length) return "";
+  return payload.cart.id;
+}
+
+/** onAddToCart — no request when the wrapper has no usable variant id */
+async function onAddToCart(event) {
+  event.preventDefault();
+  const control = event.target.closest("[data-add-to-cart]");
+  if (!control) return;
+  const wrapper = control.closest("[data-variant-id]");
+  if (!wrapper) return;
+  const merchandiseId = toGid(wrapper.dataset.variantId);
+  if (!merchandiseId) return;
+  const cartId = await ensureCart();
+  if (!cartId) return;
+  await addCartLines(cartId, merchandiseId, readQuantity(wrapper));
+}
+
+/** bindAddToCart — one listener; listings with no buttons never fire it */
+function bindAddToCart() {
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest("[data-add-to-cart]")) return;
+    onAddToCart(event);
+  });
+}
+
 restoreCart();
+bindAddToCart();

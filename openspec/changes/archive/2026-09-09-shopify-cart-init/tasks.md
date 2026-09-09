@@ -22,11 +22,11 @@
 
 ## 5. Webflow (manual, outside this repo)
 
-- [ ] 5.1 Add `js/cart.js` to Site Footer at the commit SHA, immediately below the `js/shopify.js` tag
+- [x] 5.1 Add `js/cart.js` to Site Footer at the commit SHA, immediately below the `js/shopify.js` tag
 
 ## 6. Verify
 
-- [ ] 6.1 Publish and hard-refresh with no `rad-cart-id`; confirm no cart `graphql.json` request
-- [ ] 6.2 Set a known-good cart gid in `rad-cart-id`, hard-refresh; confirm one `cart(id)` request and the key remains
-- [ ] 6.3 Set a garbage gid in `rad-cart-id`, hard-refresh; confirm the key is removed
-- [ ] 6.4 From the console, call `ensureCart()` with no stored id; confirm one `cartCreate` and that `rad-cart-id` is written
+- [x] 6.1 Publish and hard-refresh with no `rad-cart-id`; confirm no cart `graphql.json` request
+- [x] 6.2 Set a known-good cart gid in `rad-cart-id`, hard-refresh; confirm one `cart(id)` request and the key remains
+- [x] 6.3 Set a garbage gid in `rad-cart-id`, hard-refresh; confirm the key is removed
+- [x] 6.4 From the console, call `ensureCart()` with no stored id; confirm one `cartCreate` and that `rad-cart-id` is written
