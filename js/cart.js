@@ -7,7 +7,7 @@
  * createCart — cartCreate with no lines → cart id or ""
  * restoreCart — validate a stored id; clear if expired; keep the key on throw
  * ensureCart — restore if valid, otherwise create and persist
- * readQuantity — quantity from [data-quantity] or #quantity, or 1
+ * readQuantity — quantity from select.value, [data-quantity] or #quantity, or 1
  * addCartLines — cartLinesAdd → cart id or ""
  * onAddToCart — click → variant + qty → ensureCart → addCartLines
  * bindAddToCart — document click on [data-add-to-cart]
@@ -120,12 +120,18 @@ async function ensureCart() {
   return id;
 }
 
-/** readQuantity — [data-quantity] else #quantity; positive int or 1 */
+/** readQuantity — [data-quantity] else #quantity; select.value, or 1 */
 function readQuantity(wrapper) {
   const el =
     wrapper.querySelector("[data-quantity]") ||
     wrapper.querySelector("#quantity");
   if (!el) return 1;
+
+  const select = el.tagName === "SELECT" ? el : el.querySelector("select");
+  if (select) {
+    const n = parseInt(select.value, 10);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  }
 
   const toggle = el.querySelector(".w-dropdown-toggle");
   if (toggle) {
