@@ -17,12 +17,12 @@
 
 ## 4. Webflow (manual, outside this repo)
 
-- [ ] 4.1 Point the Footer `js/cart.js` tag at the new commit SHA and publish
+- [x] 4.1 Point the Footer `js/cart.js` tag at the new commit SHA and publish
 
 ## 5. Verify
 
-- [ ] 5.1 On `/product/{slug}` with no `rad-cart-id`, click Add to cart; confirm `cartCreate` then `cartLinesAdd` with the wrapper's variant gid and quantity `1`
-- [ ] 5.2 Click the other add-to-cart control; confirm a second `cartLinesAdd` on the same cart id
-- [ ] 5.3 On `/merch/{slug}`, click Add to cart; confirm `cartLinesAdd` for that page's variant
-- [ ] 5.4 On `/shop`, confirm no `cartLinesAdd`
-- [ ] 5.5 Click Add to cart; confirm the page does not jump to the top
+- [x] 5.1 On `/product/{slug}` with no `rad-cart-id`, click Add to cart; confirm `cartCreate` then `cartLinesAdd` with the wrapper's variant gid and quantity `1`
+- [x] 5.2 Click the other add-to-cart control; confirm a second `cartLinesAdd` on the same cart id
+- [x] 5.3 On `/merch/{slug}`, click Add to cart; confirm `cartLinesAdd` for that page's variant
+- [x] 5.4 On `/shop`, confirm no `cartLinesAdd`
+- [x] 5.5 Click Add to cart; confirm the page does not jump to the top
