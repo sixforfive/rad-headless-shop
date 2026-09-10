@@ -9,10 +9,15 @@
  * ensureCart — restore if valid, otherwise create and persist
  * readQuantity — quantity from select.value, [data-quantity] or #quantity, or 1
  * addCartLines — cartLinesAdd → cart or ""
- * fillLine — sku, image, qty, line price into a cloned row
+ * fillLine — sku, image, line id, qty, line price into a cloned row
  * renderCart — empty state or cloned lines + subtotal in .cart-drawer
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
+ * updateCartLine — cartLinesUpdate → cart or ""
+ * removeCartLine — cartLinesRemove → cart or ""
+ * onCartQuantityChange — change → line id + qty → updateCartLine → renderCart
+ * onCartRemove — click → line id → removeCartLine → renderCart
+ * bindLineControls — document click on [data-cart-remove], change on [data-cart-quantity]
  */
 
 const CART_KEY = "rad-cart-id";
@@ -52,6 +57,7 @@ const CART_FIELDS = `
       }
       lines(first: 50) {
         nodes {
+          id
           quantity
           cost {
             totalAmount {
@@ -100,6 +106,34 @@ const CART_CREATE = `
 const CART_LINES_ADD = `
   mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
     cartLinesAdd(cartId: $cartId, lines: $lines) {
+      cart {
+${CART_FIELDS}
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const CART_LINES_UPDATE = `
+  mutation cartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+    cartLinesUpdate(cartId: $cartId, lines: $lines) {
+      cart {
+${CART_FIELDS}
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const CART_LINES_REMOVE = `
+  mutation cartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+    cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
       cart {
 ${CART_FIELDS}
       }
@@ -207,12 +241,55 @@ async function addCartLines(cartId, merchandiseId, quantity) {
   return payload.cart;
 }
 
-/** fillLine — sku, image, qty, line price into a cloned row */
+/** updateCartLine — userErrors come back in data, not as GraphQL errors */
+async function updateCartLine(lineId, quantity) {
+  if (!SHOPIFY.domain || !SHOPIFY.token) return "";
+  const cartId = readCartId();
+  if (!cartId || !lineId) return "";
+  let data;
+  try {
+    data = await shopifyFetch(CART_LINES_UPDATE, {
+      cartId,
+      lines: [{ id: lineId, quantity }],
+    });
+  } catch (e) {
+    return "";
+  }
+  const payload = data?.cartLinesUpdate;
+  if (!payload?.cart?.id) return "";
+  if (payload.userErrors?.length) return "";
+  return payload.cart;
+}
+
+/** removeCartLine — userErrors come back in data, not as GraphQL errors */
+async function removeCartLine(lineId) {
+  if (!SHOPIFY.domain || !SHOPIFY.token) return "";
+  const cartId = readCartId();
+  if (!cartId || !lineId) return "";
+  let data;
+  try {
+    data = await shopifyFetch(CART_LINES_REMOVE, {
+      cartId,
+      lineIds: [lineId],
+    });
+  } catch (e) {
+    return "";
+  }
+  const payload = data?.cartLinesRemove;
+  if (!payload?.cart?.id) return "";
+  if (payload.userErrors?.length) return "";
+  return payload.cart;
+}
+
+/** fillLine — sku, image, line id, qty, line price into a cloned row */
 function fillLine(el, line) {
   const merch = line.merchandise || {};
   const sku = merch.sku || merch.product?.title || "";
   const skuEl = el.querySelector("[data-cart-sku]");
   if (skuEl) skuEl.textContent = sku;
+
+  if (line.id) el.dataset.cartLineId = line.id;
+  else el.removeAttribute("data-cart-line-id");
 
   const img = el.querySelector("[data-cart-image]");
   if (img) {
@@ -229,7 +306,11 @@ function fillLine(el, line) {
   }
 
   const qtyEl = el.querySelector("[data-cart-quantity]");
-  if (qtyEl) qtyEl.textContent = String(line.quantity ?? "");
+  if (qtyEl) {
+    const qty = String(line.quantity ?? "");
+    if (qtyEl.tagName === "SELECT") qtyEl.value = qty;
+    else qtyEl.textContent = qty;
+  }
 
   const priceEl = el.querySelector("[data-cart-line-price]");
   if (priceEl) {
@@ -311,5 +392,46 @@ function bindAddToCart() {
   });
 }
 
+/** onCartQuantityChange — no request when the row has no line id */
+async function onCartQuantityChange(event) {
+  const control = event.target.closest("[data-cart-quantity]");
+  if (!control) return;
+  if (control.closest("[data-cart-line-template]")) return;
+  const row = control.closest(".cart-product");
+  const lineId = row?.dataset.cartLineId;
+  if (!lineId) return;
+  const n = parseInt(control.value, 10);
+  if (!Number.isFinite(n) || n <= 0) return;
+  const cart = await updateCartLine(lineId, n);
+  if (!cart) return;
+  renderCart(cart);
+}
+
+/** onCartRemove — no request when the row has no line id */
+async function onCartRemove(event) {
+  const control = event.target.closest("[data-cart-remove]");
+  if (!control) return;
+  if (control.closest("[data-cart-line-template]")) return;
+  const row = control.closest(".cart-product");
+  const lineId = row?.dataset.cartLineId;
+  if (!lineId) return;
+  const cart = await removeCartLine(lineId);
+  if (!cart) return;
+  renderCart(cart);
+}
+
+/** bindLineControls — one listener each; the hidden template never fires a mutation */
+function bindLineControls() {
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest("[data-cart-remove]")) return;
+    onCartRemove(event);
+  });
+  document.addEventListener("change", (event) => {
+    if (!event.target.closest("[data-cart-quantity]")) return;
+    onCartQuantityChange(event);
+  });
+}
+
 restoreCart().then(() => renderCart(restoredCart));
 bindAddToCart();
+bindLineControls();
