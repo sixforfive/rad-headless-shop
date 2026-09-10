@@ -10,7 +10,7 @@
  * readQuantity — quantity from select.value, [data-quantity] or #quantity, or 1
  * addCartLines — cartLinesAdd → cart or ""
  * fillLine — sku, image, line id, qty, line price into a cloned row
- * renderCart — empty state or cloned lines + subtotal in .cart-drawer
+ * renderCart — count, empty state or cloned lines + subtotal in .cart-drawer
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
  * updateCartLine — cartLinesUpdate → cart or ""
@@ -321,8 +321,12 @@ function fillLine(el, line) {
   }
 }
 
-/** renderCart — empty state or cloned lines + subtotal in .cart-drawer */
+/** renderCart — count, empty state or cloned lines + subtotal in .cart-drawer */
 function renderCart(cart) {
+  document.querySelectorAll("[data-cart-count]").forEach((el) => {
+    el.textContent = String(cart?.totalQuantity ?? 0);
+  });
+
   const list = document.querySelector(".cart-list");
   const empty = document.querySelector(".empty-cart");
   const template = document.querySelector("[data-cart-line-template]");
