@@ -217,6 +217,8 @@ function fillLine(el, line) {
   const img = el.querySelector("[data-cart-image]");
   if (img) {
     const url = merch.image?.url || "";
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
     if (url) {
       img.src = url;
       img.alt = merch.image?.altText || sku;
