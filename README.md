@@ -11,12 +11,12 @@ Webflow runs the pages and CMS. Shopify handles cart and payment. This repo is t
 | Path | Role |
 |---|---|
 | `css/global.css` | Site-wide styles |
-| `js/global.js` | Cross-page behavior (nav, drawer, currency) |
+| `js/global.js` | Cross-page behavior (nav, drawer, currency); `#keep-shopping` closes the cart drawer |
 | `js/shop.js` | Shop grid placement and Gallery/List switch |
 | `js/product.js` | Product and merch detail (fullscreen gallery, snap, ticks) |
 | `js/merch.js` | Merch listing grid (`merch-column`) |
 | `js/faq.js` | FAQ accordion/list |
-| `js/cart.js` | Cart identity, add to cart, and drawer render: restore `rad-cart-id`, lazy `cartCreate` via `ensureCart`, `cartLinesAdd` from `[data-add-to-cart]`, clone `[data-cart-line-template]` into `.cart-drawer`, `cartLinesUpdate` / `cartLinesRemove` from the line quantity select and `[data-cart-remove]`, write `totalQuantity` to `[data-cart-count]` |
+| `js/cart.js` | Cart identity, add to cart, and drawer render: restore `rad-cart-id`, lazy `cartCreate` via `ensureCart`, `cartLinesAdd` from `[data-add-to-cart]`, clone `[data-cart-line-template]` into `.cart-drawer`, `cartLinesUpdate` / `cartLinesRemove` from the line quantity select and `[data-cart-remove]`, write `totalQuantity` to `[data-cart-count]`, hide `#checkout-btn` when the cart has no lines |
 | `js/shopify.js` | Storefront API client; hydrates price and availability onto `[data-variant-id]` wrappers |
 | `scripts/purge.sh` | CSS purge after markup changes |
 

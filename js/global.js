@@ -215,4 +215,5 @@ menuOpen?.addEventListener("click", (event) => openDrawer("menu", event));
 cartOpen?.addEventListener("click", (event) => openDrawer("cart", event));
 menuClose?.addEventListener("click", closeDrawer);
 cartClose?.addEventListener("click", closeDrawer);
+document.getElementById("keep-shopping")?.addEventListener("click", closeDrawer);
 drawerWrapper?.addEventListener("click", onDrawerBackdrop);

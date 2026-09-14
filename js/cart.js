@@ -10,7 +10,7 @@
  * readQuantity — quantity from select.value, [data-quantity] or #quantity, or 1
  * addCartLines — cartLinesAdd → cart or ""
  * fillLine — sku, image, line id, qty, line price into a cloned row
- * renderCart — count, empty state or cloned lines + subtotal in .cart-drawer
+ * renderCart — count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
  * updateCartLine — cartLinesUpdate → cart or ""
@@ -321,7 +321,7 @@ function fillLine(el, line) {
   }
 }
 
-/** renderCart — count, empty state or cloned lines + subtotal in .cart-drawer */
+/** renderCart — count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty */
 function renderCart(cart) {
   document.querySelectorAll("[data-cart-count]").forEach((el) => {
     el.textContent = String(cart?.totalQuantity ?? 0);
@@ -331,6 +331,7 @@ function renderCart(cart) {
   const empty = document.querySelector(".empty-cart");
   const template = document.querySelector("[data-cart-line-template]");
   const summary = list?.querySelector(".cart-summary");
+  const checkoutBtn = document.getElementById("checkout-btn");
 
   list
     ?.querySelectorAll(".cart-product:not([data-cart-line-template])")
@@ -341,11 +342,13 @@ function renderCart(cart) {
   if (!lines.length) {
     if (empty) empty.style.display = "flex";
     if (list) list.style.display = "none";
+    if (checkoutBtn) checkoutBtn.style.display = "none";
     return;
   }
 
   if (empty) empty.style.display = "none";
   if (list) list.style.display = "flex";
+  if (checkoutBtn) checkoutBtn.style.display = "";
   if (!template || !list) return;
 
   const anchor = list.querySelector(".spacer-tiny") || summary;
