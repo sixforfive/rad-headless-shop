@@ -263,6 +263,10 @@ html.is-full-screen .gallery-full-screen .gallery-full-screen_close,
   body:not(:has(.notification-item)) .product-gallery-col {
     padding-top: var(--_layout---spacing--space-300);
   }
+
+  body:not(:has(.notification-item)) .empty-cart {
+    margin-top: var(--_layout---spacing--space-400);
+  }
 }
 
 /* Drawer open: lock page scroll. */
