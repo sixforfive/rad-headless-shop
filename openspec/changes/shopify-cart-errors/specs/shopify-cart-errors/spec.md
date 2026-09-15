@@ -11,12 +11,12 @@ When a Storefront cart mutation fails, the site SHALL show exactly one published
 #### Scenario: Network or GraphQL throw on add
 
 - **WHEN** add to cart runs and the Storefront request throws or no cart can be created
-- **THEN** `#error-no-reach` inside `.layer-cta` has class `is-visible` and no line is added
+- **THEN** `#error-no-reach` inside the clicked `.cta-wrapper` has class `is-visible` and no line is added
 
 #### Scenario: Sold out add
 
 - **WHEN** `cartLinesAdd` returns `userErrors` for unavailable or unpublished merchandise
-- **THEN** `#error-soldout` inside `.layer-cta` has class `is-visible` and no line is added
+- **THEN** `#error-soldout` inside the clicked `.cta-wrapper` has class `is-visible` and no line is added
 
 #### Scenario: Not enough stock on add or quantity change
 
@@ -40,7 +40,7 @@ When a Storefront cart mutation fails, the site SHALL show exactly one published
 
 ### Requirement: Drawer sold-out and missing-item errors name the SKUs
 
-When `#error-soldout` or `#error-no-item` is shown inside `.cart-drawer`, the site SHALL write the affected lines' SKUs into `.error-item-select` inside that node. Multiple SKUs SHALL be joined by `", "`. Add errors inside `.layer-cta` SHALL NOT change `.error-item-select`.
+When `#error-soldout` or `#error-no-item` is shown inside `.cart-drawer`, the site SHALL write the affected lines' SKUs into `.error-item-select` inside that node. Multiple SKUs SHALL be joined by `", "`. Add errors inside `.cta-wrapper` SHALL NOT change `.error-item-select`.
 
 #### Scenario: One line sold out in the drawer
 
@@ -55,21 +55,21 @@ When `#error-soldout` or `#error-no-item` is shown inside `.cart-drawer`, the si
 #### Scenario: Product page sold-out copy unchanged
 
 - **WHEN** add to cart fails as sold out
-- **THEN** `.error-item-select` inside `.layer-cta` is unchanged
+- **THEN** `.error-item-select` inside the clicked `.cta-wrapper` is unchanged
 
 ### Requirement: Add errors show in the product CTA and line errors show in the drawer
 
-An add failure SHALL show its node inside `.layer-cta .error-wrapper`. A quantity or remove failure SHALL show its node inside `.cart-drawer .error-wrapper`. The site SHALL query those ids inside that wrapper, not as document-unique ids. The site SHALL remove `is-visible` from the other three nodes in that wrapper before showing the mapped one.
+An add failure SHALL show its node inside the clicked control's `.cta-wrapper .error-wrapper`. A quantity or remove failure SHALL show its node inside `.cart-drawer .error-wrapper`. The site SHALL query those ids inside that wrapper, not as document-unique ids. The site SHALL remove `is-visible` from the other three nodes in that wrapper before showing the mapped one. The other breakpoint's `.cta-wrapper` SHALL NOT gain `is-visible` error nodes.
 
-#### Scenario: Add failure stays on the product page
+#### Scenario: Add failure stays on the clicked CTA
 
 - **WHEN** add to cart fails
-- **THEN** the visible error is inside `.layer-cta` and `.cart-drawer` error nodes do not gain `is-visible`
+- **THEN** the visible error is inside the clicked `.cta-wrapper` and `.cart-drawer` error nodes do not gain `is-visible`
 
 #### Scenario: Quantity failure stays in the drawer
 
 - **WHEN** `cartLinesUpdate` fails
-- **THEN** the visible error is inside `.cart-drawer` and `.layer-cta` error nodes do not gain `is-visible`
+- **THEN** the visible error is inside `.cart-drawer` and `.cta-wrapper` error nodes do not gain `is-visible`
 
 ### Requirement: A successful cart mutation hides the error nodes
 
@@ -77,8 +77,8 @@ When a cart mutation succeeds, the site SHALL remove `is-visible` from all four 
 
 #### Scenario: Successful add after a failure
 
-- **WHEN** a later add to cart succeeds after `#error-no-reach` was shown in `.layer-cta`
-- **THEN** none of the four `.layer-cta` error nodes have class `is-visible`
+- **WHEN** a later add to cart succeeds after `#error-no-reach` was shown in that `.cta-wrapper`
+- **THEN** none of the four error nodes in that `.cta-wrapper` have class `is-visible`
 
 ### Requirement: Error nodes fade in and move up
 
@@ -88,6 +88,15 @@ When an error node receives `is-visible`, it SHALL fade in and move up. When `pr
 
 - **WHEN** an error node gains class `is-visible`
 - **THEN** it becomes visible with a fade and an upward move
+
+### Requirement: Shown errors hide after eight seconds
+
+When an error node is shown, the site SHALL hide that wrapper's error nodes after 8 seconds. A new show or a successful mutation SHALL cancel that timer.
+
+#### Scenario: Auto-hide
+
+- **WHEN** `#error-no-reach` is shown and 8 seconds pass with no new cart mutation
+- **THEN** that `.error-wrapper` has class `is-none` and the error node does not have `is-visible`
 
 ### Requirement: Cart controls are inert while a request is in flight
 

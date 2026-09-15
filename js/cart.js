@@ -12,8 +12,8 @@
  * addCartLines — cartLinesAdd → { cart, kind }
  * fillLine — sku, image, line id, qty, line price into a cloned row
  * renderCart — count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
- * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper
- * showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select
+ * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper; clear hide timer
+ * showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
  * setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
@@ -25,8 +25,10 @@
  */
 
 const CART_KEY = "rad-cart-id";
+const CART_ERROR_HIDE_MS = 8000;
 let restoredCart = null;
 let cartBusy = false;
+let cartErrorTimer = null;
 
 /** readCartId — rad-cart-id from localStorage, or "" */
 function readCartId() {
@@ -419,8 +421,12 @@ function renderCart(cart) {
   }
 }
 
-/** hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper */
+/** hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper; clear hide timer */
 function hideCartErrors(root) {
+  if (cartErrorTimer) {
+    clearTimeout(cartErrorTimer);
+    cartErrorTimer = null;
+  }
   if (!root) return;
   root.querySelectorAll('[id^="error-"]').forEach((el) => {
     el.classList.remove("is-visible");
@@ -428,8 +434,12 @@ function hideCartErrors(root) {
   root.querySelector(".error-wrapper")?.classList.add("is-none");
 }
 
-/** showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select */
+/** showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s */
 function showCartError(root, kind, skus) {
+  if (cartErrorTimer) {
+    clearTimeout(cartErrorTimer);
+    cartErrorTimer = null;
+  }
   if (!root) return;
   const wrapper = root.querySelector(".error-wrapper");
   root.querySelectorAll('[id^="error-"]').forEach((el) => {
@@ -445,17 +455,21 @@ function showCartError(root, kind, skus) {
   if (!node) return;
   node.classList.add("is-visible");
   if (
-    !root.classList.contains("cart-drawer") ||
-    (kind !== "soldout" && kind !== "no-item")
+    root.classList.contains("cart-drawer") &&
+    (kind === "soldout" || kind === "no-item")
   ) {
-    return;
+    const slot = node.querySelector(".error-item-select");
+    if (slot) {
+      const list = (Array.isArray(skus) ? skus : [skus])
+        .map((s) => String(s || "").trim())
+        .filter(Boolean);
+      slot.textContent = [...new Set(list)].join(", ");
+    }
   }
-  const slot = node.querySelector(".error-item-select");
-  if (!slot) return;
-  const list = (Array.isArray(skus) ? skus : [skus])
-    .map((s) => String(s || "").trim())
-    .filter(Boolean);
-  slot.textContent = [...new Set(list)].join(", ");
+  cartErrorTimer = setTimeout(() => {
+    cartErrorTimer = null;
+    hideCartErrors(root);
+  }, CART_ERROR_HIDE_MS);
 }
 
 /** setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls */
@@ -481,7 +495,7 @@ async function onAddToCart(event) {
   if (!wrapper) return;
   const merchandiseId = toGid(wrapper.dataset.variantId);
   if (!merchandiseId) return;
-  const root = document.querySelector(".layer-cta");
+  const root = control.closest(".cta-wrapper");
   setCartBusy(true);
   try {
     const cartId = await ensureCart();
