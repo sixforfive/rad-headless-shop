@@ -33,6 +33,30 @@ When a Storefront cart mutation fails, the site SHALL show exactly one published
 - **WHEN** a mutation returns `userErrors` whose code is not sold-out, stock, or `INVALID_MERCHANDISE_LINE`
 - **THEN** `#error-no-reach` inside the wrapper for that action has class `is-visible`
 
+#### Scenario: Quantity or remove merch unavailable
+
+- **WHEN** `cartLinesUpdate` or `cartLinesRemove` returns `userErrors` for unavailable merchandise
+- **THEN** `#error-soldout` inside `.cart-drawer` has class `is-visible`
+
+### Requirement: Drawer sold-out and missing-item errors name the SKUs
+
+When `#error-soldout` or `#error-no-item` is shown inside `.cart-drawer`, the site SHALL write the affected lines' SKUs into `.error-item-select` inside that node. Multiple SKUs SHALL be joined by `", "`. Add errors inside `.layer-cta` SHALL NOT change `.error-item-select`.
+
+#### Scenario: One line sold out in the drawer
+
+- **WHEN** quantity update fails as sold out on a cloned row whose `[data-cart-sku]` is `EX-001`
+- **THEN** `.error-item-select` inside `#error-soldout` in `.cart-drawer` is `EX-001`
+
+#### Scenario: One line gone from the drawer
+
+- **WHEN** remove fails with `INVALID_MERCHANDISE_LINE` on a cloned row whose `[data-cart-sku]` is `EX-002`
+- **THEN** `.error-item-select` inside `#error-no-item` in `.cart-drawer` is `EX-002`
+
+#### Scenario: Product page sold-out copy unchanged
+
+- **WHEN** add to cart fails as sold out
+- **THEN** `.error-item-select` inside `.layer-cta` is unchanged
+
 ### Requirement: Add errors show in the product CTA and line errors show in the drawer
 
 An add failure SHALL show its node inside `.layer-cta .error-wrapper`. A quantity or remove failure SHALL show its node inside `.cart-drawer .error-wrapper`. The site SHALL query those ids inside that wrapper, not as document-unique ids. The site SHALL remove `is-visible` from the other three nodes in that wrapper before showing the mapped one.

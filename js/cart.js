@@ -13,7 +13,7 @@
  * fillLine — sku, image, line id, qty, line price into a cloned row
  * renderCart — count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
  * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper
- * showCartError — lift is-none, reflow, is-visible on #error-${kind} inside root
+ * showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select
  * setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
@@ -177,7 +177,9 @@ function errorKind(userErrors, action) {
   ) {
     return "stock";
   }
-  if (action === "add") return "soldout";
+  if (action === "add" || action === "update" || action === "remove") {
+    return "soldout";
+  }
   return "no-reach";
 }
 
@@ -426,8 +428,8 @@ function hideCartErrors(root) {
   root.querySelector(".error-wrapper")?.classList.add("is-none");
 }
 
-/** showCartError — lift is-none, reflow, is-visible on #error-${kind} inside root */
-function showCartError(root, kind) {
+/** showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select */
+function showCartError(root, kind, skus) {
   if (!root) return;
   const wrapper = root.querySelector(".error-wrapper");
   root.querySelectorAll('[id^="error-"]').forEach((el) => {
@@ -439,7 +441,21 @@ function showCartError(root, kind) {
   }
   wrapper.classList.remove("is-none");
   void wrapper.offsetHeight;
-  wrapper.querySelector("#error-" + kind)?.classList.add("is-visible");
+  const node = wrapper.querySelector("#error-" + kind);
+  if (!node) return;
+  node.classList.add("is-visible");
+  if (
+    !root.classList.contains("cart-drawer") ||
+    (kind !== "soldout" && kind !== "no-item")
+  ) {
+    return;
+  }
+  const slot = node.querySelector(".error-item-select");
+  if (!slot) return;
+  const list = (Array.isArray(skus) ? skus : [skus])
+    .map((s) => String(s || "").trim())
+    .filter(Boolean);
+  slot.textContent = [...new Set(list)].join(", ");
 }
 
 /** setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls */
@@ -509,12 +525,13 @@ async function onCartQuantityChange(event) {
   if (!lineId) return;
   const n = parseInt(control.value, 10);
   if (!Number.isFinite(n) || n <= 0) return;
+  const sku = row.querySelector("[data-cart-sku]")?.textContent.trim() || "";
   const root = document.querySelector(".cart-drawer");
   setCartBusy(true);
   try {
     const result = await updateCartLine(lineId, n);
     if (!result.cart) {
-      showCartError(root, result.kind || "no-reach");
+      showCartError(root, result.kind || "no-reach", sku);
       return;
     }
     hideCartErrors(root);
@@ -533,12 +550,13 @@ async function onCartRemove(event) {
   const row = control.closest(".cart-product");
   const lineId = row?.dataset.cartLineId;
   if (!lineId) return;
+  const sku = row.querySelector("[data-cart-sku]")?.textContent.trim() || "";
   const root = document.querySelector(".cart-drawer");
   setCartBusy(true);
   try {
     const result = await removeCartLine(lineId);
     if (!result.cart) {
-      showCartError(root, result.kind || "no-reach");
+      showCartError(root, result.kind || "no-reach", sku);
       return;
     }
     hideCartErrors(root);
