@@ -4,17 +4,21 @@
  * writeCartId — persist a cart gid under rad-cart-id
  * clearCartId — remove rad-cart-id
  * fetchCart — cart(id) → cart or null
- * createCart — cartCreate with no lines → cart id or ""
+ * createCart — cartCreate with no lines → { cart: id, kind }
  * restoreCart — validate a stored id; set restoredCart; clear if expired; keep the key on throw
  * ensureCart — restore if valid, otherwise create and persist
  * readQuantity — quantity from select.value, [data-quantity] or #quantity, or 1
- * addCartLines — cartLinesAdd → cart or ""
+ * errorKind — userErrors + action → no-reach | soldout | stock | no-item
+ * addCartLines — cartLinesAdd → { cart, kind }
  * fillLine — sku, image, line id, qty, line price into a cloned row
  * renderCart — count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
+ * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper
+ * showCartError — lift is-none, reflow, is-visible on #error-${kind} inside root
+ * setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
- * updateCartLine — cartLinesUpdate → cart or ""
- * removeCartLine — cartLinesRemove → cart or ""
+ * updateCartLine — cartLinesUpdate → { cart, kind }
+ * removeCartLine — cartLinesRemove → { cart, kind }
  * onCartQuantityChange — change → line id + qty → updateCartLine → renderCart
  * onCartRemove — click → line id → removeCartLine → renderCart
  * bindLineControls — document click on [data-cart-remove], change on [data-cart-quantity]
@@ -22,6 +26,7 @@
 
 const CART_KEY = "rad-cart-id";
 let restoredCart = null;
+let cartBusy = false;
 
 /** readCartId — rad-cart-id from localStorage, or "" */
 function readCartId() {
@@ -96,6 +101,7 @@ const CART_CREATE = `
         id
       }
       userErrors {
+        code
         field
         message
       }
@@ -110,6 +116,7 @@ const CART_LINES_ADD = `
 ${CART_FIELDS}
       }
       userErrors {
+        code
         field
         message
       }
@@ -124,6 +131,7 @@ const CART_LINES_UPDATE = `
 ${CART_FIELDS}
       }
       userErrors {
+        code
         field
         message
       }
@@ -138,6 +146,7 @@ const CART_LINES_REMOVE = `
 ${CART_FIELDS}
       }
       userErrors {
+        code
         field
         message
       }
@@ -151,19 +160,45 @@ async function fetchCart(id) {
   return data?.cart ?? null;
 }
 
+/** errorKind — first userError code/field → no-reach | soldout | stock | no-item */
+function errorKind(userErrors, action) {
+  const first = userErrors && userErrors[0];
+  if (!first) return "no-reach";
+  const code = String(first.code || "").toUpperCase();
+  const field = (Array.isArray(first.field) ? first.field : [])
+    .join(".")
+    .toLowerCase();
+  if (code === "INVALID_MERCHANDISE_LINE") return "no-item";
+  if (
+    code === "NOT_ENOUGH_IN_STOCK" ||
+    code === "MERCHANDISE_NOT_ENOUGH_STOCK" ||
+    code === "INVALID_INCREMENT" ||
+    field.includes("quantity")
+  ) {
+    return "stock";
+  }
+  if (action === "add") return "soldout";
+  return "no-reach";
+}
+
 /** createCart — userErrors come back in data, not as GraphQL errors */
 async function createCart() {
-  if (!SHOPIFY.domain || !SHOPIFY.token) return "";
+  if (!SHOPIFY.domain || !SHOPIFY.token) {
+    return { cart: "", kind: "no-reach" };
+  }
   let data;
   try {
     data = await shopifyFetch(CART_CREATE);
   } catch (e) {
-    return "";
+    return { cart: "", kind: "no-reach" };
   }
   const payload = data?.cartCreate;
-  if (!payload?.cart?.id) return "";
-  if (payload.userErrors?.length) return "";
-  return payload.cart.id;
+  if (payload?.userErrors?.length) {
+    return { cart: "", kind: errorKind(payload.userErrors, "create") };
+  }
+  const id = payload?.cart?.id || "";
+  if (!id) return { cart: "", kind: "no-reach" };
+  return { cart: id, kind: "" };
 }
 
 /** restoreCart — one query when a stored id exists; no request on a first visit */
@@ -190,9 +225,9 @@ async function ensureCart() {
   if (!SHOPIFY.domain || !SHOPIFY.token) return "";
   const restored = await restoreCart();
   if (restored) return restored;
-  const id = await createCart();
-  if (id) writeCartId(id);
-  return id;
+  const created = await createCart();
+  if (created.cart) writeCartId(created.cart);
+  return created.cart;
 }
 
 /** readQuantity — [data-quantity] else #quantity; select.value, or 1 */
@@ -225,7 +260,9 @@ function readQuantity(wrapper) {
 
 /** addCartLines — userErrors come back in data, not as GraphQL errors */
 async function addCartLines(cartId, merchandiseId, quantity) {
-  if (!SHOPIFY.domain || !SHOPIFY.token) return "";
+  if (!SHOPIFY.domain || !SHOPIFY.token) {
+    return { cart: "", kind: "no-reach" };
+  }
   let data;
   try {
     data = await shopifyFetch(CART_LINES_ADD, {
@@ -233,19 +270,23 @@ async function addCartLines(cartId, merchandiseId, quantity) {
       lines: [{ merchandiseId, quantity }],
     });
   } catch (e) {
-    return "";
+    return { cart: "", kind: "no-reach" };
   }
   const payload = data?.cartLinesAdd;
-  if (!payload?.cart?.id) return "";
-  if (payload.userErrors?.length) return "";
-  return payload.cart;
+  if (payload?.userErrors?.length) {
+    return { cart: "", kind: errorKind(payload.userErrors, "add") };
+  }
+  if (!payload?.cart?.id) return { cart: "", kind: "no-reach" };
+  return { cart: payload.cart, kind: "" };
 }
 
 /** updateCartLine — userErrors come back in data, not as GraphQL errors */
 async function updateCartLine(lineId, quantity) {
-  if (!SHOPIFY.domain || !SHOPIFY.token) return "";
+  if (!SHOPIFY.domain || !SHOPIFY.token) {
+    return { cart: "", kind: "no-reach" };
+  }
   const cartId = readCartId();
-  if (!cartId || !lineId) return "";
+  if (!cartId || !lineId) return { cart: "", kind: "no-reach" };
   let data;
   try {
     data = await shopifyFetch(CART_LINES_UPDATE, {
@@ -253,19 +294,23 @@ async function updateCartLine(lineId, quantity) {
       lines: [{ id: lineId, quantity }],
     });
   } catch (e) {
-    return "";
+    return { cart: "", kind: "no-reach" };
   }
   const payload = data?.cartLinesUpdate;
-  if (!payload?.cart?.id) return "";
-  if (payload.userErrors?.length) return "";
-  return payload.cart;
+  if (payload?.userErrors?.length) {
+    return { cart: "", kind: errorKind(payload.userErrors, "update") };
+  }
+  if (!payload?.cart?.id) return { cart: "", kind: "no-reach" };
+  return { cart: payload.cart, kind: "" };
 }
 
 /** removeCartLine — userErrors come back in data, not as GraphQL errors */
 async function removeCartLine(lineId) {
-  if (!SHOPIFY.domain || !SHOPIFY.token) return "";
+  if (!SHOPIFY.domain || !SHOPIFY.token) {
+    return { cart: "", kind: "no-reach" };
+  }
   const cartId = readCartId();
-  if (!cartId || !lineId) return "";
+  if (!cartId || !lineId) return { cart: "", kind: "no-reach" };
   let data;
   try {
     data = await shopifyFetch(CART_LINES_REMOVE, {
@@ -273,12 +318,14 @@ async function removeCartLine(lineId) {
       lineIds: [lineId],
     });
   } catch (e) {
-    return "";
+    return { cart: "", kind: "no-reach" };
   }
   const payload = data?.cartLinesRemove;
-  if (!payload?.cart?.id) return "";
-  if (payload.userErrors?.length) return "";
-  return payload.cart;
+  if (payload?.userErrors?.length) {
+    return { cart: "", kind: errorKind(payload.userErrors, "remove") };
+  }
+  if (!payload?.cart?.id) return { cart: "", kind: "no-reach" };
+  return { cart: payload.cart, kind: "" };
 }
 
 /** fillLine — sku, image, line id, qty, line price into a cloned row */
@@ -370,25 +417,77 @@ function renderCart(cart) {
   }
 }
 
+/** hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper */
+function hideCartErrors(root) {
+  if (!root) return;
+  root.querySelectorAll('[id^="error-"]').forEach((el) => {
+    el.classList.remove("is-visible");
+  });
+  root.querySelector(".error-wrapper")?.classList.add("is-none");
+}
+
+/** showCartError — lift is-none, reflow, is-visible on #error-${kind} inside root */
+function showCartError(root, kind) {
+  if (!root) return;
+  const wrapper = root.querySelector(".error-wrapper");
+  root.querySelectorAll('[id^="error-"]').forEach((el) => {
+    el.classList.remove("is-visible");
+  });
+  if (!kind || !wrapper) {
+    wrapper?.classList.add("is-none");
+    return;
+  }
+  wrapper.classList.remove("is-none");
+  void wrapper.offsetHeight;
+  wrapper.querySelector("#error-" + kind)?.classList.add("is-visible");
+}
+
+/** setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls */
+function setCartBusy(busy) {
+  cartBusy = busy;
+  document
+    .querySelectorAll(
+      "[data-add-to-cart], [data-cart-quantity], [data-cart-remove]",
+    )
+    .forEach((el) => {
+      if (busy) el.setAttribute("aria-busy", "true");
+      else el.removeAttribute("aria-busy");
+    });
+}
+
 /** onAddToCart — no request when the wrapper has no usable variant id */
 async function onAddToCart(event) {
   event.preventDefault();
+  if (cartBusy) return;
   const control = event.target.closest("[data-add-to-cart]");
   if (!control) return;
   const wrapper = control.closest("[data-variant-id]");
   if (!wrapper) return;
   const merchandiseId = toGid(wrapper.dataset.variantId);
   if (!merchandiseId) return;
-  const cartId = await ensureCart();
-  if (!cartId) return;
-  const cart = await addCartLines(
-    cartId,
-    merchandiseId,
-    readQuantity(wrapper),
-  );
-  if (!cart) return;
-  renderCart(cart);
-  openDrawer("cart", event);
+  const root = document.querySelector(".layer-cta");
+  setCartBusy(true);
+  try {
+    const cartId = await ensureCart();
+    if (!cartId) {
+      showCartError(root, "no-reach");
+      return;
+    }
+    const result = await addCartLines(
+      cartId,
+      merchandiseId,
+      readQuantity(wrapper),
+    );
+    if (!result.cart) {
+      showCartError(root, result.kind || "no-reach");
+      return;
+    }
+    hideCartErrors(root);
+    renderCart(result.cart);
+    openDrawer("cart", event);
+  } finally {
+    setCartBusy(false);
+  }
 }
 
 /** bindAddToCart — one listener; listings with no buttons never fire it */
@@ -404,14 +503,25 @@ async function onCartQuantityChange(event) {
   const control = event.target.closest("[data-cart-quantity]");
   if (!control) return;
   if (control.closest("[data-cart-line-template]")) return;
+  if (cartBusy) return;
   const row = control.closest(".cart-product");
   const lineId = row?.dataset.cartLineId;
   if (!lineId) return;
   const n = parseInt(control.value, 10);
   if (!Number.isFinite(n) || n <= 0) return;
-  const cart = await updateCartLine(lineId, n);
-  if (!cart) return;
-  renderCart(cart);
+  const root = document.querySelector(".cart-drawer");
+  setCartBusy(true);
+  try {
+    const result = await updateCartLine(lineId, n);
+    if (!result.cart) {
+      showCartError(root, result.kind || "no-reach");
+      return;
+    }
+    hideCartErrors(root);
+    renderCart(result.cart);
+  } finally {
+    setCartBusy(false);
+  }
 }
 
 /** onCartRemove — no request when the row has no line id */
@@ -419,12 +529,23 @@ async function onCartRemove(event) {
   const control = event.target.closest("[data-cart-remove]");
   if (!control) return;
   if (control.closest("[data-cart-line-template]")) return;
+  if (cartBusy) return;
   const row = control.closest(".cart-product");
   const lineId = row?.dataset.cartLineId;
   if (!lineId) return;
-  const cart = await removeCartLine(lineId);
-  if (!cart) return;
-  renderCart(cart);
+  const root = document.querySelector(".cart-drawer");
+  setCartBusy(true);
+  try {
+    const result = await removeCartLine(lineId);
+    if (!result.cart) {
+      showCartError(root, result.kind || "no-reach");
+      return;
+    }
+    hideCartErrors(root);
+    renderCart(result.cart);
+  } finally {
+    setCartBusy(false);
+  }
 }
 
 /** bindLineControls — one listener each; the hidden template never fires a mutation */

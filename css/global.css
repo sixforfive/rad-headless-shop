@@ -156,6 +156,28 @@ body * {
   opacity: 1;
 }
 
+.error-wrapper {
+  position: relative;
+}
+
+.error-wrapper [id^="error-"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(0.5rem);
+  pointer-events: none;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.error-wrapper [id^="error-"].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
 .main-wrapper,
 .gallery-full-screen {
   opacity: 1;
@@ -279,6 +301,7 @@ body.is-scroll-locked {
   .drawer-wrapper,
   .main-wrapper,
   .gallery-full-screen,
+  .error-wrapper [id^="error-"],
   body,
   body *,
   .thumb-light,
