@@ -31,19 +31,27 @@
   <style>
     .button__cell { background: {{ shop.email_accent_color }}; }
     .actions-buttons .button__cell--primary { background-color: {{ shop.email_accent_color }}; }
-    a, a:hover, a:active, a:visited { color: {{ shop.email_accent_color }}; }
+    a, a:hover, a:active, a:visited { color: {{ shop.email_accent_color }}; text-decoration: underline; }
     img,
     img.order-list__product-image,
     img.order-list__no-product-image {
-      border-radius: 8px;
+      border-radius: 4px;
     }
     td.order-list__product-description-cell,
     span.order-list__item-title,
-    span.total-discount--amount,
     h4,
-    p.order-list__item-price { color: #000; }
+    p.order-list__item-price,
+    td.subtotal-line__value,
+    td.subtotal-line__value strong { color: #000; }
     span.order-list__item-variant,
-    span.subtotal-line__discount-title { color: #777; }
+    span.subtotal-line__discount,
+    span.subtotal-line__discount-title,
+    td.subtotal-line__title,
+    td.subtotal-line__title p,
+    td.subtotal-line__title span,
+    td.subtotal-line__value.total-discount,
+    p.total-discount,
+    span.total-discount--amount { color: #777; }
     h1 a,
     h1 a:hover,
     h1 a:active,
@@ -54,20 +62,28 @@
     a,
     p,
     p.order-list__item-price,
-    p.total-discount,
     td.order-list__product-description-cell,
     span.order-number__text,
     span.order-list__item-title,
-    span.subtotal-line__discount,
-    span.subtotal-line__discount-title,
-    span.total-discount--amount { font-size: 14px; }
+    td.subtotal-line__value,
+    td.subtotal-line__value strong { font-size: 14px; }
     td.order-number__cell,
     span,
     span.order-list__item-variant,
     span.order-list__item-discount-allocation,
+    span.subtotal-line__discount,
+    span.subtotal-line__discount-title,
+    td.subtotal-line__title,
+    td.subtotal-line__title p,
+    td.subtotal-line__title span,
+    td.subtotal-line__value.total-discount,
+    p.total-discount,
     p.disclaimer__subtext,
     p.disclaimer__subtext a,
     del.order-list__item-original-price { font-size: 12px; }
+    table.subtotal-table--total td.subtotal-line__value,
+    table.subtotal-table--total td.subtotal-line__value strong { font-size: 16px; }
+    table.subtotal-table--total td.subtotal-line__value.total-discount { font-size: 12px; }
   </style>
 </head>
 
