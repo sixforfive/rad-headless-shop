@@ -25,12 +25,12 @@
 
 ## 5. Webflow (manual, outside this repo)
 
-- [ ] 5.1 Confirm `.error-wrapper.is-none` is `display: none`; four `.cta-error_massage` stay in HTML and overlay with `position: absolute`; wrapper `absolute` / `bottom` is not on the `.is-none` combo
-- [ ] 5.2 Point the Footer `js/cart.js` and `css/global.css` tags at the new commit SHAs and publish
+- [x] 5.1 Confirm `.error-wrapper.is-none` is `display: none`; four `.cta-error_massage` stay in HTML and overlay with `position: absolute`; wrapper `absolute` / `bottom` is not on the `.is-none` combo
+- [x] 5.2 Point the Footer `js/cart.js` and `css/global.css` tags at the new commit SHAs and publish
 
 ## 6. Verify
 
-- [ ] 6.1 On `/product/{slug}`, fail add (offline): `#error-no-reach` in the clicked `.cta-wrapper` fades in; drawer does not open
-- [ ] 6.2 Double-click add while the first request is in flight: only one Storefront add mutation
-- [ ] 6.3 Successful add after a failure: that `.cta-wrapper` error nodes lose `is-visible`
-- [ ] 6.4 Fail qty or remove (offline): `#error-no-reach` in `.cart-drawer`; line markup unchanged
+- [x] 6.1 On `/product/{slug}`, fail add (offline): `#error-no-reach` in the clicked `.cta-wrapper` fades in; drawer does not open
+- [x] 6.2 Double-click add while the first request is in flight: only one Storefront add mutation
+- [x] 6.3 Successful add after a failure: that `.cta-wrapper` error nodes lose `is-visible`
+- [x] 6.4 Fail qty or remove (offline): `#error-no-reach` in `.cart-drawer`; line markup unchanged
