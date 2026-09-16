@@ -16,7 +16,7 @@
  * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
  * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer
  * showCartError — lift is-none, reflow, is-visible on #error-${kind}; stock writes .error-stock-lead + SKU; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
- * setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls
+ * setCartBusy — cartBusy flag and aria-busy on add/qty/remove/#checkout-btn
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
  * updateCartLine — cartLinesUpdate → { cart, kind }; stock cap → undo, kind stock
@@ -24,6 +24,8 @@
  * onCartQuantityChange — change → line id + qty → updateCartLine → renderCart
  * onCartRemove — click → line id → removeCartLine → renderCart
  * bindLineControls — document click on [data-cart-remove], change on [data-cart-quantity]
+ * onCheckout — click → checkoutUrl or #error-no-reach in .cart-drawer
+ * bindCheckout — document click on #checkout-btn
  */
 
 const CART_KEY = "rad-cart-id";
@@ -59,6 +61,7 @@ function clearCartId() {
 
 const CART_FIELDS = `
       id
+      checkoutUrl
       totalQuantity
       cost {
         subtotalAmount {
@@ -579,12 +582,12 @@ function showCartError(root, kind, skus, stockLeft) {
   }, CART_ERROR_HIDE_MS);
 }
 
-/** setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls */
+/** setCartBusy — cartBusy flag and aria-busy on add/qty/remove/#checkout-btn */
 function setCartBusy(busy) {
   cartBusy = busy;
   document
     .querySelectorAll(
-      "[data-add-to-cart], [data-cart-quantity], [data-cart-remove]",
+      "[data-add-to-cart], [data-cart-quantity], [data-cart-remove], #checkout-btn",
     )
     .forEach((el) => {
       if (busy) el.setAttribute("aria-busy", "true");
@@ -711,6 +714,27 @@ function bindLineControls() {
   });
 }
 
+/** onCheckout — missing URL shows #error-no-reach; does not clear rad-cart-id */
+function onCheckout(event) {
+  event.preventDefault();
+  if (cartBusy) return;
+  const url = restoredCart?.checkoutUrl;
+  if (!url) {
+    showCartError(document.querySelector(".cart-drawer"), "no-reach");
+    return;
+  }
+  window.location.assign(url);
+}
+
+/** bindCheckout — one listener; missing node never fires it */
+function bindCheckout() {
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest("#checkout-btn")) return;
+    onCheckout(event);
+  });
+}
+
 restoreCart().then(() => renderCart(restoredCart));
 bindAddToCart();
 bindLineControls();
+bindCheckout();
