@@ -4,8 +4,8 @@ Cart mutations fail closed and stay silent. A double-click adds twice, and a sol
 
 ## What Changes
 
-- Failed `cartCreate`, `cartLinesAdd`, `cartLinesUpdate`, and `cartLinesRemove` show the matching published node (`#error-no-reach`, `#error-soldout`, `#error-stock`, `#error-no-item`) with fade-in and move-up.
-- Add failures show inside `.layer-cta .error-wrapper`. Qty and remove failures show inside `.cart-drawer .error-wrapper`. Success hides that wrapper's four nodes. Copy stays in Webflow.
+- Failed `cartCreate`, `cartLinesAdd`, `cartLinesUpdate`, and `cartLinesRemove` show the matching published node (`#error-no-reach`, `#error-soldout`, `#error-stock`, `#error-no-item`) with fade-in and move-up; hide is fade plus move-down, then `.is-none` after 0.3s. Shown errors auto-hide after 8s.
+- Add failures show inside the clicked `.cta-wrapper .add-to-cart .error-wrapper`. Qty and remove failures show inside `.cart-drawer .error-wrapper`. Success hides that wrapper's four nodes. Copy and overlay layout stay in Webflow.
 - While a cart request is in flight, add, qty, and remove controls are inert (`aria-busy`). Missing variant id stays silent.
 
 ## Capabilities
@@ -16,14 +16,14 @@ Cart mutations fail closed and stay silent. A double-click adds twice, and a sol
 
 ### Modified Capabilities
 
-- `shopify-add-to-cart`: a failed add still adds no line, but now shows the mapped error in `.layer-cta`.
+- `shopify-add-to-cart`: a failed add still adds no line, but now shows the mapped error in the clicked `.cta-wrapper`.
 - `shopify-cart-drawer`: a failed qty/remove still leaves drawer markup unchanged, but now shows the mapped error in `.cart-drawer`.
 
 ## Impact
 
 - `js/cart.js` — `userErrors { code field }`, error kind from mutations, `showCartError` / `hideCartErrors`, `cartBusy` in the three handlers.
-- `css/global.css` — hide `.error-wrapper [id^="error-"]` with opacity and `translateY`; `.is-visible` fades and moves up.
+- `css/global.css` — hide `.error-wrapper [id^="error-"]` with opacity and `translateY` only; no `position` / inset / width. `.is-visible` fades and moves up; dropping it fades and moves down.
 - `README.md` — the `js/cart.js` row covers error UI and the busy lock.
 - `js/shopify.js`, `js/global.js` — unchanged.
-- Webflow — already published: `.error-wrapper` in `.layer-cta` (product/merch templates) and `.cart-drawer`, four nodes with those ids. Nodes must stay in layout (not `display: none`). Footer `js/cart.js` SHA after commit.
+- Webflow — `.error-wrapper` in `.add-to-cart` (product/merch) and `.cart-drawer`; `.error-wrapper.is-none { display: none }`; overlay via `.cta-error_massage` `position: absolute`. Footer `js/cart.js` and `css/global.css` SHAs after commit.
 - Checkout redirect is not in this change.

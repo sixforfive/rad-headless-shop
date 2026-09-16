@@ -82,12 +82,17 @@ When a cart mutation succeeds, the site SHALL remove `is-visible` from all four 
 
 ### Requirement: Error nodes fade in and move up
 
-When an error node receives `is-visible`, it SHALL fade in and move up. When `prefers-reduced-motion: reduce` is set, it SHALL change opacity only.
+When an error node receives `is-visible`, it SHALL fade in and move up. When `is-visible` is removed, it SHALL fade out and move down, then that `.error-wrapper` SHALL gain `is-none` after 0.3s. When `prefers-reduced-motion: reduce` is set, it SHALL change opacity only. Repo CSS SHALL NOT set `position`, inset, or `width` on `.error-wrapper` or `.cta-error_massage`.
 
 #### Scenario: Error appears
 
 - **WHEN** an error node gains class `is-visible`
 - **THEN** it becomes visible with a fade and an upward move
+
+#### Scenario: Error disappears
+
+- **WHEN** an error node loses class `is-visible`
+- **THEN** it fades and moves down, and its `.error-wrapper` has class `is-none` after 0.3s
 
 ### Requirement: Shown errors hide after eight seconds
 
@@ -96,7 +101,7 @@ When an error node is shown, the site SHALL hide that wrapper's error nodes afte
 #### Scenario: Auto-hide
 
 - **WHEN** `#error-no-reach` is shown and 8 seconds pass with no new cart mutation
-- **THEN** that `.error-wrapper` has class `is-none` and the error node does not have `is-visible`
+- **THEN** that error node does not have `is-visible` and that `.error-wrapper` has class `is-none` after the hide fade
 
 ### Requirement: Cart controls are inert while a request is in flight
 

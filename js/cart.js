@@ -9,15 +9,17 @@
  * ensureCart — restore if valid, otherwise create and persist
  * readQuantity — quantity from select.value, [data-quantity] or #quantity, or 1
  * errorKind — userErrors + action → no-reach | soldout | stock | no-item
- * addCartLines — cartLinesAdd → { cart, kind }
+ * lineByMerch / lineById — cart line for a variant gid or line id
+ * undoStockClamp — remove a new line or set qty back after Shopify caps stock
+ * addCartLines — cartLinesAdd → { cart, kind }; stock cap → undo, kind stock
  * fillLine — sku, image, line id, qty, line price into a cloned row
- * renderCart — count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
+ * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
  * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer
  * showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
  * setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
- * updateCartLine — cartLinesUpdate → { cart, kind }
+ * updateCartLine — cartLinesUpdate → { cart, kind }; stock cap → undo, kind stock
  * removeCartLine — cartLinesRemove → { cart, kind }
  * onCartQuantityChange — change → line id + qty → updateCartLine → renderCart
  * onCartRemove — click → line id → removeCartLine → renderCart
@@ -76,6 +78,7 @@ const CART_FIELDS = `
           }
           merchandise {
             ... on ProductVariant {
+              id
               sku
               product {
                 title
@@ -187,6 +190,33 @@ function errorKind(userErrors, action) {
   return "no-reach";
 }
 
+/** lineByMerch — cart line whose variant gid matches, or null */
+function lineByMerch(cart, merchandiseId) {
+  return (cart?.lines?.nodes || []).find(
+    (line) => line.merchandise?.id === merchandiseId,
+  );
+}
+
+/** lineById — cart line with this line gid, or null */
+function lineById(cart, lineId) {
+  return (cart?.lines?.nodes || []).find((line) => line.id === lineId);
+}
+
+/** undoStockClamp — remove a new line or set qty back after Shopify caps stock */
+async function undoStockClamp(cartId, lineId, prevQty) {
+  if (!cartId || !lineId) return;
+  try {
+    if (prevQty <= 0) {
+      await shopifyFetch(CART_LINES_REMOVE, { cartId, lineIds: [lineId] });
+      return;
+    }
+    await shopifyFetch(CART_LINES_UPDATE, {
+      cartId,
+      lines: [{ id: lineId, quantity: prevQty }],
+    });
+  } catch (e) {}
+}
+
 /** createCart — userErrors come back in data, not as GraphQL errors */
 async function createCart() {
   if (!SHOPIFY.domain || !SHOPIFY.token) {
@@ -283,6 +313,13 @@ async function addCartLines(cartId, merchandiseId, quantity) {
     return { cart: "", kind: errorKind(payload.userErrors, "add") };
   }
   if (!payload?.cart?.id) return { cart: "", kind: "no-reach" };
+  const prev = lineByMerch(restoredCart, merchandiseId);
+  const prevQty = prev?.quantity || 0;
+  const next = lineByMerch(payload.cart, merchandiseId);
+  if ((next?.quantity || 0) < prevQty + quantity) {
+    await undoStockClamp(cartId, next?.id || prev?.id, prevQty);
+    return { cart: "", kind: "stock" };
+  }
   return { cart: payload.cart, kind: "" };
 }
 
@@ -307,6 +344,13 @@ async function updateCartLine(lineId, quantity) {
     return { cart: "", kind: errorKind(payload.userErrors, "update") };
   }
   if (!payload?.cart?.id) return { cart: "", kind: "no-reach" };
+  const prev = lineById(restoredCart, lineId);
+  const prevQty = prev?.quantity || 0;
+  const got = lineById(payload.cart, lineId)?.quantity || 0;
+  if (got < quantity) {
+    await undoStockClamp(cartId, lineId, prevQty);
+    return { cart: "", kind: "stock" };
+  }
   return { cart: payload.cart, kind: "" };
 }
 
@@ -374,8 +418,9 @@ function fillLine(el, line) {
   }
 }
 
-/** renderCart — count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty */
+/** renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty */
 function renderCart(cart) {
+  if (cart?.id) restoredCart = cart;
   document.querySelectorAll("[data-cart-count]").forEach((el) => {
     el.textContent = String(cart?.totalQuantity ?? 0);
   });
@@ -524,6 +569,7 @@ async function onAddToCart(event) {
       readQuantity(wrapper),
     );
     if (!result.cart) {
+      if (result.kind === "stock") renderCart(restoredCart);
       showCartError(root, result.kind || "no-reach");
       return;
     }
@@ -560,6 +606,7 @@ async function onCartQuantityChange(event) {
   try {
     const result = await updateCartLine(lineId, n);
     if (!result.cart) {
+      if (result.kind === "stock") renderCart(restoredCart);
       showCartError(root, result.kind || "no-reach", sku);
       return;
     }
