@@ -12,7 +12,7 @@
  * addCartLines — cartLinesAdd → { cart, kind }
  * fillLine — sku, image, line id, qty, line price into a cloned row
  * renderCart — count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
- * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper; clear hide timer
+ * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer
  * showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
  * setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
@@ -26,9 +26,11 @@
 
 const CART_KEY = "rad-cart-id";
 const CART_ERROR_HIDE_MS = 8000;
+const CART_ERROR_FADE_MS = 300;
 let restoredCart = null;
 let cartBusy = false;
 let cartErrorTimer = null;
+let cartErrorFadeTimer = null;
 
 /** readCartId — rad-cart-id from localStorage, or "" */
 function readCartId() {
@@ -421,17 +423,26 @@ function renderCart(cart) {
   }
 }
 
-/** hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper; clear hide timer */
+/** hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer */
 function hideCartErrors(root) {
   if (cartErrorTimer) {
     clearTimeout(cartErrorTimer);
     cartErrorTimer = null;
   }
+  if (cartErrorFadeTimer) {
+    clearTimeout(cartErrorFadeTimer);
+    cartErrorFadeTimer = null;
+  }
   if (!root) return;
   root.querySelectorAll('[id^="error-"]').forEach((el) => {
     el.classList.remove("is-visible");
   });
-  root.querySelector(".error-wrapper")?.classList.add("is-none");
+  const wrapper = root.querySelector(".error-wrapper");
+  if (!wrapper) return;
+  cartErrorFadeTimer = setTimeout(() => {
+    cartErrorFadeTimer = null;
+    wrapper.classList.add("is-none");
+  }, CART_ERROR_FADE_MS);
 }
 
 /** showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s */
@@ -439,6 +450,10 @@ function showCartError(root, kind, skus) {
   if (cartErrorTimer) {
     clearTimeout(cartErrorTimer);
     cartErrorTimer = null;
+  }
+  if (cartErrorFadeTimer) {
+    clearTimeout(cartErrorFadeTimer);
+    cartErrorFadeTimer = null;
   }
   if (!root) return;
   const wrapper = root.querySelector(".error-wrapper");

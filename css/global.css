@@ -156,10 +156,6 @@ body * {
   opacity: 1;
 }
 
-.error-wrapper {
-  position: relative;
-}
-
 .error-wrapper [id^="error-"] {
   position: absolute;
   top: 0;
@@ -174,7 +170,6 @@ body * {
 }
 
 .error-wrapper [id^="error-"].is-visible {
-  position: relative;
   opacity: 1;
   transform: none;
 }
