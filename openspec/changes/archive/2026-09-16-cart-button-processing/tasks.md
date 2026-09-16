@@ -15,7 +15,7 @@
 
 ## 4. Webflow (manual, outside this repo)
 
-- [ ] 4.1 Point the Footer `js/cart.js` and `css/global.css` tags at the new commit SHAs and publish
+- [x] 4.1 Point the Footer `js/cart.js` and `css/global.css` tags at the new commit SHAs and publish
 
 ## 5. Verify
 
