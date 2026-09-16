@@ -15,10 +15,10 @@
 
 ## 4. Webflow (manual, outside this repo)
 
-- [ ] 4.1 Point the Footer `js/cart.js` tag at the new commit SHA and publish
+- [x] 4.1 Point the Footer `js/cart.js` tag at the new commit SHA and publish
 
 ## 5. Verify
 
-- [ ] 5.1 Add a line, click `#checkout-btn`: navigates to Shopify checkout in the same window; `rad-cart-id` still set
-- [ ] 5.2 With lines and no `checkoutUrl` on the in-memory cart, click `#checkout-btn`: `#error-no-reach` in `.cart-drawer` has `is-visible`; page does not navigate
-- [ ] 5.3 Click `#checkout-btn` while a qty update is in flight: page does not navigate; `#checkout-btn` has `aria-busy="true"`
+- [x] 5.1 Add a line, click `#checkout-btn`: navigates to Shopify checkout in the same window; `rad-cart-id` still set
+- [x] 5.2 With lines and no `checkoutUrl` on the in-memory cart, click `#checkout-btn`: `#error-no-reach` in `.cart-drawer` has `is-visible`; page does not navigate
+- [x] 5.3 Click `#checkout-btn` while a qty update is in flight: page does not navigate; `#checkout-btn` has `aria-busy="true"`
