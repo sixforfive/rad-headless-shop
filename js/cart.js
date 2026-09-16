@@ -16,7 +16,7 @@
  * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
  * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer
  * showCartError — lift is-none, reflow, is-visible on #error-${kind}; stock writes .error-stock-lead + SKU; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
- * setCartBusy — cartBusy flag and aria-busy on add/qty/remove/#checkout-btn
+ * setCartBusy — cartBusy flag, aria-busy on add/qty/remove/#checkout-btn, PROCESSING on add/checkout
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
  * updateCartLine — cartLinesUpdate → { cart, kind }; stock cap → undo, kind stock
@@ -582,7 +582,7 @@ function showCartError(root, kind, skus, stockLeft) {
   }, CART_ERROR_HIDE_MS);
 }
 
-/** setCartBusy — cartBusy flag and aria-busy on add/qty/remove/#checkout-btn */
+/** setCartBusy — cartBusy flag, aria-busy on add/qty/remove/#checkout-btn, PROCESSING on add/checkout */
 function setCartBusy(busy) {
   cartBusy = busy;
   document
@@ -592,6 +592,19 @@ function setCartBusy(busy) {
     .forEach((el) => {
       if (busy) el.setAttribute("aria-busy", "true");
       else el.removeAttribute("aria-busy");
+    });
+  document
+    .querySelectorAll("[data-add-to-cart], #checkout-btn")
+    .forEach((el) => {
+      if (busy) {
+        if (!el.hasAttribute("data-cart-idle-label")) {
+          el.dataset.cartIdleLabel = el.textContent.trim();
+        }
+        el.textContent = "PROCESSING";
+      } else if (el.hasAttribute("data-cart-idle-label")) {
+        el.textContent = el.dataset.cartIdleLabel;
+        el.removeAttribute("data-cart-idle-label");
+      }
     });
 }
 

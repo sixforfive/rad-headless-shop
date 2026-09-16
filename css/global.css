@@ -288,6 +288,26 @@ body.is-scroll-locked {
   overflow: hidden;
 }
 
+@keyframes cart-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+[data-add-to-cart][aria-busy="true"]::before,
+#checkout-btn[aria-busy="true"]::before {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-inline-end: 0.4em;
+  border: 0.12em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.15em;
+  animation: cart-button-spin 0.6s linear infinite;
+}
+
 /* Kill the 0.3s fades; marquee is left running (infinite, not a transition). */
 @media (prefers-reduced-motion: reduce) {
   .drawer-wrapper,
@@ -299,5 +319,10 @@ body.is-scroll-locked {
   .thumb-light,
   .thumb-dark {
     transition-duration: 0s;
+  }
+
+  [data-add-to-cart][aria-busy="true"]::before,
+  #checkout-btn[aria-busy="true"]::before {
+    animation: none;
   }
 }
