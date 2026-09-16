@@ -9,13 +9,13 @@
  * ensureCart — restore if valid, otherwise create and persist
  * readQuantity — quantity from select.value, [data-quantity] or #quantity, or 1
  * errorKind — userErrors + action → no-reach | soldout | stock | no-item
- * lineByMerch / lineById — cart line for a variant gid or line id
+ * lineByMerch / lineById / lineSku — cart line for a variant gid or line id; sku from that line
  * undoStockClamp — remove a new line or set qty back after Shopify caps stock
  * addCartLines — cartLinesAdd → { cart, kind }; stock cap → undo, kind stock
  * fillLine — sku, image, line id, qty, line price into a cloned row
  * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
  * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer
- * showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
+ * showCartError — lift is-none, reflow, is-visible on #error-${kind}; stock writes .error-stock-lead + SKU; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
  * setCartBusy — cartBusy flag and aria-busy on add/qty/remove controls
  * onAddToCart — click → variant + qty → ensureCart → addCartLines → renderCart → openDrawer
  * bindAddToCart — document click on [data-add-to-cart]
@@ -294,6 +294,11 @@ function readQuantity(wrapper) {
   return 1;
 }
 
+/** lineSku — variant sku or product title from a cart line */
+function lineSku(line) {
+  return String(line?.merchandise?.sku || line?.merchandise?.product?.title || "").trim();
+}
+
 /** addCartLines — userErrors come back in data, not as GraphQL errors */
 async function addCartLines(cartId, merchandiseId, quantity) {
   if (!SHOPIFY.domain || !SHOPIFY.token) {
@@ -310,7 +315,19 @@ async function addCartLines(cartId, merchandiseId, quantity) {
   }
   const payload = data?.cartLinesAdd;
   if (payload?.userErrors?.length) {
-    return { cart: "", kind: errorKind(payload.userErrors, "add") };
+    const kind = errorKind(payload.userErrors, "add");
+    if (kind === "stock") {
+      const line =
+        lineByMerch(payload.cart, merchandiseId) ||
+        lineByMerch(restoredCart, merchandiseId);
+      return {
+        cart: "",
+        kind,
+        stockLeft: line?.quantity,
+        sku: lineSku(line),
+      };
+    }
+    return { cart: "", kind };
   }
   if (!payload?.cart?.id) return { cart: "", kind: "no-reach" };
   const prev = lineByMerch(restoredCart, merchandiseId);
@@ -318,7 +335,12 @@ async function addCartLines(cartId, merchandiseId, quantity) {
   const next = lineByMerch(payload.cart, merchandiseId);
   if ((next?.quantity || 0) < prevQty + quantity) {
     await undoStockClamp(cartId, next?.id || prev?.id, prevQty);
-    return { cart: "", kind: "stock" };
+    return {
+      cart: "",
+      kind: "stock",
+      stockLeft: next?.quantity,
+      sku: lineSku(next) || lineSku(prev),
+    };
   }
   return { cart: payload.cart, kind: "" };
 }
@@ -341,15 +363,31 @@ async function updateCartLine(lineId, quantity) {
   }
   const payload = data?.cartLinesUpdate;
   if (payload?.userErrors?.length) {
-    return { cart: "", kind: errorKind(payload.userErrors, "update") };
+    const kind = errorKind(payload.userErrors, "update");
+    if (kind === "stock") {
+      const line = lineById(payload.cart, lineId) || lineById(restoredCart, lineId);
+      return {
+        cart: "",
+        kind,
+        stockLeft: line?.quantity,
+        sku: lineSku(line),
+      };
+    }
+    return { cart: "", kind };
   }
   if (!payload?.cart?.id) return { cart: "", kind: "no-reach" };
   const prev = lineById(restoredCart, lineId);
   const prevQty = prev?.quantity || 0;
-  const got = lineById(payload.cart, lineId)?.quantity || 0;
+  const next = lineById(payload.cart, lineId);
+  const got = next?.quantity || 0;
   if (got < quantity) {
     await undoStockClamp(cartId, lineId, prevQty);
-    return { cart: "", kind: "stock" };
+    return {
+      cart: "",
+      kind: "stock",
+      stockLeft: got,
+      sku: lineSku(next) || lineSku(prev),
+    };
   }
   return { cart: payload.cart, kind: "" };
 }
@@ -490,8 +528,8 @@ function hideCartErrors(root) {
   }, CART_ERROR_FADE_MS);
 }
 
-/** showCartError — lift is-none, reflow, is-visible on #error-${kind}; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s */
-function showCartError(root, kind, skus) {
+/** showCartError — lift is-none, reflow, is-visible on #error-${kind}; stock writes .error-stock-lead + SKU; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s */
+function showCartError(root, kind, skus, stockLeft) {
   if (cartErrorTimer) {
     clearTimeout(cartErrorTimer);
     cartErrorTimer = null;
@@ -514,17 +552,26 @@ function showCartError(root, kind, skus) {
   const node = wrapper.querySelector("#error-" + kind);
   if (!node) return;
   node.classList.add("is-visible");
-  if (
+  const list = (Array.isArray(skus) ? skus : [skus])
+    .map((s) => String(s || "").trim())
+    .filter(Boolean);
+  const skuText = [...new Set(list)].join(", ");
+  if (kind === "stock") {
+    const lead = node.querySelector(".error-stock-lead");
+    const n = Number(stockLeft);
+    if (lead && Number.isFinite(n) && n >= 0) {
+      lead.textContent = n === 1 ? "There is only 1" : "There are only " + n;
+    }
+    const slot = node.querySelector(".error-item-select");
+    if (slot && skuText) {
+      slot.textContent = skuText.startsWith("[") ? skuText : "[" + skuText + "]";
+    }
+  } else if (
     root.classList.contains("cart-drawer") &&
     (kind === "soldout" || kind === "no-item")
   ) {
     const slot = node.querySelector(".error-item-select");
-    if (slot) {
-      const list = (Array.isArray(skus) ? skus : [skus])
-        .map((s) => String(s || "").trim())
-        .filter(Boolean);
-      slot.textContent = [...new Set(list)].join(", ");
-    }
+    if (slot) slot.textContent = skuText;
   }
   cartErrorTimer = setTimeout(() => {
     cartErrorTimer = null;
@@ -570,7 +617,12 @@ async function onAddToCart(event) {
     );
     if (!result.cart) {
       if (result.kind === "stock") renderCart(restoredCart);
-      showCartError(root, result.kind || "no-reach");
+      showCartError(
+        root,
+        result.kind || "no-reach",
+        result.sku,
+        result.stockLeft,
+      );
       return;
     }
     hideCartErrors(root);
@@ -607,7 +659,12 @@ async function onCartQuantityChange(event) {
     const result = await updateCartLine(lineId, n);
     if (!result.cart) {
       if (result.kind === "stock") renderCart(restoredCart);
-      showCartError(root, result.kind || "no-reach", sku);
+      showCartError(
+        root,
+        result.kind || "no-reach",
+        result.sku || sku,
+        result.stockLeft,
+      );
       return;
     }
     hideCartErrors(root);
