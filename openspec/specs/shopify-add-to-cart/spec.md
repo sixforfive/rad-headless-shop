@@ -17,7 +17,7 @@ When the visitor activates an element marked `data-add-to-cart`, the site SHALL 
 
 #### Scenario: Either add-to-cart control
 
-- **WHEN** the visitor clicks `#add-to-cart-landscape` or `#add-to-cart-desktop` on a product or merch detail page
+- **WHEN** the visitor clicks `[data-add-to-cart]` on a product or merch detail page
 - **THEN** the same variant and quantity are sent
 
 ### Requirement: Quantity comes from the quantity control
