@@ -12,6 +12,7 @@
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
+ * initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers
  */
 
 const FAVICON_LIGHT =
@@ -217,3 +218,64 @@ menuClose?.addEventListener("click", closeDrawer);
 cartClose?.addEventListener("click", closeDrawer);
 document.getElementById("keep-shopping")?.addEventListener("click", closeDrawer);
 drawerWrapper?.addEventListener("click", onDrawerBackdrop);
+
+const CURSOR_LABEL_OFFSET_X = 12;
+const CURSOR_LABEL_OFFSET_Y = 8;
+const CURSOR_LABEL_LERP = 0.15;
+
+/** initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers */
+function initCursorLabel() {
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    return;
+  }
+
+  const label = document.createElement("div");
+  label.className = "custom-cursor-label text-meta";
+  document.body.appendChild(label);
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let targetX = 0;
+  let targetY = 0;
+  let currentX = 0;
+  let currentY = 0;
+
+  function applyTransform() {
+    label.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+  }
+
+  function onPointerMove(event) {
+    targetX = event.clientX + CURSOR_LABEL_OFFSET_X;
+    targetY = event.clientY + CURSOR_LABEL_OFFSET_Y;
+
+    const node =
+      event.target instanceof Element
+        ? event.target.closest("[custom-cursor]")
+        : null;
+    const text = node?.getAttribute("custom-cursor")?.trim() ?? "";
+    const show = text.length > 0;
+    const wasVisible = label.classList.contains("is-visible");
+
+    if (show) {
+      label.textContent = text;
+      if (!wasVisible) {
+        currentX = targetX;
+        currentY = targetY;
+        applyTransform();
+      }
+    }
+    label.classList.toggle("is-visible", show);
+  }
+
+  function tick() {
+    const factor = reduceMotion.matches ? 1 : CURSOR_LABEL_LERP;
+    currentX += (targetX - currentX) * factor;
+    currentY += (targetY - currentY) * factor;
+    applyTransform();
+    requestAnimationFrame(tick);
+  }
+
+  document.addEventListener("pointermove", onPointerMove);
+  requestAnimationFrame(tick);
+}
+
+initCursorLabel();

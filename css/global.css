@@ -308,6 +308,22 @@ body.is-scroll-locked {
   animation: cart-button-spin 0.6s linear infinite;
 }
 
+/* Informational pointer label; type comes from .text-meta. */
+.custom-cursor-label {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.custom-cursor-label.is-visible {
+  opacity: 1;
+}
+
 /* Kill the 0.3s fades; marquee is left running (infinite, not a transition). */
 @media (prefers-reduced-motion: reduce) {
   .drawer-wrapper,
@@ -317,7 +333,8 @@ body.is-scroll-locked {
   body,
   body *,
   .thumb-light,
-  .thumb-dark {
+  .thumb-dark,
+  .custom-cursor-label {
     transition-duration: 0s;
   }
 
