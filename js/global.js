@@ -216,12 +216,14 @@ menuOpen?.addEventListener("click", (event) => openDrawer("menu", event));
 cartOpen?.addEventListener("click", (event) => openDrawer("cart", event));
 menuClose?.addEventListener("click", closeDrawer);
 cartClose?.addEventListener("click", closeDrawer);
-document.getElementById("keep-shopping")?.addEventListener("click", closeDrawer);
+document
+  .getElementById("keep-shopping")
+  ?.addEventListener("click", closeDrawer);
 drawerWrapper?.addEventListener("click", onDrawerBackdrop);
 
-const CURSOR_LABEL_OFFSET_X = 12;
-const CURSOR_LABEL_OFFSET_Y = 8;
-const CURSOR_LABEL_LERP = 0.15;
+const CURSOR_LABEL_OFFSET_X = 16;
+const CURSOR_LABEL_OFFSET_Y = 16;
+const CURSOR_LABEL_LERP = 0.1;
 
 /** initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers */
 function initCursorLabel() {
