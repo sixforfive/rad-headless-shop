@@ -79,6 +79,21 @@ body {
   }
 }
 
+/* Sibling dim: other thumbs recede while one is hovered. Gaps do not dim. */
+@media (hover: hover) and (pointer: fine) {
+  .product-list .product-thumb {
+    transition: opacity 0.3s ease;
+  }
+
+  .product-list:has(.product-thumb:hover) .product-thumb {
+    opacity: 0.3;
+  }
+
+  .product-list:has(.product-thumb:hover) .product-thumb:hover {
+    opacity: 1;
+  }
+}
+
 /* Stack dark over light; empty CMS bind is a placeholder SVG — hide it. */
 .thumb-light,
 .thumb-dark {
@@ -338,7 +353,8 @@ body.is-scroll-locked {
   body *,
   .thumb-light,
   .thumb-dark,
-  .custom-cursor-label {
+  .custom-cursor-label,
+  .product-list .product-thumb {
     transition-duration: 0s;
   }
 
