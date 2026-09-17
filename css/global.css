@@ -82,11 +82,11 @@ body {
 /* Sibling dim: other thumbs recede while one is hovered. Gaps do not dim. */
 @media (hover: hover) and (pointer: fine) {
   .product-list .product-thumb {
-    transition: opacity 0.3s ease;
+    transition: opacity 0.6s ease;
   }
 
   .product-list:has(.product-thumb:hover) .product-thumb {
-    opacity: 0.3;
+    opacity: 0.15;
   }
 
   .product-list:has(.product-thumb:hover) .product-thumb:hover {
