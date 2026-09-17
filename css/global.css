@@ -92,6 +92,14 @@ body {
   .product-list .product-thumb:has(.product-link:hover) {
     opacity: 1;
   }
+
+  .menu-link {
+    transition: opacity 0.3s ease;
+  }
+
+  body:has(.menu-link:hover) .menu-link:not(:hover) {
+    opacity: 0.3;
+  }
 }
 
 /* Stack dark over light; empty CMS bind is a placeholder SVG — hide it. */
@@ -354,7 +362,8 @@ body.is-scroll-locked {
   .thumb-light,
   .thumb-dark,
   .custom-cursor-label,
-  .product-list .product-thumb {
+  .product-list .product-thumb,
+  .menu-link {
     transition-duration: 0s;
   }
 
