@@ -222,8 +222,8 @@ document
 drawerWrapper?.addEventListener("click", onDrawerBackdrop);
 
 const CURSOR_LABEL_OFFSET_X = 16;
-const CURSOR_LABEL_OFFSET_Y = 16;
-const CURSOR_LABEL_LERP = 0.1;
+const CURSOR_LABEL_OFFSET_Y = 20;
+const CURSOR_LABEL_LERP = 0.125;
 
 /** initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers */
 function initCursorLabel() {
