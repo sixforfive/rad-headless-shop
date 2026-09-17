@@ -5,6 +5,7 @@
  * cloneGalleryThumbs — duplicate original thumbs after hydrate for gallery loop
  * loopHeight — first clone getBoundingClientRect.top minus first original
  * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
+ * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
  * setView — add/remove is-gallery on .product-list from data-view; jump to top when the view changes
  * syncActive — is-active on the switch button that matches the current view
  */
@@ -62,6 +63,15 @@ function measureLoopHeight() {
   galleryLoopHeight = loopHeight();
 }
 
+/** jumpScrollY — instant window jump through Lenis when live */
+function jumpScrollY(y) {
+  if (typeof radScrollTo === "function") {
+    radScrollTo(y, { immediate: true });
+    return;
+  }
+  window.scrollTo({ top: y, behavior: "auto" });
+}
+
 /** onGalleryScroll — wrap down in gallery; write 00–99 into #gallery-scroll-counter */
 function onGalleryScroll() {
   const list = shopList();
@@ -70,7 +80,7 @@ function onGalleryScroll() {
   if (h <= 0) return;
   if (window.scrollY >= h) {
     document.documentElement.style.overflowAnchor = "none";
-    window.scrollTo({ top: window.scrollY - h, behavior: "auto" });
+    jumpScrollY(window.scrollY - h);
     document.documentElement.style.overflowAnchor = "";
   }
   const counter = document.getElementById("gallery-scroll-counter");
@@ -93,9 +103,9 @@ function setView(view) {
   document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
     btn.classList.toggle("is-active", btn.getAttribute("data-view") === view);
   });
-  window.scrollTo(0, 0);
+  jumpScrollY(0);
   requestAnimationFrame(() => {
-    window.scrollTo(0, 0);
+    jumpScrollY(0);
     document.documentElement.style.overflowAnchor = "";
     measureLoopHeight();
     onGalleryScroll();

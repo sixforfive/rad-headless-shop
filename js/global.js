@@ -3,7 +3,7 @@
  * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
  * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none
  * storedLightsDark — true only when rad-lights is exactly "dark"
- * scrollToTop — #back-to-top click → window to top (smooth, or instant if reduced-motion)
+ * scrollToTop — #back-to-top click → radScrollToTop (slower Lenis, or instant if reduced-motion)
  * setDrawerButtons — is-none on open/close plus lights, cart-title, currency; is-normal on .navbar
  * showDrawerPanel — display:flex on the active drawer, none on the other
  * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
@@ -74,12 +74,18 @@ lightsSwitchBtn?.addEventListener("click", (event) => {
   applyLights(!document.body.classList.contains("dark-mode"));
 });
 
-/** scrollToTop — #back-to-top click → window to top (smooth, or instant if reduced-motion) */
+/** scrollToTop — #back-to-top click → nested gallery or window; slower Lenis duration */
 function scrollToTop(event) {
   event.preventDefault();
   const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)",
   ).matches;
+  if (typeof radScrollToTop === "function") {
+    radScrollToTop(
+      reduceMotion ? { immediate: true } : { duration: 1.4 },
+    );
+    return;
+  }
   window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
 }
 
@@ -155,6 +161,7 @@ function hideDrawerOverlay() {
   if (menuDrawer) menuDrawer.style.display = "none";
   if (cartDrawer) cartDrawer.style.display = "none";
   document.body.classList.remove("is-scroll-locked");
+  if (typeof radLenisStart === "function") radLenisStart();
 }
 
 /** openDrawer — kind is "menu" | "cart"; swap if the other is already open */
@@ -168,6 +175,7 @@ function openDrawer(kind, event) {
   showDrawerPanel(kind);
   notificationBarBox?.classList.add("is-hidden");
   document.body.classList.add("is-scroll-locked");
+  if (typeof radLenisStop === "function") radLenisStop();
 
   if (overlayOpen) return;
 

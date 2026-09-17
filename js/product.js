@@ -1,7 +1,7 @@
 /**
  * product.js — Product and merch detail (/product/{slug}, /merch/{slug}).
  * isMobileViewport — true at max-width 767px
- * setFullScreenGallery — open: hide default collection + blend layer (>767); hide layer (≤767); html+body.is-full-screen
+ * setFullScreenGallery — open: hide default collection + blend layer (>767); hide layer (≤767); html+body.is-full-screen; nested Lenis sync
  * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
  * setChosenTick — is-choosen on the tick at Math.round(scrollLeft / clientWidth)
@@ -42,10 +42,12 @@ function setFullScreenGallery(open) {
     layer?.classList.toggle("is-blend", open);
     defaultGalleryCollection?.classList.toggle("is-none", open);
   }
+  if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 }
 
 mobileQuery.addEventListener("change", () => {
   if (galleryOpen) setFullScreenGallery(true);
+  else if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 });
 
 layer
@@ -133,3 +135,4 @@ function setPaginationTicks() {
 }
 
 setPaginationTicks();
+if (typeof radNestedGallerySync === "function") radNestedGallerySync();
