@@ -21,13 +21,13 @@ See proposal.md for motivation. `/shop` already has one `.product-list:not(.is-m
 
 ### Clone in `shop.js` after `hydrateThumbs`
 
-`cloneNode(true)` each `.product-thumb:not(.is-clone)` on the shop list, add `.is-clone`, `aria-hidden="true"`, `tabindex="-1"` on inner links, append. Inline CSS vars copy with the node. Guard so clone runs once.
+`cloneNode(true)` each `.product-thumb:not(.is-clone)` on the shop list, add `.is-clone`, `aria-hidden="true"`, `tabindex="-1"` on inner links, append to that thumb’s `parentNode` so clones stay in the same grid as originals. Inline CSS vars copy with the node. Guard so clone runs once.
 
 Alternative considered: a second Webflow Collection List. Rejected — duplicate CMS items, duplicate ids, extra work to hide in list view.
 
 ### Wrap with instant `scrollTo`, down only
 
-Loop height `h` = first `.is-clone` `offsetTop` minus first original `offsetTop`. When `.product-list` has `.is-gallery` and `window.scrollY >= h`, `window.scrollTo(0, window.scrollY - h)` with `behavior: "auto"`. Set `overflow-anchor: none` on `html` around the jump (same trick as `setView`). No prepended clone, so the top stays a hard stop.
+Loop height `h` = first `.is-clone` `getBoundingClientRect().top` minus first original `getBoundingClientRect().top` (visual gap, not `offsetTop`). When `.product-list` has `.is-gallery` and `window.scrollY >= h`, `window.scrollTo(0, window.scrollY - h)` with `behavior: "auto"`. At that point the first clone row sits where the first original sat at load, so last originals are already off the top and beginning clones already fill the view. Set `overflow-anchor: none` on `html` around the jump (same trick as `setView`). No prepended clone, so the top stays a hard stop.
 
 Skip wrap when the list is not gallery, when `h <= 0`, or when merch.
 
@@ -47,13 +47,13 @@ body:has(.product-list:not(.is-gallery):not(.is-merch)) #gallery-scroll-counter 
 
 Clones stay in the DOM so gallery wrap does not rebuild on every view switch. List placement in `shop-grid` is unchanged: hidden clones do not occupy list cells.
 
-### Counter is `scrollY / h`, integer 0–100
+### Counter is `scrollY / h`, `00`–`99`
 
-Write `String(Math.min(100, Math.max(0, Math.round((window.scrollY / h) * 100))))` into `#gallery-scroll-counter`. After wrap, `scrollY` is below `h`, so the value returns to 0. No `%` suffix (add it in Webflow if needed).
+Write `String(Math.min(99, Math.max(0, Math.floor((window.scrollY / h) * 100)))).padStart(2, "0")` into `#gallery-scroll-counter`. After wrap, `scrollY` is below `h`, so the value returns to `00`. Never `100`. No `%` suffix (add it in Webflow if needed).
 
-### Remeasure `h` on resize and after `setView`
+### Remeasure `h` on list resize, window resize, and after `setView`
 
-Grid collapse at 479px and view switch change row heights. Recalc `h` on `resize` and at the end of `setView`. `setView` already jumps to top.
+Grid collapse, image load, and view switch change row heights. Recalc `h` with `ResizeObserver` on the shop list, on `resize`, and at the end of `setView`. `setView` already jumps to top.
 
 ## Risks / Trade-offs
 

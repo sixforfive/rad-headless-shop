@@ -7,7 +7,7 @@ Gallery view on `/shop` ends at the last row. Looping that view like a marquee, 
 - In gallery view only, scrolling past the last original row jumps to the first row (down only; top stays a hard stop).
 - JS clones each original `.product-thumb` once (class `.is-clone`). No second Webflow collection.
 - List view hides clones so the list is not doubled.
-- `#gallery-scroll-counter` shows integer 0–100 of the original collection. Hidden in list view.
+- `#gallery-scroll-counter` shows `00`–`99` of the original collection (zero-padded; never `100`). Hidden in list view.
 
 ## Capabilities
 

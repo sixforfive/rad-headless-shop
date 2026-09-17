@@ -12,8 +12,8 @@ The loop SHALL NOT run when `.product-list` does not have `is-gallery`. The merc
 
 #### Scenario: Wrap at the last row
 
-- **WHEN** the shop gallery is showing and the visitor scrolls past the last original row
-- **THEN** the first original row is in the same viewport position the last original row just left, with no blank gap
+- **WHEN** the shop gallery is showing and the last original row has scrolled out at the top
+- **THEN** the first clone row is in the same viewport position the first original row had at load, with no visible jump
 
 #### Scenario: Top is a hard stop
 
@@ -51,24 +51,24 @@ The shop gallery SHALL contain one cloned `.product-thumb` per original `.produc
 
 ### Requirement: Footer counter shows original-set percent
 
-`#gallery-scroll-counter` SHALL show an integer from 0 through 100 for how far the visitor has scrolled through the original gallery set (not including clones). At the first original row the value SHALL be 0. Immediately before the wrap the value SHALL be 100. After the wrap the value SHALL return to 0.
+`#gallery-scroll-counter` SHALL show a zero-padded integer from 00 through 99 for how far the visitor has scrolled through the original gallery set (not including clones). At the first original row the value SHALL be 00. Immediately before the wrap the value SHALL be 99. After the wrap the value SHALL return to 00. The value SHALL NOT be 100.
 
 When the shop list is not gallery, `#gallery-scroll-counter` SHALL NOT be visible.
 
 #### Scenario: Start of the set
 
 - **WHEN** the shop gallery is at the first original row
-- **THEN** `#gallery-scroll-counter` shows 0
+- **THEN** `#gallery-scroll-counter` shows 00
 
 #### Scenario: End of the set before wrap
 
 - **WHEN** the shop gallery is at the last original row, immediately before wrap
-- **THEN** `#gallery-scroll-counter` shows 100
+- **THEN** `#gallery-scroll-counter` shows 99
 
 #### Scenario: After wrap
 
 - **WHEN** the gallery has just wrapped to the first original row
-- **THEN** `#gallery-scroll-counter` shows 0
+- **THEN** `#gallery-scroll-counter` shows 00
 
 #### Scenario: Hidden in list view
 
