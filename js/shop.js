@@ -1,13 +1,24 @@
 /**
  * shop.js — Shop page (/shop).
+ * shopList — the Shop Collection List (not merch)
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
+ * cloneGalleryThumbs — duplicate original thumbs after hydrate for gallery loop
+ * loopHeight — first clone offsetTop minus first original offsetTop
+ * onGalleryScroll — wrap down when scrollY >= loop height; write percent to #gallery-scroll-counter
  * setView — add/remove is-gallery on .product-list from data-view; jump to top when the view changes
  * syncActive — is-active on the switch button that matches the current view
  */
 
+let galleryLoopHeight = 0;
+
 /** shopLists — Shop Collection Lists only (not merch) */
 function shopLists() {
   return document.querySelectorAll(".product-list:not(.is-merch)");
+}
+
+/** shopList — the Shop Collection List (not merch) */
+function shopList() {
+  return document.querySelector(".product-list:not(.is-merch)");
 }
 
 /** hydrateThumbs — gallery-column-start/end and list-column → CSS vars (end is inclusive, so +1) */
@@ -24,9 +35,57 @@ function hydrateThumbs() {
   });
 }
 
+/** cloneGalleryThumbs — one .is-clone copy of each original shop thumb; skip if already cloned */
+function cloneGalleryThumbs() {
+  const list = shopList();
+  if (!list || list.querySelector(".product-thumb.is-clone")) return;
+  list.querySelectorAll(".product-thumb:not(.is-clone)").forEach((el) => {
+    const clone = el.cloneNode(true);
+    clone.classList.add("is-clone");
+    clone.setAttribute("aria-hidden", "true");
+    clone.querySelectorAll("a").forEach((a) => a.setAttribute("tabindex", "-1"));
+    list.appendChild(clone);
+  });
+}
+
+/** loopHeight — first clone offsetTop minus first original offsetTop */
+function loopHeight() {
+  const list = shopList();
+  const first = list?.querySelector(".product-thumb:not(.is-clone)");
+  const firstClone = list?.querySelector(".product-thumb.is-clone");
+  if (!first || !firstClone) return 0;
+  return firstClone.offsetTop - first.offsetTop;
+}
+
+/** measureLoopHeight — cache loopHeight for scroll */
+function measureLoopHeight() {
+  galleryLoopHeight = loopHeight();
+}
+
+/** onGalleryScroll — wrap down in gallery; write 0–100 into #gallery-scroll-counter */
+function onGalleryScroll() {
+  const list = shopList();
+  if (!list?.classList.contains("is-gallery")) return;
+  const h = galleryLoopHeight;
+  if (h <= 0) return;
+  if (window.scrollY >= h) {
+    document.documentElement.style.overflowAnchor = "none";
+    window.scrollTo({ top: window.scrollY - h, behavior: "auto" });
+    document.documentElement.style.overflowAnchor = "";
+  }
+  const counter = document.getElementById("gallery-scroll-counter");
+  if (counter) {
+    const pct = Math.min(
+      100,
+      Math.max(0, Math.round((window.scrollY / h) * 100)),
+    );
+    counter.textContent = String(pct);
+  }
+}
+
 /** setView — gallery adds is-gallery; list removes it; is-active follows data-view; jump to top on change */
 function setView(view) {
-  const list = document.querySelector(".product-list:not(.is-merch)");
+  const list = shopList();
   const current = list?.classList.contains("is-gallery") ? "gallery" : "list";
   if (current === view) return;
 
@@ -41,12 +100,14 @@ function setView(view) {
   requestAnimationFrame(() => {
     window.scrollTo(0, 0);
     document.documentElement.style.overflowAnchor = "";
+    measureLoopHeight();
+    onGalleryScroll();
   });
 }
 
 /** syncActive — is-active matches whether the grid currently has is-gallery */
 function syncActive() {
-  const list = document.querySelector(".product-list:not(.is-merch)");
+  const list = shopList();
   const view = list?.classList.contains("is-gallery") ? "gallery" : "list";
   document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
     btn.classList.toggle("is-active", btn.getAttribute("data-view") === view);
@@ -54,7 +115,16 @@ function syncActive() {
 }
 
 hydrateThumbs();
+cloneGalleryThumbs();
 syncActive();
+measureLoopHeight();
+onGalleryScroll();
+
+window.addEventListener("scroll", onGalleryScroll, { passive: true });
+window.addEventListener("resize", () => {
+  measureLoopHeight();
+  onGalleryScroll();
+});
 
 document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
   btn.addEventListener("click", () => {

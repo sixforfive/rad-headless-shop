@@ -51,6 +51,14 @@ body {
   grid-column: var(--merch-column);
 }
 
+.product-list:not(.is-gallery) .product-thumb.is-clone {
+  display: none;
+}
+
+body:has(.product-list:not(.is-gallery):not(.is-merch)) #gallery-scroll-counter {
+  display: none;
+}
+
 @media screen and (max-width: 991px) {
   .product-list.is-merch .product-thumb {
     grid-column: auto;
