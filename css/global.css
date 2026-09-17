@@ -316,6 +316,10 @@ body.is-scroll-locked {
   z-index: 9999;
   pointer-events: none;
   white-space: nowrap;
+  color: #fff;
+  mix-blend-mode: difference;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
