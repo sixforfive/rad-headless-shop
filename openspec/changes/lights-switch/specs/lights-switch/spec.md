@@ -57,7 +57,7 @@ Other `.link-sec-brack` nodes SHALL NOT receive this glyph swap.
 
 ### Requirement: Product thumbs follow the mode
 
-When a `.thumb-img-holder` contains `.thumb-dark` that is not `.w-dyn-bind-empty`, light mode SHALL show `.thumb-light` and dark mode SHALL show `.thumb-dark`.
+When a `.thumb-img-holder` contains `.thumb-dark` that is not `.w-dyn-bind-empty`, light mode SHALL show `.thumb-light` and dark mode SHALL show `.thumb-dark` over `.thumb-light`. `.thumb-light` SHALL stay fully opaque in both modes.
 
 When `.thumb-dark` is missing or has class `w-dyn-bind-empty`, the holder SHALL show `.thumb-light` in both modes and SHALL NOT show the empty dark placeholder.
 
@@ -69,7 +69,7 @@ When `.thumb-dark` is missing or has class `w-dyn-bind-empty`, the holder SHALL 
 #### Scenario: Both thumbs present, dark mode
 
 - **WHEN** the page is in dark mode and a holder has `.thumb-light` and a non-empty `.thumb-dark`
-- **THEN** `.thumb-dark` is visible and `.thumb-light` is not
+- **THEN** `.thumb-dark` is visible over `.thumb-light`, and `.thumb-light` stays opaque
 
 #### Scenario: Empty dark field
 
@@ -78,7 +78,7 @@ When `.thumb-dark` is missing or has class `w-dyn-bind-empty`, the holder SHALL 
 
 ### Requirement: Smooth mode transition
 
-Switching modes SHALL fade colors and product thumbs over 0.3s. When `prefers-reduced-motion: reduce` is set, that fade SHALL NOT run.
+Switching modes SHALL fade colors and the `.thumb-dark` overlay over 0.3s. `.thumb-light` SHALL NOT fade. When `prefers-reduced-motion: reduce` is set, that fade SHALL NOT run.
 
 #### Scenario: Reduced motion
 

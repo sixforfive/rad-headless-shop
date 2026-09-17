@@ -41,11 +41,13 @@ Paste in Webflow Site Settings → Custom Code → Head. Not in this repo.
 
 ### Thumbs in CSS, glyphs in JS
 
-Stack `.thumb-dark` absolute on `.thumb-img-holder` (`position: relative` already). Crossfade `opacity`. Hide `.thumb-dark.w-dyn-bind-empty` with `display: none`. Show dark only when `body.dark-mode .thumb-dark:not(.w-dyn-bind-empty)`. `:has()` keeps light visible when dark is empty.
+Stack `.thumb-dark` absolute on `.thumb-img-holder` (`position: relative` already). Fade only that overlay; `.thumb-light` stays opaque so the holder never shows through. Hide `.thumb-dark.w-dyn-bind-empty` with `display: none`. Show dark only when `body.dark-mode .thumb-dark:not(.w-dyn-bind-empty)`.
 
 Plus/minus use `.is-none` as specified; `display: none` cannot fade, which is acceptable for two glyphs.
 
-Alternative considered: `.is-none` on thumbs — kills the crossfade.
+Alternative considered: fade both layers. Rejected — midpoint coverage is 75%, so the page canvas shows through.
+
+Alternative considered: `.is-none` on thumbs — kills the fade.
 
 ### Storage key `rad-lights`
 
@@ -57,13 +59,12 @@ Values `light` | `dark`. Anything other than `dark` is light.
 
 ### Fade duration matches the drawer
 
-`0.3s ease` on `background-color`, `color`, `border-color`, and thumb `opacity`. `transition-duration: 0s` under `prefers-reduced-motion`.
+`0.3s ease` on `background-color`, `color`, `border-color`, and `.thumb-dark` `opacity`. `transition-duration: 0s` under `prefers-reduced-motion`.
 
 ## Risks / Trade-offs
 
 - [Head snippet omitted on publish] → Dark return visits flash light. Mitigation: include the snippet in tasks; tokens still work after JS runs.
 - [jsDelivr cache] → New SHA in the Webflow `<link>` / `<script>` (see `rad-workflow-scripts.md`); do not rely on `@main`.
-- [`:has()`] → Supported in current browsers; merch without `.thumb-dark` simply never matches the hide-light rule.
 
 ## Migration Plan
 

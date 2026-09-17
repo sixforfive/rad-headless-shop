@@ -110,7 +110,6 @@ body:has(.product-list:not(.is-gallery):not(.is-merch)) #gallery-scroll-counter 
 .thumb-light,
 .thumb-dark {
   width: 100%;
-  transition: opacity 0.3s ease;
 }
 
 .thumb-dark {
@@ -118,6 +117,7 @@ body:has(.product-list:not(.is-gallery):not(.is-merch)) #gallery-scroll-counter 
   inset: 0;
   object-fit: cover;
   opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .thumb-dark.w-dyn-bind-empty {
@@ -126,12 +126,6 @@ body:has(.product-list:not(.is-gallery):not(.is-merch)) #gallery-scroll-counter 
 
 .dark-mode .thumb-dark:not(.w-dyn-bind-empty) {
   opacity: 1;
-}
-
-.dark-mode
-  .thumb-img-holder:has(.thumb-dark:not(.w-dyn-bind-empty))
-  .thumb-light {
-  opacity: 0;
 }
 
 .hero-photo-dark {
@@ -383,7 +377,6 @@ body.is-scroll-locked {
   .error-wrapper [id^="error-"],
   body,
   body *,
-  .thumb-light,
   .thumb-dark,
   .hero-photo-dark,
   .custom-cursor-label,

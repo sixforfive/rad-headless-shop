@@ -30,9 +30,30 @@ When `.hero-photo-dark` is missing or has class `w-dyn-bind-empty`, the holder S
 
 ## MODIFIED Requirements
 
+### Requirement: Product thumbs follow the mode
+
+When a `.thumb-img-holder` contains `.thumb-dark` that is not `.w-dyn-bind-empty`, light mode SHALL show `.thumb-light` and dark mode SHALL show `.thumb-dark` over `.thumb-light`. `.thumb-light` SHALL stay fully opaque in both modes.
+
+When `.thumb-dark` is missing or has class `w-dyn-bind-empty`, the holder SHALL show `.thumb-light` in both modes and SHALL NOT show the empty dark placeholder.
+
+#### Scenario: Both thumbs present, light mode
+
+- **WHEN** the page is in light mode and a holder has `.thumb-light` and a non-empty `.thumb-dark`
+- **THEN** `.thumb-light` is visible and `.thumb-dark` is not
+
+#### Scenario: Both thumbs present, dark mode
+
+- **WHEN** the page is in dark mode and a holder has `.thumb-light` and a non-empty `.thumb-dark`
+- **THEN** `.thumb-dark` is visible over `.thumb-light`, and `.thumb-light` stays opaque
+
+#### Scenario: Empty dark field
+
+- **WHEN** the page is in dark mode and `.thumb-dark` has class `w-dyn-bind-empty`
+- **THEN** `.thumb-light` is visible and the empty dark image is not shown
+
 ### Requirement: Smooth mode transition
 
-Switching modes SHALL fade colors, product thumbs, and the collection `.hero-photo-dark` overlay over 0.3s. `.hero-photo-light` SHALL NOT fade. When `prefers-reduced-motion: reduce` is set, that fade SHALL NOT run.
+Switching modes SHALL fade colors, the `.thumb-dark` overlay, and the collection `.hero-photo-dark` overlay over 0.3s. `.thumb-light` and `.hero-photo-light` SHALL NOT fade. When `prefers-reduced-motion: reduce` is set, that fade SHALL NOT run.
 
 #### Scenario: Reduced motion
 

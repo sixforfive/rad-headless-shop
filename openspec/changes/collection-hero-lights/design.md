@@ -1,13 +1,13 @@
 ## Context
 
-See proposal.md for motivation. Collection `/` already publishes `.collection-hero-photo` (`position: relative`) with `.hero-photo-light` and `.hero-photo-dark.is-none`. Webflow CSS is `.hero-photo-dark.is-none { display: none; }`. Shop thumbs in `css/global.css` fade both layers; the hero holder is a full-viewport stack over the page canvas. `applyLights` in `js/global.js` already toggles `body.dark-mode`.
+See proposal.md for motivation. Collection `/` already publishes `.collection-hero-photo` (`position: relative`) with `.hero-photo-light` and `.hero-photo-dark.is-none`. Webflow CSS is `.hero-photo-dark.is-none { display: none; }`. Shop thumbs stack `.thumb-dark` on `.thumb-img-holder`. `applyLights` in `js/global.js` already toggles `body.dark-mode`.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Hero photos follow `body.dark-mode` in CSS.
-- Keep published markup, including `.is-none` on the dark photo.
+- Hero photos and product thumbs follow `body.dark-mode` in CSS.
+- Keep published markup, including `.is-none` on the dark hero photo.
 - No hole to the holder or page canvas while switching.
 
 **Non-Goals:**
@@ -15,7 +15,6 @@ See proposal.md for motivation. Collection `/` already publishes `.collection-he
 - JS in `applyLights`.
 - Webflow markup or CMS field changes.
 - Logo / `.collection-hero-logo` swap.
-- Changing the shop thumb crossfade.
 
 ## Decisions
 
@@ -23,21 +22,23 @@ See proposal.md for motivation. Collection `/` already publishes `.collection-he
 
 Stack `.hero-photo-dark` absolute on `.collection-hero-photo`. Fade only that overlay. `.hero-photo-light` stays at opacity 1 so two 50% layers never punch through to the canvas.
 
-Show dark only when `body.dark-mode .hero-photo-dark:not(.w-dyn-bind-empty)`. Empty CMS binds stay hidden via `.w-dyn-bind-empty`.
+Same for shop: fade only `.thumb-dark`; `.thumb-light` stays opaque.
 
-Override Webflow `.hero-photo-dark.is-none { display: none }` so the dark photo can participate in the fade.
+Show dark only when `body.dark-mode` and the dark image is not `.w-dyn-bind-empty`. Empty CMS binds stay hidden via `.w-dyn-bind-empty`.
 
-Alternative considered: fade both like thumbs. Rejected — midpoint coverage is 75%, so the holder/page shows through. Shop gets away with it because `.thumb-img-holder` is small and unfilled.
+Override Webflow `.hero-photo-dark.is-none { display: none }` so the dark hero can participate in the fade.
+
+Alternative considered: fade both layers. Rejected — midpoint coverage is 75%, so the holder/page shows through.
 
 Alternative considered: toggle `.is-none` in `applyLights`. Rejected — `display: none` cannot fade.
 
 ### Stay in `css/global.css`
 
-Site-wide sheet already loaded on `/`. No new file. No JS.
+Site-wide sheet already loaded on `/` and `/shop`. No new file. No JS.
 
-### Fade duration matches thumbs
+### Fade duration matches the drawer
 
-`0.3s ease` on `.hero-photo-dark` `opacity` only. `transition-duration: 0s` under `prefers-reduced-motion`.
+`0.3s ease` on `.hero-photo-dark` and `.thumb-dark` `opacity` only. `transition-duration: 0s` under `prefers-reduced-motion`.
 
 ## Risks / Trade-offs
 
@@ -46,6 +47,6 @@ Site-wide sheet already loaded on `/`. No new file. No JS.
 
 ## Migration Plan
 
-1. Add the hero rules in `css/global.css`.
+1. Add the hero and thumb overlay rules in `css/global.css`.
 2. Point the site-wide Head `<link>` at the new commit SHA and publish.
 3. Rollback: revert the SHA.

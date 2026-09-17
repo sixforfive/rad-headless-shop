@@ -1,6 +1,6 @@
 ## 1. Thumb and color CSS
 
-- [x] 1.1 In `css/global.css`, stack `.thumb-dark` on `.thumb-img-holder`, crossfade opacity with `body.dark-mode`, hide `.thumb-dark.w-dyn-bind-empty`, keep `.thumb-light` when dark is empty (`:has()`)
+- [x] 1.1 In `css/global.css`, stack `.thumb-dark` on `.thumb-img-holder`, fade only that overlay with `body.dark-mode`, hide `.thumb-dark.w-dyn-bind-empty`, leave `.thumb-light` opaque
 - [x] 1.2 Add `0.3s ease` transitions on `background-color`, `color`, `border-color`, and thumb `opacity`; set duration `0s` under `prefers-reduced-motion`
 
 ## 2. Lights JS
