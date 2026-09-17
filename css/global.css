@@ -79,10 +79,10 @@ body {
   }
 }
 
-/* Sibling dim: other thumbs recede while one is hovered. Gaps do not dim. */
-@media (hover: hover) and (pointer: fine) {
+/* Sibling dim: other thumbs recede while one is hovered. Gaps do not dim. 768+ only. */
+@media screen and (min-width: 768px) and (hover: hover) and (pointer: fine) {
   .product-list .product-thumb {
-    transition: opacity 0.45s ease;
+    transition: opacity 0.6s ease;
   }
 
   .product-list:has(.product-link:hover) .product-thumb {
