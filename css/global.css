@@ -85,11 +85,11 @@ body {
     transition: opacity 0.45s ease;
   }
 
-  .product-list:has(.product-thumb:hover) .product-thumb {
+  .product-list:has(.product-link:hover) .product-thumb {
     opacity: 0.1;
   }
 
-  .product-list:has(.product-thumb:hover) .product-thumb:hover {
+  .product-list .product-thumb:has(.product-link:hover) {
     opacity: 1;
   }
 }
