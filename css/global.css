@@ -79,18 +79,14 @@ body {
   }
 }
 
-/* Sibling dim: other thumbs recede while one is hovered. Gaps do not dim. 768+ only. */
+/* Sibling dim: other product links recede while one is hovered. Gaps do not dim. 768+ only. */
 @media screen and (min-width: 768px) and (hover: hover) and (pointer: fine) {
-  .product-list .product-thumb {
+  .product-list .product-link {
     transition: opacity 0.6s ease;
   }
 
-  .product-list:has(.product-link:hover) .product-thumb {
+  .product-list:has(.product-link:hover) .product-link:not(:hover) {
     opacity: 0.1;
-  }
-
-  .product-list .product-thumb:has(.product-link:hover) {
-    opacity: 1;
   }
 
   .menu-link {
@@ -362,7 +358,7 @@ body.is-scroll-locked {
   .thumb-light,
   .thumb-dark,
   .custom-cursor-label,
-  .product-list .product-thumb,
+  .product-list .product-link,
   .menu-link {
     transition-duration: 0s;
   }
