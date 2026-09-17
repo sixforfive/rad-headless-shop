@@ -134,6 +134,36 @@ body:has(.product-list:not(.is-gallery):not(.is-merch)) #gallery-scroll-counter 
   opacity: 0;
 }
 
+.hero-photo-light,
+.hero-photo-dark {
+  transition: opacity 0.3s ease;
+}
+
+.hero-photo-dark {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  opacity: 0;
+}
+
+.hero-photo-dark.is-none {
+  display: block;
+}
+
+.hero-photo-dark.w-dyn-bind-empty {
+  display: none;
+}
+
+.dark-mode .hero-photo-dark:not(.w-dyn-bind-empty) {
+  opacity: 1;
+}
+
+.dark-mode
+  .collection-hero-photo:has(.hero-photo-dark:not(.w-dyn-bind-empty))
+  .hero-photo-light {
+  opacity: 0;
+}
+
 /* Theme swap: Webflow paints color on descendants, so body * is required. */
 body,
 body * {
@@ -365,6 +395,8 @@ body.is-scroll-locked {
   body *,
   .thumb-light,
   .thumb-dark,
+  .hero-photo-light,
+  .hero-photo-dark,
   .custom-cursor-label,
   .product-list .product-link,
   .menu-link {
