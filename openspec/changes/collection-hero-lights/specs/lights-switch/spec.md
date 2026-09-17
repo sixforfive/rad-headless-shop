@@ -2,7 +2,7 @@
 
 ### Requirement: Collection hero photos follow the mode
 
-When a `.collection-hero-photo` contains `.hero-photo-dark` that is not `.w-dyn-bind-empty`, light mode SHALL show `.hero-photo-light` and dark mode SHALL show `.hero-photo-dark`.
+When a `.collection-hero-photo` contains `.hero-photo-dark` that is not `.w-dyn-bind-empty`, light mode SHALL show `.hero-photo-light` and dark mode SHALL show `.hero-photo-dark` over `.hero-photo-light`. `.hero-photo-light` SHALL stay fully opaque in both modes.
 
 When `.hero-photo-dark` is missing or has class `w-dyn-bind-empty`, the holder SHALL show `.hero-photo-light` in both modes and SHALL NOT show the empty dark placeholder.
 
@@ -16,12 +16,12 @@ When `.hero-photo-dark` is missing or has class `w-dyn-bind-empty`, the holder S
 #### Scenario: Both photos present, dark mode
 
 - **WHEN** the page is in dark mode and a holder has `.hero-photo-light` and a non-empty `.hero-photo-dark`
-- **THEN** `.hero-photo-dark` is visible and `.hero-photo-light` is not
+- **THEN** `.hero-photo-dark` is visible over `.hero-photo-light`, and `.hero-photo-light` stays opaque
 
 #### Scenario: Dark photo has is-none
 
 - **WHEN** the page is in dark mode and `.hero-photo-dark` has class `is-none` and is not `.w-dyn-bind-empty`
-- **THEN** `.hero-photo-dark` is visible and `.hero-photo-light` is not
+- **THEN** `.hero-photo-dark` is visible over `.hero-photo-light`
 
 #### Scenario: Empty dark field
 
@@ -32,7 +32,7 @@ When `.hero-photo-dark` is missing or has class `w-dyn-bind-empty`, the holder S
 
 ### Requirement: Smooth mode transition
 
-Switching modes SHALL fade colors, product thumbs, and collection hero photos over 0.3s. When `prefers-reduced-motion: reduce` is set, that fade SHALL NOT run.
+Switching modes SHALL fade colors, product thumbs, and the collection `.hero-photo-dark` overlay over 0.3s. `.hero-photo-light` SHALL NOT fade. When `prefers-reduced-motion: reduce` is set, that fade SHALL NOT run.
 
 #### Scenario: Reduced motion
 
