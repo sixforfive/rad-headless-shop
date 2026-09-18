@@ -1,4 +1,4 @@
-# macOS
+e # macOS
 .DS_Store
 
 # Logs
@@ -147,3 +147,6 @@ vite.config.ts.timestamp-*
 
 # Local workflow notes
 rad-workflow-scripts.md
+
+# Local reference media
+references/
