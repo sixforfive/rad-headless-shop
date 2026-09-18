@@ -13,6 +13,7 @@ Webflow runs the pages and CMS. Shopify handles cart and payment. This repo is t
 | `css/global.css` | Site-wide styles |
 | `js/global.js` | Cross-page behavior (nav, drawer, currency); `#keep-shopping` closes the cart drawer; `[custom-cursor]` shows a rubber-following `.text-meta` label |
 | `js/shop.js` | Shop grid placement and Gallery/List switch |
+| `js/collection.js` | Collection `/` only: infinite hero canvas from `.hero-gallery-img` srcs (`type="module"`, imports `three@0.182.0`) |
 | `js/product.js` | Product and merch detail (fullscreen gallery, snap, ticks) |
 | `js/merch.js` | Merch listing grid (`merch-column`) |
 | `js/faq.js` | FAQ accordion/list |
