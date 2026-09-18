@@ -31,8 +31,9 @@ const INVIS_THRESHOLD = 0.01;
 const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.9;
 const INITIAL_CAMERA_Z = 50;
-const PLANE_SCALE = 1.33;
-const ITEMS_PER_CHUNK = 3;
+const PLANE_SCALE = 2;
+const ITEMS_PER_CHUNK = 2;
+const Z_SCATTER = 22;
 const MAX_PLANE_CACHE = 256;
 const DRAG_CLICK_PX = 8;
 const SHOP_HREF = "/shop";
@@ -89,7 +90,7 @@ function generateChunkPlanes(cx, cy, cz) {
       id: `${cx}-${cy}-${cz}-${i}`,
       x: cx * CHUNK_SIZE + r(0) * CHUNK_SIZE,
       y: cy * CHUNK_SIZE + r(1) * CHUNK_SIZE,
-      z: cz * CHUNK_SIZE + r(2) * CHUNK_SIZE,
+      z: cz * CHUNK_SIZE + CHUNK_SIZE / 2 + (r(2) - 0.5) * Z_SCATTER,
       size,
       mediaIndex: Math.floor(r(5) * 1_000_000),
       chunkCx: cx,
