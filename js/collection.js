@@ -500,7 +500,7 @@ function onWheel(event) {
   if (!controller) return;
   const s = controller;
   s.targetVel.x -= event.deltaX * WHEEL_GAIN;
-  s.targetVel.y += event.deltaY * WHEEL_GAIN;
+  s.targetVel.y -= event.deltaY * WHEEL_GAIN;
 }
 
 function onTouchMove(event) {
