@@ -9,7 +9,7 @@
 
 - [x] 2.1 Replace `syncChunks` with one period meshed on a 3×3 of `(ox * PERIOD_W, oy * PERIOD_H)` offsets
 - [x] 2.2 In `tick`, wrap `basePos` with modulo `PERIOD_W` / `PERIOD_H` so the camera stays on the center copy
-- [x] 2.3 In `resizeRenderer`, set ortho height to `VIEW_H` and width to `height * aspect`; do not rebuild the period
+- [x] 2.3 In `resizeRenderer`, set ortho height to `PERIOD_H` and width to `height * aspect`; do not rebuild the period
 - [x] 2.4 Delete `fadePlanes` and edge-fade constants; period meshes stay opacity 1
 
 ## 3. Motion
@@ -28,10 +28,3 @@
 - [x] 5.2 Replace cell lattice in `buildPeriod` with dart-throw (`TILE_COUNT` 14, `PLACE_TRIES` 40, AABB)
 - [x] 5.3 Size classes `0.10 / 0.16 / 0.24 / 0.36`, weights `2, 3, 3, 2`; no one-cell cap
 - [x] 5.4 `pickMediaIndex` bans nearby tiles by distance, not 8-grid neighbors
-
-## 6. Depth, period, easing
-
-- [x] 6.1 `VIEW_H` 90, `PERIOD_W/H` 320×180; frustum from `VIEW_H`
-- [x] 6.2 `LAYERS` far/mid/fore with parallax 0.70/0.85/1.0, counts 18/14/12, groups at z -2/-1/0
-- [x] 6.3 `tick` / `syncLayerOffsets`: group offset `-wrap(basePos * parallax, PERIOD)`
-- [x] 6.4 Grab ease-in 220ms, 1:1 drag, friction 0.92 coast, rest drift fade-in; reduced motion skips ramp/coast/drift
