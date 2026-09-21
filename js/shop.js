@@ -3,6 +3,9 @@
  * shopList — the Shop Collection List (not merch)
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
  * cloneGalleryThumbs — duplicate original thumbs after hydrate for gallery loop; eager-decode clone imgs
+ * thumbImages — all shop thumb <img> (originals + clones)
+ * whenThumbsReady — resolve once every thumb image is decoded
+ * galleryReady — blocks wrap until first real measure lands
  * loopHeight — first clone getBoundingClientRect.top minus first original
  * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
@@ -11,6 +14,7 @@
  */
 
 let galleryLoopHeight = 0;
+let galleryReady = false;
 
 /** shopLists — Shop Collection Lists only (not merch) */
 function shopLists() {
@@ -53,6 +57,24 @@ function cloneGalleryThumbs() {
   });
 }
 
+/** thumbImages — all shop thumb <img> (originals + clones) */
+function thumbImages() {
+  const list = shopList();
+  return list ? [...list.querySelectorAll(".product-thumb img")] : [];
+}
+
+/** whenThumbsReady — resolve once every thumb image is decoded */
+function whenThumbsReady() {
+  return Promise.all(
+    thumbImages().map((img) =>
+      img.complete ? img.decode().catch(() => {}) : new Promise((r) => {
+        img.addEventListener("load", r, { once: true });
+        img.addEventListener("error", r, { once: true });
+      })
+    )
+  );
+}
+
 /** loopHeight — first clone getBoundingClientRect.top minus first original */
 function loopHeight() {
   const list = shopList();
@@ -80,6 +102,7 @@ function jumpScrollY(y) {
 function onGalleryScroll() {
   const list = shopList();
   if (!list?.classList.contains("is-gallery")) return;
+  if (!galleryReady) return;
   const h = galleryLoopHeight;
   if (h <= 0) return;
   if (window.scrollY >= h) {
@@ -128,8 +151,12 @@ function syncActive() {
 hydrateThumbs();
 cloneGalleryThumbs();
 syncActive();
-measureLoopHeight();
-onGalleryScroll();
+
+whenThumbsReady().then(() => {
+  measureLoopHeight();
+  galleryReady = true;
+  onGalleryScroll();
+});
 
 window.addEventListener("scroll", onGalleryScroll, { passive: true });
 window.addEventListener("resize", () => {
