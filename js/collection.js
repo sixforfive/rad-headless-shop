@@ -36,9 +36,9 @@ const SIZE_BASE = 160;
 const TILE_COUNT = 28;
 const PLACE_TRIES = 36;
 const GUTTER = SIZE_BASE * (20 / 1440);
-const MAX_VELOCITY = 1.2;
-const VELOCITY_LERP = 0.085;
-const VELOCITY_DECAY = 0.985;
+const MAX_VELOCITY = 2.0;
+const VELOCITY_LERP = 0.12;
+const VELOCITY_DECAY = 0.96;
 const GRAB_EASE_MS = 400;
 const PARALLAX_MIN = 0.9;
 const DRAG_CLICK_PX = 8;
@@ -443,7 +443,7 @@ function onPointerMove(event) {
     s.moved = Math.hypot(event.clientX - s.press.x, event.clientY - s.press.y);
     if (s.moved >= DRAG_CLICK_PX) s.clickCanceled = true;
     const gain =
-      (event.pointerType === "touch" ? 0.016 : 0.02) *
+      (event.pointerType === "touch" ? 0.06 : 0.08) *
       grabGain(s, event.timeStamp);
     s.targetVel.x = -dx * gain;
     s.targetVel.y = dy * gain;
