@@ -21,8 +21,8 @@
  * applyModeTextures() -> swap maps from body.dark-mode
  * hitPlane(clientX, clientY) -> mesh or null
  * setCursorLabel(hit) -> custom-cursor on canvas
- * grabGain(s, now) -> 0..1 ease-in on grab
- * parallaxFactor(w) -> 0.94..1 from tile size
+ * grabGain(s, now) -> 0..1 ease-in-out on grab
+ * parallaxFactor(w) -> PARALLAX_MIN..1 from tile size
  * placeCopies() -> mesh positions around camera with size lag
  * ============================================================================
  */
@@ -36,11 +36,11 @@ const SIZE_BASE = 160;
 const TILE_COUNT = 28;
 const PLACE_TRIES = 36;
 const GUTTER = SIZE_BASE * (20 / 1440);
-const MAX_VELOCITY = 2.0;
-const VELOCITY_LERP = 0.12;
-const VELOCITY_DECAY = 0.96;
-const GRAB_EASE_MS = 400;
-const PARALLAX_MIN = 0.9;
+const MAX_VELOCITY = 1.05;
+const VELOCITY_LERP = 0.07;
+const VELOCITY_DECAY = 0.978;
+const GRAB_EASE_MS = 280;
+const PARALLAX_MIN = 0.88;
 const DRAG_CLICK_PX = 8;
 const WHEEL_GAIN = 0.004;
 const SHOP_HREF = "/shop";
@@ -380,16 +380,14 @@ function setCursorLabel(hit) {
   galleryCanvas.setAttribute("custom-cursor", "");
 }
 
-/** grabGain(s, now) -> 0..1 ease-in on grab */
+/** grabGain(s, now) -> 0..1 ease-in-out on grab */
 function grabGain(s, now) {
   if (reduceMotion) return 1;
-  const t = (now - s.grabStart) / GRAB_EASE_MS;
-  if (t >= 1) return 1;
-  if (t <= 0) return 0;
-  return t * t;
+  const t = clamp((now - s.grabStart) / GRAB_EASE_MS, 0, 1);
+  return t * t * (3 - 2 * t);
 }
 
-/** parallaxFactor(w) -> 0.94..1 from tile size */
+/** parallaxFactor(w) -> PARALLAX_MIN..1 from tile size */
 function parallaxFactor(w) {
   if (reduceMotion) return 1;
   const t = clamp(
@@ -443,10 +441,10 @@ function onPointerMove(event) {
     s.moved = Math.hypot(event.clientX - s.press.x, event.clientY - s.press.y);
     if (s.moved >= DRAG_CLICK_PX) s.clickCanceled = true;
     const gain =
-      (event.pointerType === "touch" ? 0.06 : 0.08) *
+      (event.pointerType === "touch" ? 0.022 : 0.028) *
       grabGain(s, event.timeStamp);
-    s.targetVel.x = -dx * gain;
-    s.targetVel.y = dy * gain;
+    s.targetVel.x -= dx * gain;
+    s.targetVel.y += dy * gain;
     s.lastMouse.x = event.clientX;
     s.lastMouse.y = event.clientY;
   }
