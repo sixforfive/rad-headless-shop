@@ -14,10 +14,17 @@
 
 ## 3. Motion
 
-- [x] 3.1 In `tick`, add diagonal `DRIFT` to `targetVel` when not dragging and not `prefers-reduced-motion`
+- [x] 3.1 In `tick`, do not add rest drift; drag and wheel still pan; inertia coasts then stops
 - [x] 3.2 In `onWheel`, pan X/Y from `deltaX`/`deltaY` (`preventDefault`); do not change camera Z
-- [x] 3.3 Skip inertia lerp and skip drift when `prefers-reduced-motion: reduce`
+- [x] 3.3 Skip inertia lerp when `prefers-reduced-motion: reduce`
 
 ## 4. Pin
 
 - [ ] 4.1 After commit: Collection Footer `js/collection.js` SHA; publish
+
+## 5. Density and rest
+
+- [x] 5.1 Remove `DRIFT` from `tick` and constants
+- [x] 5.2 Replace cell lattice in `buildPeriod` with dart-throw (`TILE_COUNT` 14, `PLACE_TRIES` 40, AABB)
+- [x] 5.3 Size classes `0.10 / 0.16 / 0.24 / 0.36`, weights `2, 3, 3, 2`; no one-cell cap
+- [x] 5.4 `pickMediaIndex` bans nearby tiles by distance, not 8-grid neighbors

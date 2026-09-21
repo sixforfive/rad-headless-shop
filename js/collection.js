@@ -13,7 +13,8 @@
  * makeRng(seed) -> (n) -> 0..1
  * pickSizeClass(rand) -> class width / PERIOD_W
  * aabbOverlap(a, b) -> torus boxes collide (with gutter)
- * pickMediaIndex(col, row, grid, n, rand) -> image index
+ * isNearby(a, b) -> tiles close enough to ban the same image
+ * pickMediaIndex(tile, tiles, n, rand) -> image index
  * buildPeriod(srcs) -> tiles for one wrapping poster
  * urlForIndex(i) -> current-mode src
  * getTexture(url) -> cached THREE.Texture
@@ -27,11 +28,9 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 
 const PERIOD_W = 160;
 const PERIOD_H = 90;
-const GRID_COLS = 6;
-const GRID_ROWS = 4;
-const FILL = 0.35;
+const TILE_COUNT = 14;
+const PLACE_TRIES = 40;
 const GUTTER = PERIOD_W * (24 / 1440);
-const DRIFT = 0.04;
 const MAX_VELOCITY = 1.8;
 const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.9;
@@ -41,10 +40,10 @@ const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
 const SIZE_CLASSES = [
-  { frac: 0.07, weight: 3 },
-  { frac: 0.11, weight: 4 },
-  { frac: 0.16, weight: 2 },
-  { frac: 0.2, weight: 1 },
+  { frac: 0.1, weight: 2 },
+  { frac: 0.16, weight: 3 },
+  { frac: 0.24, weight: 3 },
+  { frac: 0.36, weight: 2 },
 ];
 
 const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
@@ -124,19 +123,23 @@ function aabbOverlap(a, b) {
   );
 }
 
-/** pickMediaIndex(col, row, grid, n, rand) -> image index */
-function pickMediaIndex(col, row, grid, n, rand) {
+/** isNearby(a, b) -> tiles close enough to ban the same image */
+function isNearby(a, b) {
+  const dx = Math.abs(wrapDelta(a.x - b.x, PERIOD_W));
+  const dy = Math.abs(wrapDelta(a.y - b.y, PERIOD_H));
+  return (
+    dx < a.w / 2 + b.w / 2 + GUTTER + Math.min(a.w, b.w) / 2 &&
+    dy < a.h / 2 + b.h / 2 + GUTTER + Math.min(a.h, b.h) / 2
+  );
+}
+
+/** pickMediaIndex(tile, tiles, n, rand) -> image index */
+function pickMediaIndex(tile, tiles, n, rand) {
   if (n <= 0) return 0;
   if (n < 3) return Math.floor(rand() * n);
   const banned = new Set();
-  for (let dc = -1; dc <= 1; dc++) {
-    for (let dr = -1; dr <= 1; dr++) {
-      if (dc === 0 && dr === 0) continue;
-      const nc = (col + dc + GRID_COLS) % GRID_COLS;
-      const nr = (row + dr + GRID_ROWS) % GRID_ROWS;
-      const used = grid[nr][nc];
-      if (used >= 0) banned.add(used);
-    }
+  for (let t = 0; t < tiles.length; t++) {
+    if (isNearby(tile, tiles[t])) banned.add(tiles[t].mediaIndex);
   }
   const order = [];
   for (let i = 0; i < n; i++) order.push(i);
@@ -156,52 +159,18 @@ function pickMediaIndex(col, row, grid, n, rand) {
 function buildPeriod(srcs) {
   const n = srcs.length;
   const rand = makeRng(hashString(srcs.slice().sort().join("|")));
-  const cellW = PERIOD_W / GRID_COLS;
-  const cellH = PERIOD_H / GRID_ROWS;
-  const maxW = Math.max(1, cellW - GUTTER);
-  const maxH = Math.max(1, cellH - GUTTER);
-  const jitterCap = GUTTER / 2;
-  const targetCount = Math.max(1, Math.round(GRID_COLS * GRID_ROWS * FILL));
-  const cells = [];
-  for (let row = 0; row < GRID_ROWS; row++) {
-    for (let col = 0; col < GRID_COLS; col++) {
-      cells.push({ col, row });
-    }
-  }
-  for (let i = cells.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    const tmp = cells[i];
-    cells[i] = cells[j];
-    cells[j] = tmp;
-  }
-  const grid = [];
-  for (let row = 0; row < GRID_ROWS; row++) {
-    grid[row] = [];
-    for (let col = 0; col < GRID_COLS; col++) grid[row][col] = -1;
-  }
+  const maxW = PERIOD_W - GUTTER;
+  const maxH = PERIOD_H - GUTTER;
   const tiles = [];
-  for (let c = 0; c < cells.length && tiles.length < targetCount; c++) {
-    const cell = cells[c];
+  for (let i = 0; i < TILE_COUNT; i++) {
     const classW = pickSizeClass(rand) * PERIOD_W;
     const w = Math.min(classW, maxW);
     const h = Math.min(w, maxH);
-    const slackX = Math.max(0, (cellW - w) / 2);
-    const slackY = Math.max(0, (cellH - h) / 2);
-    const spanX = Math.min(slackX, jitterCap);
-    const spanY = Math.min(slackY, jitterCap);
-    const tile = {
-      x: 0,
-      y: 0,
-      w,
-      h,
-      col: cell.col,
-      row: cell.row,
-      mediaIndex: 0,
-    };
+    const tile = { x: 0, y: 0, w, h, mediaIndex: 0 };
     let hits = true;
-    for (let attempt = 0; attempt < 8 && hits; attempt++) {
-      tile.x = cell.col * cellW + cellW / 2 + (rand() - 0.5) * 2 * spanX;
-      tile.y = cell.row * cellH + cellH / 2 + (rand() - 0.5) * 2 * spanY;
+    for (let attempt = 0; attempt < PLACE_TRIES && hits; attempt++) {
+      tile.x = rand() * PERIOD_W;
+      tile.y = rand() * PERIOD_H;
       hits = false;
       for (let t = 0; t < tiles.length; t++) {
         if (aabbOverlap(tiles[t], tile)) {
@@ -211,8 +180,7 @@ function buildPeriod(srcs) {
       }
     }
     if (hits) continue;
-    tile.mediaIndex = pickMediaIndex(cell.col, cell.row, grid, n, rand);
-    grid[cell.row][cell.col] = tile.mediaIndex;
+    tile.mediaIndex = pickMediaIndex(tile, tiles, n, rand);
     tiles.push(tile);
   }
   return tiles;
@@ -464,11 +432,6 @@ function tick() {
   rafId = requestAnimationFrame(tick);
   const s = controller;
   reduceMotion = prefersReducedMotion();
-
-  if (!reduceMotion && !s.isDragging) {
-    s.targetVel.x += DRIFT;
-    s.targetVel.y += DRIFT;
-  }
 
   s.targetVel.x = clamp(s.targetVel.x, -MAX_VELOCITY, MAX_VELOCITY);
   s.targetVel.y = clamp(s.targetVel.y, -MAX_VELOCITY, MAX_VELOCITY);

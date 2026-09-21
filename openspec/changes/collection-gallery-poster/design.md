@@ -10,9 +10,9 @@ Keep the host, CMS lists, logo overlay, and `three@0.182.0`. Replace the generat
 
 **Goals:**
 
-- One seeded period that looks like the GIF: sparse, mixed sizes, no overlap, wrap.
+- One seeded period that looks like the GIF: dense irregular mosaic, mixed sizes, no overlap, wrap.
 - Crop on resize, not reflow.
-- Auto-drift at rest; no zoom.
+- Still at rest; no zoom. No auto-drift.
 
 **Non-Goals:**
 
@@ -34,39 +34,37 @@ Build the period once. Instance it on a 3×3 of offsets `(ox * PERIOD_W, oy * PE
 ```
 PERIOD_W = 160
 PERIOD_H = 90
-GRID_COLS = 6
-GRID_ROWS = 4
-FILL = 0.35
+TILE_COUNT = 14
 ```
 
-At 16:9 the frustum matches one period (`height = PERIOD_H`, `width = height * aspect`). Other aspects crop. Occupancy ≈ 8–9 tiles in view, matching the GIF.
+At 16:9 the frustum matches one period (`height = PERIOD_H`, `width = height * aspect`). Other aspects crop. Fourteen dart-thrown tiles fill the view.
 
 Alternative considered: infinite unique chunks with torus only at wrap. Rejected — neighbor constraint dies at chunk seams; GIF is one repeating poster.
 
 ### Size classes as fractions of `PERIOD_W`, not vw
 
-GIF weights, not the prompt’s 8/14/22/30 vw (those overflow a 6-col cell and reflow with the window):
+Dart-throw into the period. No cell lattice. Classes larger than the first pass so tiles eat the field:
 
 | class | width / PERIOD_W | weight |
 | ----- | ---------------- | ------ |
-| S     | 0.07             | 3      |
-| M     | 0.11             | 4      |
-| L     | 0.16             | 2      |
-| XL    | 0.20             | 1      |
+| S     | 0.10             | 2      |
+| M     | 0.16             | 3      |
+| L     | 0.24             | 3      |
+| XL    | 0.36             | 2      |
 
-Height from image aspect. Gutter = `PERIOD_W * (24 / 1440)`. Jitter inside the leftover cell slack, less than half gutter. AABB on torus (test wrapped replicas). If a pick collides, retry; if still colliding, skip the cell.
+Height from image aspect, contain-fit in the reserved `w×h` (square cap `PERIOD_H - GUTTER`). Gutter = `PERIOD_W * (24 / 1440)`. AABB on torus. Retry `PLACE_TRIES` then skip. `TILE_COUNT` 14.
 
-Seed: `hashString` of sorted light srcs so CMS order is stable. Shuffle occupancy, then greedy `mediaIndex` excluding 8-neighbors including wrap. If N < 3, skip the uniqueness rule (spec already gates at three).
+Seed: `hashString` of sorted light srcs. Greedy `mediaIndex` excluding nearby tiles (half-size + gutter, wrap). If N < 3, skip the uniqueness rule.
 
 ### Camera crops; delete edge fade
 
 `resizeRenderer` sets ortho to `PERIOD_H` × aspect. Do not change period or tile world sizes. Remove `fadePlanes` / `EDGE_FADE_*` — wrap must stay fully opaque or the torus reads as a void.
 
-### Rest drift, wheel pan, no zoom
+### Wheel pan, inertia, no rest drift
 
-Keep drag → `targetVel`, lerp, decay. When not dragging and not reduced-motion, add a constant `DRIFT` (diagonal, ~0.04 world/frame) onto `targetVel`. Wheel: `deltaX`/`deltaY` into `targetVel`, `preventDefault`; no Z. Drop pinch-depth if any remains. Reduced motion: no lerp coast, no drift.
+Keep drag → `targetVel`, lerp, decay. Do not add rest drift. Wheel: `deltaX`/`deltaY` into `targetVel`, `preventDefault`; no Z. Reduced motion: no lerp coast.
 
-Inertia numbers stay in the current band (`VELOCITY_LERP` 0.16, `VELOCITY_DECAY` 0.9, cap lowered so rest drift stays quieter than a flick). Alternative considered: prompt `friction 0.92` and `cubic-bezier`. Rejected — the loop already is exponential decay; swapping the curve does not change the GIF read.
+Inertia numbers stay in the current band (`VELOCITY_LERP` 0.16, `VELOCITY_DECAY` 0.9).
 
 ### Logo stays CSS
 
@@ -75,8 +73,8 @@ Inertia numbers stay in the current band (`VELOCITY_LERP` 0.16, `VELOCITY_DECAY`
 ## Risks / Trade-offs
 
 - [Few CMS images, N = 1 or 2] → Spec uniqueness only when N ≥ 3; still AABB and skip.
-- [Landscape XL in a cell] → Cap width to cell minus gutter; class is a target, not a license to collide.
-- [3×3 meshes × period tiles] → ~9×9 ≈ 80 planes; still under the old cache cap. Recycle groups as today if needed.
+- [Landscape XL] → Cap width to `PERIOD_W - GUTTER` and height to `PERIOD_H - GUTTER`; AABB still wins.
+- [3×3 meshes × period tiles] → 9×14 ≈ 126 planes.
 - [Desktop GIF vs phone crop] → Accepted. Composition stays; phone pans more.
 - [Hard texture cut on lights] → Unchanged; out of scope.
 
