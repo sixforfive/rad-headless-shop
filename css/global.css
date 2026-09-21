@@ -52,6 +52,10 @@ html.lenis.lenis-stopped {
 }
 
 /* CMS column attrs as vars; auto when Webflow collapses the grid. */
+.product-list.is-gallery {
+  will-change: transform;
+}
+
 .product-list.is-gallery .product-thumb {
   grid-column-start: var(--gallery-column-start);
   grid-column-end: var(--gallery-column-end);

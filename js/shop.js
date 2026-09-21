@@ -2,22 +2,24 @@
  * shop.js — Shop page (/shop).
  * shopList — the Shop Collection List (not merch)
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
- * cloneGalleryThumbs — two .is-clone copies of each original so wrap lands on a just-seen set
+ * cloneGalleryThumbs — one .is-clone copy of each original for the gallery loop
  * thumbImages — all shop thumb <img> (originals + clones)
  * eagerThumbImages — loading=eager on every thumb img so below-fold originals actually fetch
  * whenImageReady — decode if complete; else load/error, recheck complete to not miss the event
  * whenThumbsReady — resolve once every thumb image is decoded
- * parkThumbImages — full-size src copies clipped in the viewport so wrap does not refetch
  * galleryReady — blocks wrap until first real measure lands
  * loopHeight — first clone getBoundingClientRect.top minus first original
- * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
+ * applyGalleryOffset — translate3d the shop list, or none in list view
+ * writeGalleryCounter — 00–99 of offset / loop height into #gallery-scroll-counter
+ * radGalleryPan — add wheel delta to offset; wrap at h; apply
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
- * setView — add/remove is-gallery on .product-list from data-view; jump to top when the view changes
+ * setView — add/remove is-gallery on .product-list from data-view; reset offset when the view changes
  * syncActive — is-active on the switch button that matches the current view
  */
 
 let galleryLoopHeight = 0;
 let galleryReady = false;
+let galleryOffset = 0;
 
 /** shopLists — Shop Collection Lists only (not merch) */
 function shopLists() {
@@ -43,22 +45,17 @@ function hydrateThumbs() {
   });
 }
 
-/** cloneGalleryThumbs — two .is-clone copies of each original shop thumb; skip if already cloned */
+/** cloneGalleryThumbs — one .is-clone copy of each original shop thumb; skip if already cloned */
 function cloneGalleryThumbs() {
   const list = shopList();
-  if (!list) return;
-  const originals = [...list.querySelectorAll(".product-thumb:not(.is-clone)")];
-  if (!originals.length) return;
-  if (list.querySelectorAll(".product-thumb.is-clone").length >= originals.length * 2) return;
-  for (let i = 0; i < 2; i++) {
-    originals.forEach((el) => {
-      const clone = el.cloneNode(true);
-      clone.classList.add("is-clone");
-      clone.setAttribute("aria-hidden", "true");
-      clone.querySelectorAll("a").forEach((a) => a.setAttribute("tabindex", "-1"));
-      el.parentNode.appendChild(clone);
-    });
-  }
+  if (!list || list.querySelector(".product-thumb.is-clone")) return;
+  list.querySelectorAll(".product-thumb:not(.is-clone)").forEach((el) => {
+    const clone = el.cloneNode(true);
+    clone.classList.add("is-clone");
+    clone.setAttribute("aria-hidden", "true");
+    clone.querySelectorAll("a").forEach((a) => a.setAttribute("tabindex", "-1"));
+    el.parentNode.appendChild(clone);
+  });
 }
 
 /** thumbImages — all shop thumb <img> (originals + clones) */
@@ -91,26 +88,6 @@ function whenThumbsReady() {
   return Promise.all(thumbImages().map(whenImageReady));
 }
 
-/** parkThumbImages — full-size src copies clipped in the viewport so wrap does not refetch */
-function parkThumbImages() {
-  if (document.getElementById("gallery-thumb-park")) return;
-  const park = document.createElement("div");
-  park.id = "gallery-thumb-park";
-  park.setAttribute("aria-hidden", "true");
-  park.style.cssText =
-    "position:fixed;top:0;left:0;width:1px;height:1px;overflow:hidden;pointer-events:none";
-  thumbImages().forEach((img) => {
-    const src = img.currentSrc || img.src;
-    if (!src) return;
-    const copy = new Image();
-    copy.src = src;
-    copy.width = img.naturalWidth || img.width;
-    copy.height = img.naturalHeight || img.height;
-    park.appendChild(copy);
-  });
-  document.body.appendChild(park);
-}
-
 /** loopHeight — first clone getBoundingClientRect.top minus first original */
 function loopHeight() {
   const list = shopList();
@@ -125,6 +102,38 @@ function measureLoopHeight() {
   galleryLoopHeight = loopHeight();
 }
 
+/** applyGalleryOffset — translate3d the shop list, or none in list view */
+function applyGalleryOffset() {
+  const list = shopList();
+  if (!list) return;
+  if (!list.classList.contains("is-gallery")) {
+    list.style.transform = "";
+    return;
+  }
+  list.style.transform = `translate3d(0, ${-galleryOffset}px, 0)`;
+}
+
+/** writeGalleryCounter — 00–99 of offset / loop height into #gallery-scroll-counter */
+function writeGalleryCounter() {
+  const counter = document.getElementById("gallery-scroll-counter");
+  const h = galleryLoopHeight;
+  if (!counter || h <= 0) return;
+  const pct = Math.min(99, Math.max(0, Math.floor((galleryOffset / h) * 100)));
+  counter.textContent = String(pct).padStart(2, "0");
+}
+
+/** radGalleryPan — add wheel delta to offset; wrap at h; apply */
+function radGalleryPan(deltaY) {
+  const list = shopList();
+  if (!list?.classList.contains("is-gallery")) return;
+  const h = galleryLoopHeight;
+  galleryOffset += deltaY;
+  if (galleryOffset < 0) galleryOffset = 0;
+  if (galleryReady && h > 0 && galleryOffset >= h) galleryOffset -= h;
+  applyGalleryOffset();
+  writeGalleryCounter();
+}
+
 /** jumpScrollY — instant window jump through Lenis when live */
 function jumpScrollY(y) {
   if (typeof radScrollTo === "function") {
@@ -134,24 +143,7 @@ function jumpScrollY(y) {
   window.scrollTo({ top: y, behavior: "auto" });
 }
 
-/** onGalleryScroll — wrap down in gallery; write 00–99 into #gallery-scroll-counter */
-function onGalleryScroll() {
-  const list = shopList();
-  if (!list?.classList.contains("is-gallery")) return;
-  const h = galleryLoopHeight;
-  if (galleryReady && h > 0 && window.scrollY >= h) {
-    document.documentElement.style.overflowAnchor = "none";
-    jumpScrollY(window.scrollY - h);
-    document.documentElement.style.overflowAnchor = "";
-  }
-  const counter = document.getElementById("gallery-scroll-counter");
-  if (counter && h > 0) {
-    const pct = Math.min(99, Math.max(0, Math.floor((window.scrollY / h) * 100)));
-    counter.textContent = String(pct).padStart(2, "0");
-  }
-}
-
-/** setView — gallery adds is-gallery; list removes it; is-active follows data-view; jump to top on change */
+/** setView — gallery adds is-gallery; list removes it; is-active follows data-view; reset offset on change */
 function setView(view) {
   const list = shopList();
   const current = list?.classList.contains("is-gallery") ? "gallery" : "list";
@@ -164,12 +156,15 @@ function setView(view) {
   document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
     btn.classList.toggle("is-active", btn.getAttribute("data-view") === view);
   });
+  galleryOffset = 0;
+  applyGalleryOffset();
   jumpScrollY(0);
   requestAnimationFrame(() => {
     jumpScrollY(0);
     document.documentElement.style.overflowAnchor = "";
     measureLoopHeight();
-    onGalleryScroll();
+    applyGalleryOffset();
+    writeGalleryCounter();
   });
 }
 
@@ -188,23 +183,22 @@ eagerThumbImages();
 syncActive();
 
 whenThumbsReady().then(() => {
-  parkThumbImages();
   measureLoopHeight();
   galleryReady = true;
-  onGalleryScroll();
+  applyGalleryOffset();
+  writeGalleryCounter();
 });
 
-window.addEventListener("scroll", onGalleryScroll, { passive: true });
 window.addEventListener("resize", () => {
   measureLoopHeight();
-  onGalleryScroll();
+  writeGalleryCounter();
 });
 
 const galleryList = shopList();
 if (galleryList) {
   new ResizeObserver(() => {
     measureLoopHeight();
-    onGalleryScroll();
+    writeGalleryCounter();
   }).observe(galleryList);
 }
 
