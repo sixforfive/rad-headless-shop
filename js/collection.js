@@ -22,7 +22,9 @@
  * hitPlane(clientX, clientY) -> mesh or null
  * setCursorLabel(hit) -> custom-cursor on canvas
  * grabGain(s, now) -> 0..1 ease-in-out on grab
- * setMouseNdc(event) -> cursor in host as -1..1
+ * setMouseNdc(event) -> cursor in host as -1..1; true if inside
+ * canHoverDim() -> 768+ fine hover (same gate as shop)
+ * applyHoverDim(dt) -> lerp plane opacity toward 1 or 0.5
  * parallaxFactor(w) -> class p (S 0.55 .. XL 1)
  * placeCopies() -> mesh positions from pan * p; camera stays home
  * ============================================================================
@@ -47,6 +49,8 @@ const DRAG_CLICK_PX = 8;
 const WHEEL_GAIN = 0.006;
 const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
+const HOVER_DIM = 0.5;
+const HOVER_FADE_MS = 300;
 
 const SIZE_CLASSES = [
   { frac: 0.11, weight: 2, p: 0.55 },
@@ -218,6 +222,8 @@ let reduceMotion = false;
 let finePointer = false;
 let isTouchDevice = false;
 let rafId = 0;
+let hoveredMesh = null;
+let lastTick = 0;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -225,6 +231,13 @@ function prefersReducedMotion() {
 
 function isFinePointer() {
   return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
+/** canHoverDim() -> 768+ fine hover (same gate as shop) */
+function canHoverDim() {
+  return window.matchMedia(
+    "(min-width: 768px) and (hover: hover) and (pointer: fine)",
+  ).matches;
 }
 
 function isDarkMode() {
@@ -387,9 +400,9 @@ function grabGain(s, now) {
   return t * t * (3 - 2 * t);
 }
 
-/** setMouseNdc(event) -> cursor in host as -1..1 */
+/** setMouseNdc(event) -> cursor in host as -1..1; true if inside */
 function setMouseNdc(event) {
-  if (!galleryHost || !controller) return;
+  if (!galleryHost || !controller) return false;
   const s = controller;
   const rect = galleryHost.getBoundingClientRect();
   const inside =
@@ -400,12 +413,30 @@ function setMouseNdc(event) {
   if (!inside) {
     s.mouse.x = 0;
     s.mouse.y = 0;
-    return;
+    return false;
   }
   const w = rect.width || 1;
   const h = rect.height || 1;
   s.mouse.x = ((event.clientX - rect.left) / w) * 2 - 1;
   s.mouse.y = -((event.clientY - rect.top) / h) * 2 + 1;
+  return true;
+}
+
+/** applyHoverDim(dt) -> lerp plane opacity toward 1 or 0.5 */
+function applyHoverDim(dt) {
+  if (!planeMeshes) return;
+  const dimming = Boolean(hoveredMesh);
+  const maxStep = reduceMotion
+    ? 1
+    : (1 - HOVER_DIM) * Math.min(1, dt / HOVER_FADE_MS);
+  for (let i = 0; i < planeMeshes.length; i++) {
+    const mesh = planeMeshes[i];
+    const target = dimming && mesh !== hoveredMesh ? HOVER_DIM : 1;
+    const current = mesh.material.opacity;
+    const delta = target - current;
+    mesh.material.opacity =
+      Math.abs(delta) <= maxStep ? target : current + Math.sign(delta) * maxStep;
+  }
 }
 
 /** parallaxFactor(w) -> class p (S 0.55 .. XL 1) */
@@ -460,12 +491,13 @@ function onPointerDown(event) {
   s.moved = 0;
   s.clickCanceled = false;
   s.grabStart = event.timeStamp;
+  hoveredMesh = null;
   galleryCanvas.style.cursor = "grabbing";
 }
 
 function onPointerMove(event) {
   const s = controller;
-  setMouseNdc(event);
+  const inside = setMouseNdc(event);
   if (s.isDragging && event.pointerId === s.pointerId) {
     const dx = event.clientX - s.lastMouse.x;
     const dy = event.clientY - s.lastMouse.y;
@@ -479,9 +511,17 @@ function onPointerMove(event) {
     s.lastMouse.x = event.clientX;
     s.lastMouse.y = event.clientY;
   }
-  if (finePointer && !s.isDragging) {
-    setCursorLabel(hitPlane(event.clientX, event.clientY));
+  if (s.isDragging) {
+    hoveredMesh = null;
+    return;
   }
+  if (finePointer) {
+    const hit = hitPlane(event.clientX, event.clientY);
+    setCursorLabel(hit);
+    hoveredMesh = canHoverDim() && inside ? hit : null;
+    return;
+  }
+  hoveredMesh = null;
 }
 
 function onPointerUp(event) {
@@ -489,10 +529,12 @@ function onPointerUp(event) {
   if (!s.isDragging || event.pointerId !== s.pointerId) return;
   s.isDragging = false;
   galleryCanvas.style.cursor = "grab";
+  const inside = setMouseNdc(event);
+  const hit = hitPlane(event.clientX, event.clientY);
+  if (finePointer) setCursorLabel(hit);
+  hoveredMesh = canHoverDim() && inside ? hit : null;
   if (s.clickCanceled || s.moved >= DRAG_CLICK_PX) return;
-  if (hitPlane(event.clientX, event.clientY)) {
-    window.location.assign(SHOP_HREF);
-  }
+  if (hit) window.location.assign(SHOP_HREF);
 }
 
 function onWheel(event) {
@@ -507,8 +549,10 @@ function onTouchMove(event) {
   event.preventDefault();
 }
 
-function tick() {
+function tick(now) {
   rafId = requestAnimationFrame(tick);
+  const dt = lastTick ? Math.min(now - lastTick, 50) : 16;
+  lastTick = now;
   const s = controller;
   reduceMotion = prefersReducedMotion();
 
@@ -542,6 +586,7 @@ function tick() {
 
   camera.position.set(PERIOD_W / 2 + s.drift.x, PERIOD_H / 2 + s.drift.y, 10);
   placeCopies();
+  applyHoverDim(dt);
 
   renderer.render(scene, camera);
 }
