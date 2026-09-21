@@ -7,7 +7,10 @@
  * eagerThumbImages — loading=eager on every thumb img so below-fold originals actually fetch
  * whenImageReady — decode if complete; else load/error, recheck complete to not miss the event
  * whenThumbsReady — resolve once every thumb image is decoded
+ * pinThumbSrcs — freeze currentSrc so wrap does not srcset-refetch
  * galleryReady — blocks wrap until first real measure lands
+ * wrapGallery — decode originals, then instant-jump back one loop
+ * originalThumbImages — shop thumb imgs that are not clones
  * loopHeight — first clone getBoundingClientRect.top minus first original
  * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
@@ -17,6 +20,7 @@
 
 let galleryLoopHeight = 0;
 let galleryReady = false;
+let wrapPending = false;
 
 /** shopLists — Shop Collection Lists only (not merch) */
 function shopLists() {
@@ -85,6 +89,17 @@ function whenThumbsReady() {
   return Promise.all(thumbImages().map(whenImageReady));
 }
 
+/** pinThumbSrcs — freeze currentSrc so wrap does not srcset-refetch */
+function pinThumbSrcs() {
+  thumbImages().forEach((img) => {
+    const src = img.currentSrc;
+    if (!src) return;
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
+    img.src = src;
+  });
+}
+
 /** loopHeight — first clone getBoundingClientRect.top minus first original */
 function loopHeight() {
   const list = shopList();
@@ -102,10 +117,31 @@ function measureLoopHeight() {
 /** jumpScrollY — instant window jump through Lenis when live */
 function jumpScrollY(y) {
   if (typeof radScrollTo === "function") {
-    radScrollTo(y, { immediate: true });
+    radScrollTo(y, { immediate: true, force: true });
     return;
   }
   window.scrollTo({ top: y, behavior: "auto" });
+}
+
+/** originalThumbImages — shop thumb imgs that are not clones */
+function originalThumbImages() {
+  const list = shopList();
+  return list ? [...list.querySelectorAll(".product-thumb:not(.is-clone) img")] : [];
+}
+
+/** wrapGallery — decode originals (they were off-screen), then jump one loop */
+function wrapGallery() {
+  if (wrapPending) return;
+  wrapPending = true;
+  Promise.all(originalThumbImages().map((img) => img.decode().catch(() => {}))).then(() => {
+    const h = galleryLoopHeight;
+    if (h > 0 && window.scrollY >= h) {
+      document.documentElement.style.overflowAnchor = "none";
+      jumpScrollY(window.scrollY - h);
+      document.documentElement.style.overflowAnchor = "";
+    }
+    wrapPending = false;
+  });
 }
 
 /** onGalleryScroll — wrap down in gallery; write 00–99 into #gallery-scroll-counter */
@@ -113,11 +149,7 @@ function onGalleryScroll() {
   const list = shopList();
   if (!list?.classList.contains("is-gallery")) return;
   const h = galleryLoopHeight;
-  if (galleryReady && h > 0 && window.scrollY >= h) {
-    document.documentElement.style.overflowAnchor = "none";
-    jumpScrollY(window.scrollY - h);
-    document.documentElement.style.overflowAnchor = "";
-  }
+  if (galleryReady && h > 0 && window.scrollY >= h) wrapGallery();
   const counter = document.getElementById("gallery-scroll-counter");
   if (counter && h > 0) {
     const pct = Math.min(99, Math.max(0, Math.floor((window.scrollY / h) * 100)));
@@ -162,6 +194,7 @@ eagerThumbImages();
 syncActive();
 
 whenThumbsReady().then(() => {
+  pinThumbSrcs();
   measureLoopHeight();
   galleryReady = true;
   onGalleryScroll();
