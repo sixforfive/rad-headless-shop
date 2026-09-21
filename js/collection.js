@@ -24,7 +24,8 @@
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1; true if inside
  * canHoverDim() -> 768+ fine hover (same gate as shop)
- * applyHoverDim(dt) -> lerp plane opacity toward 1 or 0.5 over theme fill
+ * applyHoverDim(dt) -> mix plane rgb toward theme bg; planes stay opaque
+ * patchHoverMaterial(material) -> uDim / uBg in the basic fragment shader
  * parallaxFactor(w) -> class p (S 0.55 .. XL 1)
  * placeCopies() -> mesh positions from pan * p; camera stays home
  * ============================================================================
@@ -224,6 +225,7 @@ let isTouchDevice = false;
 let rafId = 0;
 let hoveredMesh = null;
 let lastTick = 0;
+const themeBg = new THREE.Color(1, 1, 1);
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -311,6 +313,24 @@ function preloadTextures() {
   darkSrcs.forEach(getTexture);
 }
 
+/** patchHoverMaterial(material) -> uDim / uBg in the basic fragment shader */
+function patchHoverMaterial(material) {
+  material.userData.dim = 0;
+  material.customProgramCacheKey = () => "hover-dim";
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uDim = { value: material.userData.dim };
+    shader.uniforms.uBg = { value: themeBg };
+    material.userData.uDim = shader.uniforms.uDim;
+    shader.fragmentShader =
+      "uniform float uDim;\nuniform vec3 uBg;\n" +
+      shader.fragmentShader.replace(
+        "#include <map_fragment>",
+        `#include <map_fragment>
+         diffuseColor.rgb = mix(diffuseColor.rgb, uBg, uDim);`,
+      );
+  };
+}
+
 function makePlaneMesh(tile, ox, oy) {
   const material = new THREE.MeshBasicMaterial({
     transparent: true,
@@ -318,6 +338,7 @@ function makePlaneMesh(tile, ox, oy) {
     depthWrite: false,
     side: THREE.DoubleSide,
   });
+  patchHoverMaterial(material);
   const mesh = new THREE.Mesh(planeGeometry, material);
   mesh.position.set(tile.x + ox * PERIOD_W, tile.y + oy * PERIOD_H, 0);
   mesh.renderOrder = Math.round(tile.w * 10);
@@ -422,21 +443,27 @@ function setMouseNdc(event) {
   return true;
 }
 
-/** applyHoverDim(dt) -> lerp plane opacity toward 1 or 0.5 over theme fill */
+/** applyHoverDim(dt) -> mix plane rgb toward theme bg; planes stay opaque */
 function applyHoverDim(dt) {
   if (!planeMeshes) return;
+  themeBg.setStyle(
+    getComputedStyle(galleryHost || document.documentElement).backgroundColor,
+  );
   const dimming = Boolean(hoveredMesh);
   const maxStep = reduceMotion
     ? 1
-    : (1 - HOVER_DIM) * Math.min(1, dt / HOVER_FADE_MS);
+    : HOVER_DIM * Math.min(1, dt / HOVER_FADE_MS);
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
-    mesh.material.color.setScalar(1);
-    const target = dimming && mesh !== hoveredMesh ? HOVER_DIM : 1;
-    const current = mesh.material.opacity;
+    const material = mesh.material;
+    material.opacity = 1;
+    const target = dimming && mesh !== hoveredMesh ? HOVER_DIM : 0;
+    const current = material.userData.dim || 0;
     const delta = target - current;
-    mesh.material.opacity =
+    const next =
       Math.abs(delta) <= maxStep ? target : current + Math.sign(delta) * maxStep;
+    material.userData.dim = next;
+    if (material.userData.uDim) material.userData.uDim.value = next;
   }
 }
 
