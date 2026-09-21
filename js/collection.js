@@ -437,8 +437,8 @@ function placeCopies() {
     const cy = Math.round((s.basePos.y - worldY) / PERIOD_H);
     const lag = (1 - p) * PARALLAX_LAG;
     mesh.position.set(
-      worldX + (cx + d.ox) * PERIOD_W + lag * s.velocity.x,
-      worldY + (cy + d.oy) * PERIOD_H + lag * s.velocity.y,
+      worldX + (cx + d.ox) * PERIOD_W - lag * s.velocity.x,
+      worldY + (cy + d.oy) * PERIOD_H - lag * s.velocity.y,
       0,
     );
   }
