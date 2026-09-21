@@ -7,7 +7,6 @@
  * radLenisStop / radLenisStart — drawer lock; both instances
  * radNestedGallerySync — nested on desktop default gallery only; off in fullscreen and ≤767
  * dampVirtualScroll — scale wheel delta in the last 160px of a real bound
- * radGalleryPan — shop gallery; consume wheel, do not move the window
  */
 
 const EDGE_ZONE = 160;
@@ -47,13 +46,7 @@ function createWindowLenis() {
     autoRaf: true,
     syncTouch: false,
     overscroll: false,
-    virtualScroll: (data) => {
-      if (isShopGallery() && typeof radGalleryPan === "function") {
-        radGalleryPan(data.deltaY);
-        return false;
-      }
-      return dampVirtualScroll(radLenis, data, false);
-    },
+    virtualScroll: (data) => dampVirtualScroll(radLenis, data, isShopGallery()),
   });
 }
 

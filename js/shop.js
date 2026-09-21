@@ -9,17 +9,14 @@
  * whenThumbsReady — resolve once every thumb image is decoded
  * galleryReady — blocks wrap until first real measure lands
  * loopHeight — first clone getBoundingClientRect.top minus first original
- * applyGalleryOffset — translate3d the shop list, or none in list view
- * writeGalleryCounter — 00–99 of offset / loop height into #gallery-scroll-counter
- * radGalleryPan — add wheel delta to offset; wrap at h; apply
+ * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
- * setView — add/remove is-gallery on .product-list from data-view; reset offset when the view changes
+ * setView — add/remove is-gallery on .product-list from data-view; jump to top when the view changes
  * syncActive — is-active on the switch button that matches the current view
  */
 
 let galleryLoopHeight = 0;
 let galleryReady = false;
-let galleryOffset = 0;
 
 /** shopLists — Shop Collection Lists only (not merch) */
 function shopLists() {
@@ -102,38 +99,6 @@ function measureLoopHeight() {
   galleryLoopHeight = loopHeight();
 }
 
-/** applyGalleryOffset — translate3d the shop list, or none in list view */
-function applyGalleryOffset() {
-  const list = shopList();
-  if (!list) return;
-  if (!list.classList.contains("is-gallery")) {
-    list.style.transform = "";
-    return;
-  }
-  list.style.transform = `translate3d(0, ${-galleryOffset}px, 0)`;
-}
-
-/** writeGalleryCounter — 00–99 of offset / loop height into #gallery-scroll-counter */
-function writeGalleryCounter() {
-  const counter = document.getElementById("gallery-scroll-counter");
-  const h = galleryLoopHeight;
-  if (!counter || h <= 0) return;
-  const pct = Math.min(99, Math.max(0, Math.floor((galleryOffset / h) * 100)));
-  counter.textContent = String(pct).padStart(2, "0");
-}
-
-/** radGalleryPan — add wheel delta to offset; wrap at h; apply */
-function radGalleryPan(deltaY) {
-  const list = shopList();
-  if (!list?.classList.contains("is-gallery")) return;
-  const h = galleryLoopHeight;
-  galleryOffset += deltaY;
-  if (galleryOffset < 0) galleryOffset = 0;
-  if (galleryReady && h > 0 && galleryOffset >= h) galleryOffset -= h;
-  applyGalleryOffset();
-  writeGalleryCounter();
-}
-
 /** jumpScrollY — instant window jump through Lenis when live */
 function jumpScrollY(y) {
   if (typeof radScrollTo === "function") {
@@ -143,7 +108,24 @@ function jumpScrollY(y) {
   window.scrollTo({ top: y, behavior: "auto" });
 }
 
-/** setView — gallery adds is-gallery; list removes it; is-active follows data-view; reset offset on change */
+/** onGalleryScroll — wrap down in gallery; write 00–99 into #gallery-scroll-counter */
+function onGalleryScroll() {
+  const list = shopList();
+  if (!list?.classList.contains("is-gallery")) return;
+  const h = galleryLoopHeight;
+  if (galleryReady && h > 0 && window.scrollY >= h) {
+    document.documentElement.style.overflowAnchor = "none";
+    jumpScrollY(window.scrollY - h);
+    document.documentElement.style.overflowAnchor = "";
+  }
+  const counter = document.getElementById("gallery-scroll-counter");
+  if (counter && h > 0) {
+    const pct = Math.min(99, Math.max(0, Math.floor((window.scrollY / h) * 100)));
+    counter.textContent = String(pct).padStart(2, "0");
+  }
+}
+
+/** setView — gallery adds is-gallery; list removes it; is-active follows data-view; jump to top on change */
 function setView(view) {
   const list = shopList();
   const current = list?.classList.contains("is-gallery") ? "gallery" : "list";
@@ -156,15 +138,12 @@ function setView(view) {
   document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
     btn.classList.toggle("is-active", btn.getAttribute("data-view") === view);
   });
-  galleryOffset = 0;
-  applyGalleryOffset();
   jumpScrollY(0);
   requestAnimationFrame(() => {
     jumpScrollY(0);
     document.documentElement.style.overflowAnchor = "";
     measureLoopHeight();
-    applyGalleryOffset();
-    writeGalleryCounter();
+    onGalleryScroll();
   });
 }
 
@@ -185,20 +164,20 @@ syncActive();
 whenThumbsReady().then(() => {
   measureLoopHeight();
   galleryReady = true;
-  applyGalleryOffset();
-  writeGalleryCounter();
+  onGalleryScroll();
 });
 
+window.addEventListener("scroll", onGalleryScroll, { passive: true });
 window.addEventListener("resize", () => {
   measureLoopHeight();
-  writeGalleryCounter();
+  onGalleryScroll();
 });
 
 const galleryList = shopList();
 if (galleryList) {
   new ResizeObserver(() => {
     measureLoopHeight();
-    writeGalleryCounter();
+    onGalleryScroll();
   }).observe(galleryList);
 }
 
