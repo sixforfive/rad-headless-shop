@@ -390,7 +390,7 @@ body.is-scroll-locked {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.15s ease-out;
 }
 
 .custom-cursor-label.is-visible {
