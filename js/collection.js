@@ -7,7 +7,7 @@
  * bootInfiniteGallery() -> mount canvas or no-op
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
- * wrap(v, period) -> v in [0, period)
+ * wrapDelta(d, period) -> shortest torus delta
  * hashString(str) -> integer seed
  * seededRandom(seed) -> 0..1
  * makeRng(seed) -> (n) -> 0..1
@@ -22,6 +22,8 @@
  * hitPlane(clientX, clientY) -> mesh or null
  * setCursorLabel(hit) -> custom-cursor on canvas
  * grabGain(s, now) -> 0..1 ease-in on grab
+ * parallaxFactor(w) -> 0.94..1 from tile size
+ * placeCopies() -> mesh positions around camera with size lag
  * ============================================================================
  */
 
@@ -35,9 +37,10 @@ const TILE_COUNT = 28;
 const PLACE_TRIES = 40;
 const GUTTER = SIZE_BASE * (24 / 1440);
 const MAX_VELOCITY = 3.2;
-const VELOCITY_LERP = 0.16;
-const VELOCITY_DECAY = 0.92;
-const GRAB_EASE_MS = 220;
+const VELOCITY_LERP = 0.07;
+const VELOCITY_DECAY = 0.97;
+const GRAB_EASE_MS = 400;
+const PARALLAX_MIN = 0.94;
 const DRAG_CLICK_PX = 8;
 const WHEEL_GAIN = 0.006;
 const SHOP_HREF = "/shop";
@@ -51,6 +54,8 @@ const SIZE_CLASSES = [
 ];
 
 const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
+const SIZE_FRAC_MIN = SIZE_CLASSES[0].frac;
+const SIZE_FRAC_MAX = SIZE_CLASSES[SIZE_CLASSES.length - 1].frac;
 
 const PERIOD_OFFSETS = [];
 {
@@ -69,12 +74,6 @@ function clamp(v, min, max) {
 /** lerp(a, b, t) -> mix */
 function lerp(a, b, t) {
   return a + (b - a) * t;
-}
-
-/** wrap(v, period) -> v in [0, period) */
-function wrap(v, period) {
-  const r = v % period;
-  return r < 0 ? r + period : r;
 }
 
 function wrapDelta(d, period) {
@@ -312,6 +311,10 @@ function makePlaneMesh(tile, ox, oy) {
   mesh.position.set(tile.x + ox * PERIOD_W, tile.y + oy * PERIOD_H, 0);
   mesh.renderOrder = Math.round(tile.w * 10);
   mesh.visible = true;
+  mesh.userData.tileX = tile.x;
+  mesh.userData.tileY = tile.y;
+  mesh.userData.ox = ox;
+  mesh.userData.oy = oy;
   mesh.userData.w = tile.w;
   mesh.userData.h = tile.h;
   mesh.userData.mediaIndex = tile.mediaIndex;
@@ -386,6 +389,37 @@ function grabGain(s, now) {
   if (t >= 1) return 1;
   if (t <= 0) return 0;
   return t * t;
+}
+
+/** parallaxFactor(w) -> 0.94..1 from tile size */
+function parallaxFactor(w) {
+  if (reduceMotion) return 1;
+  const t = clamp(
+    (w / SIZE_BASE - SIZE_FRAC_MIN) / (SIZE_FRAC_MAX - SIZE_FRAC_MIN),
+    0,
+    1,
+  );
+  return PARALLAX_MIN + t * (1 - PARALLAX_MIN);
+}
+
+/** placeCopies() -> mesh positions around camera with size lag */
+function placeCopies() {
+  if (!planeMeshes || !controller) return;
+  const s = controller;
+  for (let i = 0; i < planeMeshes.length; i++) {
+    const mesh = planeMeshes[i];
+    const d = mesh.userData;
+    const p = parallaxFactor(d.w);
+    const worldX = d.tileX + (1 - p) * s.basePos.x;
+    const worldY = d.tileY + (1 - p) * s.basePos.y;
+    const cx = Math.round((s.basePos.x - worldX) / PERIOD_W);
+    const cy = Math.round((s.basePos.y - worldY) / PERIOD_H);
+    mesh.position.set(
+      worldX + (cx + d.ox) * PERIOD_W,
+      worldY + (cy + d.oy) * PERIOD_H,
+      0,
+    );
+  }
 }
 
 function onPointerDown(event) {
@@ -468,9 +502,8 @@ function tick() {
     s.targetVel.y *= VELOCITY_DECAY;
   }
 
-  s.basePos.x = wrap(s.basePos.x, PERIOD_W);
-  s.basePos.y = wrap(s.basePos.y, PERIOD_H);
   camera.position.set(s.basePos.x, s.basePos.y, 10);
+  placeCopies();
 
   renderer.render(scene, camera);
 }
