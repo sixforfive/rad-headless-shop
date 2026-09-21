@@ -24,7 +24,7 @@
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1; true if inside
  * canHoverDim() -> 768+ fine hover (same gate as shop)
- * applyHoverDim(dt) -> lerp plane opacity toward 1 or 0.5
+ * applyHoverDim(dt) -> multiply plane color toward 1 or 0.5; opacity stays 1
  * parallaxFactor(w) -> class p (S 0.55 .. XL 1)
  * placeCopies() -> mesh positions from pan * p; camera stays home
  * ============================================================================
@@ -422,7 +422,7 @@ function setMouseNdc(event) {
   return true;
 }
 
-/** applyHoverDim(dt) -> lerp plane opacity toward 1 or 0.5 */
+/** applyHoverDim(dt) -> multiply plane color toward 1 or 0.5; opacity stays 1 */
 function applyHoverDim(dt) {
   if (!planeMeshes) return;
   const dimming = Boolean(hoveredMesh);
@@ -432,10 +432,11 @@ function applyHoverDim(dt) {
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
     const target = dimming && mesh !== hoveredMesh ? HOVER_DIM : 1;
-    const current = mesh.material.opacity;
+    const current = mesh.material.color.r;
     const delta = target - current;
-    mesh.material.opacity =
+    const next =
       Math.abs(delta) <= maxStep ? target : current + Math.sign(delta) * maxStep;
+    mesh.material.color.setScalar(next);
   }
 }
 
