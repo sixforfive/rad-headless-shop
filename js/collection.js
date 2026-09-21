@@ -22,6 +22,7 @@
  * hitPlane(clientX, clientY) -> mesh or null
  * setCursorLabel(hit) -> custom-cursor on canvas
  * grabGain(s, now) -> 0..1 ease-in-out on grab
+ * setMouseNdc(event) -> cursor in host as -1..1
  * parallaxFactor(w) -> PARALLAX_MIN..1 from tile size
  * placeCopies() -> mesh positions around camera with size lag
  * ============================================================================
@@ -36,13 +37,15 @@ const SIZE_BASE = 180;
 const TILE_COUNT = 32;
 const PLACE_TRIES = 40;
 const GUTTER = SIZE_BASE * (24 / 1440);
-const MAX_VELOCITY = 1.05;
-const VELOCITY_LERP = 0.07;
-const VELOCITY_DECAY = 0.978;
+const MAX_VELOCITY = 3.2;
+const VELOCITY_LERP = 0.16;
+const VELOCITY_DECAY = 0.9;
 const GRAB_EASE_MS = 280;
 const PARALLAX_MIN = 0.88;
+const DRIFT_AMOUNT = 8;
+const DRIFT_LERP = 0.12;
 const DRAG_CLICK_PX = 8;
-const WHEEL_GAIN = 0.004;
+const WHEEL_GAIN = 0.006;
 const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
@@ -387,6 +390,27 @@ function grabGain(s, now) {
   return t * t * (3 - 2 * t);
 }
 
+/** setMouseNdc(event) -> cursor in host as -1..1 */
+function setMouseNdc(event) {
+  if (!galleryHost || !controller) return;
+  const s = controller;
+  const rect = galleryHost.getBoundingClientRect();
+  const inside =
+    event.clientX >= rect.left &&
+    event.clientX <= rect.right &&
+    event.clientY >= rect.top &&
+    event.clientY <= rect.bottom;
+  if (!inside) {
+    s.mouse.x = 0;
+    s.mouse.y = 0;
+    return;
+  }
+  const w = rect.width || 1;
+  const h = rect.height || 1;
+  s.mouse.x = ((event.clientX - rect.left) / w) * 2 - 1;
+  s.mouse.y = -((event.clientY - rect.top) / h) * 2 + 1;
+}
+
 /** parallaxFactor(w) -> PARALLAX_MIN..1 from tile size */
 function parallaxFactor(w) {
   if (reduceMotion) return 1;
@@ -435,13 +459,14 @@ function onPointerDown(event) {
 
 function onPointerMove(event) {
   const s = controller;
+  setMouseNdc(event);
   if (s.isDragging && event.pointerId === s.pointerId) {
     const dx = event.clientX - s.lastMouse.x;
     const dy = event.clientY - s.lastMouse.y;
     s.moved = Math.hypot(event.clientX - s.press.x, event.clientY - s.press.y);
     if (s.moved >= DRAG_CLICK_PX) s.clickCanceled = true;
     const gain =
-      (event.pointerType === "touch" ? 0.022 : 0.028) *
+      (event.pointerType === "touch" ? 0.02 : 0.025) *
       grabGain(s, event.timeStamp);
     s.targetVel.x -= dx * gain;
     s.targetVel.y += dy * gain;
@@ -491,6 +516,8 @@ function tick() {
     s.velocity.y = 0;
     s.targetVel.x = 0;
     s.targetVel.y = 0;
+    s.drift.x = 0;
+    s.drift.y = 0;
   } else {
     s.velocity.x = lerp(s.velocity.x, s.targetVel.x, VELOCITY_LERP);
     s.velocity.y = lerp(s.velocity.y, s.targetVel.y, VELOCITY_LERP);
@@ -498,9 +525,15 @@ function tick() {
     s.basePos.y += s.velocity.y;
     s.targetVel.x *= VELOCITY_DECAY;
     s.targetVel.y *= VELOCITY_DECAY;
+    if (!s.isDragging) {
+      const tx = isTouchDevice ? 0 : s.mouse.x * DRIFT_AMOUNT;
+      const ty = isTouchDevice ? 0 : s.mouse.y * DRIFT_AMOUNT;
+      s.drift.x = lerp(s.drift.x, tx, DRIFT_LERP);
+      s.drift.y = lerp(s.drift.y, ty, DRIFT_LERP);
+    }
   }
 
-  camera.position.set(s.basePos.x, s.basePos.y, 10);
+  camera.position.set(s.basePos.x + s.drift.x, s.basePos.y + s.drift.y, 10);
   placeCopies();
 
   renderer.render(scene, camera);
@@ -548,6 +581,8 @@ function mountScene(host) {
     velocity: { x: 0, y: 0 },
     targetVel: { x: 0, y: 0 },
     basePos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
+    drift: { x: 0, y: 0 },
+    mouse: { x: 0, y: 0 },
     lastMouse: { x: 0, y: 0 },
     press: { x: 0, y: 0 },
     isDragging: false,
