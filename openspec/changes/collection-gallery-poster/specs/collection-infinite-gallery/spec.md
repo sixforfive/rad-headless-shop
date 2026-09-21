@@ -2,11 +2,11 @@
 
 ### Requirement: Poster mosaic on a wrapping period
 
-The image space SHALL be one finite period that repeats on a torus: a tile leaving one edge SHALL enter from the opposite edge. The period SHALL be a seeded irregular field of about fourteen tiles, not a regular cell grid. Tiles SHALL sit at random positions.
+The image space SHALL be one finite period that repeats on a torus: a tile leaving one edge SHALL enter from the opposite edge. The period SHALL be larger than the viewport. Tiles SHALL sit at random positions in three depth layers (far, mid, foreground), each with its own seeded layout.
 
-Each tile SHALL show one image from `.hero-gallery-light` (dark list at the same index). Size SHALL be one of four classes (small, medium, large, extra-large) with original aspect ratio. Tiles SHALL NOT overlap. The gap between tiles SHALL be at least 24 CSS pixels at a 1440-wide host.
+Each tile SHALL show one image from `.hero-gallery-light` (dark list at the same index). Size SHALL be one of four classes with original aspect ratio. Far-layer sizes SHALL span a wider range than foreground sizes. Tiles on the same layer SHALL NOT overlap. Tiles on different layers MAY overlap. The gap between tiles on the same layer SHALL be at least 24 CSS pixels at a 1440-wide host.
 
-Tiles close to each other, including across the period wrap, SHALL NOT show the same image when the light list has at least three images.
+Tiles close to each other on the same layer, including across the period wrap, SHALL NOT show the same image when the light list has at least three images.
 
 The same seed SHALL produce the same period on every load.
 
@@ -17,10 +17,15 @@ The same seed SHALL produce the same period on every load.
 - **WHEN** the visitor pans the gallery until an image leaves the right edge
 - **THEN** that image enters from the left at the matching vertical position
 
-#### Scenario: No overlap
+#### Scenario: No overlap on a layer
 
 - **WHEN** the gallery canvas is showing
-- **THEN** no two image tiles share screen pixels with each other
+- **THEN** no two tiles on the same depth layer share screen pixels with each other
+
+#### Scenario: Layers may overlap
+
+- **WHEN** the gallery canvas is showing
+- **THEN** a far-layer image MAY sit behind a foreground image
 
 #### Scenario: Dense irregular field
 
@@ -30,7 +35,7 @@ The same seed SHALL produce the same period on every load.
 #### Scenario: Neighbor uniqueness
 
 - **WHEN** the light gallery has at least three images and the mosaic is showing
-- **THEN** no tile shows the same image as a nearby tile, including across the period edge
+- **THEN** no tile shows the same image as a nearby tile on the same layer, including across the period edge
 
 #### Scenario: Logo does not pan
 
@@ -46,30 +51,39 @@ Period geometry SHALL be fixed in world units. Changing the host size SHALL crop
 - **WHEN** the visitor resizes the window while the gallery is showing
 - **THEN** the same images sit in the same relative arrangement; only how much of the period is visible changes
 
+### Requirement: Three parallax depths
+
+Far, mid, and foreground layers SHALL pan at different speeds. The far layer SHALL move slower than the mid layer. The mid layer SHALL move slower than the foreground. Far-layer tile sizes SHALL vary more than foreground tile sizes.
+
+#### Scenario: Far lags the foreground
+
+- **WHEN** the visitor drags the gallery
+- **THEN** far-layer images travel less than foreground images for the same drag
+
 ## MODIFIED Requirements
 
 ### Requirement: Pannable space with inertia
 
-Inside `.collection-hero-gallery`, drag SHALL pan the image space on X and Y. Wheel SHALL pan on X and Y. Pinch SHALL NOT move the viewpoint in depth. After pointer release, motion SHALL keep inertia. While no pointer is dragging and inertia has ended, the space SHALL stay still. Keyboard WASD and QE SHALL NOT pan this space.
+Inside `.collection-hero-gallery`, drag SHALL pan the image space on X and Y. At grab, pan speed SHALL ease in from zero over a short ramp, then track the pointer 1:1 for the rest of the drag. Wheel SHALL pan on X and Y. Pinch SHALL NOT move the viewpoint in depth. After pointer release, motion SHALL coast with exponential friction. After coast ends, a slow auto-drift SHALL fade in. Keyboard WASD and QE SHALL NOT pan this space.
 
 Image count SHALL be the number of `.hero-gallery-img` in `.hero-gallery-light` (DOM order). The site SHALL NOT require a fixed N.
 
-When `prefers-reduced-motion: reduce` is set, the site SHALL show the space without inertia.
+When `prefers-reduced-motion: reduce` is set, the site SHALL track the pointer 1:1 with no grab ramp, no coast, and no auto-drift.
 
 #### Scenario: Drag pans
 
 - **WHEN** the visitor drags inside `.collection-hero-gallery`
-- **THEN** the images move with the drag and continue with inertia after release
+- **THEN** the images ease in at grab, then follow the pointer 1:1, and continue with friction coast after release
 
 #### Scenario: Wheel pans
 
 - **WHEN** the visitor wheels over `.collection-hero-gallery`
 - **THEN** the image space pans on X and Y and does not move in depth
 
-#### Scenario: Rest stays still
+#### Scenario: Rest drift
 
-- **WHEN** the gallery is showing and the visitor is not dragging
-- **THEN** after inertia ends the image space does not move
+- **WHEN** the gallery is showing, reduced motion is off, and coast has ended
+- **THEN** the image space auto-drifts slowly
 
 #### Scenario: Keyboard ignored
 
@@ -84,7 +98,7 @@ When `prefers-reduced-motion: reduce` is set, the site SHALL show the space with
 #### Scenario: Reduced motion
 
 - **WHEN** the visitor prefers reduced motion and the gallery canvas is showing
-- **THEN** drag does not apply inertia and the space does not move on its own
+- **THEN** drag does not apply inertia and the space does not auto-drift
 
 ### Requirement: Lights swap textures without resetting the view
 
