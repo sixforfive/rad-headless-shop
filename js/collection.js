@@ -24,6 +24,7 @@
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1
  * parallaxFactor(w) -> class p (S 0.78 .. XL 1)
+ * stepFollow(cur, target, vel) -> follow that cannot outrun the pan
  * placeCopies() -> mesh positions around camera with clamped follow lag
  * ============================================================================
  */
@@ -43,6 +44,7 @@ const VELOCITY_DECAY = 0.94;
 const GRAB_EASE_MS = 280;
 const PARALLAX_FOLLOW = 0.08;
 const MAX_SLIP = 28;
+const SLIP_CATCHUP = 0.35;
 const DRIFT_AMOUNT = 8;
 const DRIFT_LERP = 0.12;
 const DRAG_CLICK_PX = 8;
@@ -410,6 +412,13 @@ function setMouseNdc(event) {
   s.mouse.y = -((event.clientY - rect.top) / h) * 2 + 1;
 }
 
+/** stepFollow(cur, target, vel) -> follow that cannot outrun the pan */
+function stepFollow(cur, target, vel) {
+  const next = lerp(cur, target, PARALLAX_FOLLOW);
+  const maxStep = Math.max(Math.abs(vel), SLIP_CATCHUP);
+  return cur + clamp(next - cur, -maxStep, maxStep);
+}
+
 /** parallaxFactor(w) -> class p (S 0.78 .. XL 1) */
 function parallaxFactor(w) {
   if (reduceMotion) return 1;
@@ -534,8 +543,8 @@ function tick() {
     s.basePos.y += s.velocity.y;
     s.targetVel.x *= VELOCITY_DECAY;
     s.targetVel.y *= VELOCITY_DECAY;
-    s.followPos.x = lerp(s.followPos.x, s.basePos.x, PARALLAX_FOLLOW);
-    s.followPos.y = lerp(s.followPos.y, s.basePos.y, PARALLAX_FOLLOW);
+    s.followPos.x = stepFollow(s.followPos.x, s.basePos.x, s.velocity.x);
+    s.followPos.y = stepFollow(s.followPos.y, s.basePos.y, s.velocity.y);
     if (!isTouchDevice) {
       s.drift.x = lerp(s.drift.x, s.mouse.x * DRIFT_AMOUNT, DRIFT_LERP);
       s.drift.y = lerp(s.drift.y, s.mouse.y * DRIFT_AMOUNT, DRIFT_LERP);
