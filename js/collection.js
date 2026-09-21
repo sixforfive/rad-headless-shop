@@ -7,48 +7,65 @@
  * bootInfiniteGallery() -> mount canvas or no-op
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
+ * wrapDelta(d, period) -> shortest torus delta
  * hashString(str) -> integer seed
  * seededRandom(seed) -> 0..1
- * generateChunkPlanes(cx, cy, cz) -> plane layouts for one chunk
- * getChunkUpdateThrottleMs(isZooming, zoomSpeed) -> ms
+ * makeRng(seed) -> (n) -> 0..1
+ * pickSizeClass(rand) -> class width / SIZE_BASE
+ * aabbOverlap(a, b) -> torus boxes collide (with gutter)
+ * isNearby(a, b) -> tiles close enough to ban the same image
+ * pickMediaIndex(tile, tiles, n, rand) -> image index
+ * buildPeriod(srcs) -> tiles for one wrapping poster
  * urlForIndex(i) -> current-mode src
  * getTexture(url) -> cached THREE.Texture
  * applyModeTextures() -> swap maps from body.dark-mode
  * hitPlane(clientX, clientY) -> mesh or null
  * setCursorLabel(hit) -> custom-cursor on canvas
+ * grabGain(s, now) -> 0..1 ease-in-out on grab
+ * setMouseNdc(event) -> cursor in host as -1..1
+ * parallaxFactor(w) -> PARALLAX_MIN..1 from tile size
+ * placeCopies() -> mesh positions around camera with follow lag
  * ============================================================================
  */
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.min.js";
 
-const CHUNK_SIZE = 110;
-const RENDER_DISTANCE = 2;
-const CHUNK_FADE_MARGIN = 1;
+const VIEW_H = 90;
+const PERIOD_W = 320;
+const PERIOD_H = 180;
+const SIZE_BASE = 180;
+const TILE_COUNT = 32;
+const PLACE_TRIES = 40;
+const GUTTER = SIZE_BASE * (24 / 1440);
 const MAX_VELOCITY = 3.2;
-const DEPTH_FADE_START = 140;
-const DEPTH_FADE_END = 260;
-const INVIS_THRESHOLD = 0.01;
 const VELOCITY_LERP = 0.16;
-const VELOCITY_DECAY = 0.9;
-const INITIAL_CAMERA_Z = 50;
-const PLANE_SCALE = 2;
-const ITEMS_PER_CHUNK = 2;
-const Z_SCATTER = 22;
-const MAX_PLANE_CACHE = 256;
+const VELOCITY_DECAY = 0.94;
+const GRAB_EASE_MS = 280;
+const PARALLAX_MIN = 0.82;
+const PARALLAX_FOLLOW = 0.03;
+const DRIFT_AMOUNT = 8;
+const DRIFT_LERP = 0.12;
 const DRAG_CLICK_PX = 8;
+const WHEEL_GAIN = 0.006;
 const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
-const CHUNK_OFFSETS = [];
+const SIZE_CLASSES = [
+  { frac: 0.11, weight: 2 },
+  { frac: 0.16, weight: 4 },
+  { frac: 0.21, weight: 3 },
+  { frac: 0.26, weight: 1 },
+];
+
+const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
+const SIZE_FRAC_MIN = SIZE_CLASSES[0].frac;
+const SIZE_FRAC_MAX = SIZE_CLASSES[SIZE_CLASSES.length - 1].frac;
+
+const PERIOD_OFFSETS = [];
 {
-  const maxDist = RENDER_DISTANCE + CHUNK_FADE_MARGIN;
-  for (let dx = -maxDist; dx <= maxDist; dx++) {
-    for (let dy = -maxDist; dy <= maxDist; dy++) {
-      for (let dz = -maxDist; dz <= maxDist; dz++) {
-        const dist = Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz));
-        if (dist > maxDist) continue;
-        CHUNK_OFFSETS.push({ dx, dy, dz, dist });
-      }
+  for (let ox = -1; ox <= 1; ox++) {
+    for (let oy = -1; oy <= 1; oy++) {
+      PERIOD_OFFSETS.push({ ox, oy });
     }
   }
 }
@@ -61,6 +78,13 @@ function clamp(v, min, max) {
 /** lerp(a, b, t) -> mix */
 function lerp(a, b, t) {
   return a + (b - a) * t;
+}
+
+function wrapDelta(d, period) {
+  let r = d % period;
+  if (r > period / 2) r -= period;
+  if (r < -period / 2) r += period;
+  return r;
 }
 
 /** hashString(str) -> integer seed */
@@ -78,58 +102,93 @@ function seededRandom(seed) {
   return x - Math.floor(x);
 }
 
-/** generateChunkPlanes(cx, cy, cz) -> plane layouts for one chunk */
-function generateChunkPlanes(cx, cy, cz) {
-  const planes = [];
-  const seed = hashString(`${cx},${cy},${cz}`);
-  for (let i = 0; i < ITEMS_PER_CHUNK; i++) {
-    const s = seed + i * 1000;
-    const r = (n) => seededRandom(s + n);
-    const size = (12 + r(4) * 8) * PLANE_SCALE;
-    planes.push({
-      id: `${cx}-${cy}-${cz}-${i}`,
-      x: cx * CHUNK_SIZE + r(0) * CHUNK_SIZE,
-      y: cy * CHUNK_SIZE + r(1) * CHUNK_SIZE,
-      z: cz * CHUNK_SIZE + CHUNK_SIZE / 2 + (r(2) - 0.5) * Z_SCATTER,
-      size,
-      mediaIndex: Math.floor(r(5) * 1_000_000),
-      chunkCx: cx,
-      chunkCy: cy,
-      chunkCz: cz,
-    });
-  }
-  return planes;
+/** makeRng(seed) -> (n) -> 0..1 */
+function makeRng(seed) {
+  let s = seed + 1;
+  return (n) => {
+    s += 1 + (n || 0);
+    return seededRandom(s);
+  };
 }
 
-const planeCache = new Map();
-
-function generateChunkPlanesCached(cx, cy, cz) {
-  const key = `${cx},${cy},${cz}`;
-  const cached = planeCache.get(key);
-  if (cached) {
-    planeCache.delete(key);
-    planeCache.set(key, cached);
-    return cached;
+/** pickSizeClass(rand) -> class width / SIZE_BASE */
+function pickSizeClass(rand) {
+  let t = rand() * SIZE_WEIGHT_SUM;
+  for (let i = 0; i < SIZE_CLASSES.length; i++) {
+    t -= SIZE_CLASSES[i].weight;
+    if (t <= 0) return SIZE_CLASSES[i].frac;
   }
-  const planes = generateChunkPlanes(cx, cy, cz);
-  planeCache.set(key, planes);
-  while (planeCache.size > MAX_PLANE_CACHE) {
-    const firstKey = planeCache.keys().next().value;
-    if (!firstKey) break;
-    planeCache.delete(firstKey);
-  }
-  return planes;
+  return SIZE_CLASSES[SIZE_CLASSES.length - 1].frac;
 }
 
-/** getChunkUpdateThrottleMs(isZooming, zoomSpeed) -> ms */
-function getChunkUpdateThrottleMs(isZooming, zoomSpeed) {
-  if (zoomSpeed > 1.0) return 500;
-  if (isZooming) return 400;
-  return 100;
+/** aabbOverlap(a, b) -> torus boxes collide (with gutter) */
+function aabbOverlap(a, b) {
+  const dx = Math.abs(wrapDelta(a.x - b.x, PERIOD_W));
+  const dy = Math.abs(wrapDelta(a.y - b.y, PERIOD_H));
+  return dx < a.w / 2 + b.w / 2 + GUTTER && dy < a.h / 2 + b.h / 2 + GUTTER;
 }
 
-function shouldThrottleUpdate(lastUpdateTime, throttleMs, currentTime) {
-  return currentTime - lastUpdateTime >= throttleMs;
+/** isNearby(a, b) -> tiles close enough to ban the same image */
+function isNearby(a, b) {
+  const dx = Math.abs(wrapDelta(a.x - b.x, PERIOD_W));
+  const dy = Math.abs(wrapDelta(a.y - b.y, PERIOD_H));
+  return (
+    dx < a.w / 2 + b.w / 2 + GUTTER + Math.min(a.w, b.w) / 2 &&
+    dy < a.h / 2 + b.h / 2 + GUTTER + Math.min(a.h, b.h) / 2
+  );
+}
+
+/** pickMediaIndex(tile, tiles, n, rand) -> image index */
+function pickMediaIndex(tile, tiles, n, rand) {
+  if (n <= 0) return 0;
+  if (n < 3) return Math.floor(rand() * n);
+  const banned = new Set();
+  for (let t = 0; t < tiles.length; t++) {
+    if (isNearby(tile, tiles[t])) banned.add(tiles[t].mediaIndex);
+  }
+  const order = [];
+  for (let i = 0; i < n; i++) order.push(i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = order[i];
+    order[i] = order[j];
+    order[j] = tmp;
+  }
+  for (let i = 0; i < order.length; i++) {
+    if (!banned.has(order[i])) return order[i];
+  }
+  return order[0];
+}
+
+/** buildPeriod(srcs) -> tiles for one wrapping poster */
+function buildPeriod(srcs) {
+  const n = srcs.length;
+  const rand = makeRng(hashString(srcs.slice().sort().join("|")));
+  const maxW = PERIOD_W - GUTTER;
+  const maxH = PERIOD_H - GUTTER;
+  const tiles = [];
+  for (let i = 0; i < TILE_COUNT; i++) {
+    const classW = pickSizeClass(rand) * SIZE_BASE;
+    const w = Math.min(classW, maxW);
+    const h = Math.min(w, maxH);
+    const tile = { x: 0, y: 0, w, h, mediaIndex: 0 };
+    let hits = true;
+    for (let attempt = 0; attempt < PLACE_TRIES && hits; attempt++) {
+      tile.x = rand() * PERIOD_W;
+      tile.y = rand() * PERIOD_H;
+      hits = false;
+      for (let t = 0; t < tiles.length; t++) {
+        if (aabbOverlap(tiles[t], tile)) {
+          hits = true;
+          break;
+        }
+      }
+    }
+    if (hits) continue;
+    tile.mediaIndex = pickMediaIndex(tile, tiles, n, rand);
+    tiles.push(tile);
+  }
+  return tiles;
 }
 
 /** readGallerySrcs(list) -> img srcs in DOM order, skip empty/placeholder */
@@ -157,12 +216,8 @@ let pointerNdc = null;
 let planeGeometry = null;
 let textureLoader = null;
 let textureCache = null;
-let chunkGroups = null;
 let planeMeshes = null;
 let controller = null;
-let lastChunkKey = "";
-let lastChunkUpdate = 0;
-let pendingChunk = null;
 let reduceMotion = false;
 let finePointer = false;
 let isTouchDevice = false;
@@ -208,15 +263,23 @@ function getTexture(url) {
 }
 
 function fitPlaneScale(mesh, texture) {
+  const maxW = mesh.userData.w;
+  const maxH = mesh.userData.h;
   const img = texture && texture.image;
   const width = img && (img.naturalWidth || img.width);
   const height = img && (img.naturalHeight || img.height);
-  const size = mesh.userData.size;
   if (width && height) {
-    mesh.scale.set(size * (width / height), size, 1);
+    const aspect = width / height;
+    let w = maxW;
+    let h = w / aspect;
+    if (h > maxH) {
+      h = maxH;
+      w = h * aspect;
+    }
+    mesh.scale.set(w, h, 1);
     return;
   }
-  mesh.scale.set(size, size, 1);
+  mesh.scale.set(maxW, maxH, 1);
 }
 
 /** applyModeTextures() -> swap maps from body.dark-mode */
@@ -239,125 +302,51 @@ function preloadTextures() {
   darkSrcs.forEach(getTexture);
 }
 
-function makePlaneMesh(plane) {
+function makePlaneMesh(tile, ox, oy) {
   const material = new THREE.MeshBasicMaterial({
     transparent: true,
-    opacity: 0,
-    side: THREE.DoubleSide,
+    opacity: 1,
     depthWrite: false,
+    side: THREE.DoubleSide,
   });
   const mesh = new THREE.Mesh(planeGeometry, material);
-  mesh.position.set(plane.x, plane.y, plane.z);
-  mesh.visible = false;
-  mesh.userData.size = plane.size;
-  mesh.userData.mediaIndex = plane.mediaIndex;
-  mesh.userData.chunkCx = plane.chunkCx;
-  mesh.userData.chunkCy = plane.chunkCy;
-  mesh.userData.chunkCz = plane.chunkCz;
-  mesh.userData.opacity = 0;
-  mesh.userData.frame = 0;
+  mesh.position.set(tile.x + ox * PERIOD_W, tile.y + oy * PERIOD_H, 0);
+  mesh.renderOrder = Math.round(tile.w * 10);
+  mesh.visible = true;
+  mesh.userData.tileX = tile.x;
+  mesh.userData.tileY = tile.y;
+  mesh.userData.ox = ox;
+  mesh.userData.oy = oy;
+  mesh.userData.w = tile.w;
+  mesh.userData.h = tile.h;
+  mesh.userData.mediaIndex = tile.mediaIndex;
   fitPlaneScale(mesh, null);
   planeMeshes.push(mesh);
   return mesh;
 }
 
-function disposeChunkGroup(group) {
-  group.traverse((obj) => {
-    if (obj.isMesh) {
-      const i = planeMeshes.indexOf(obj);
-      if (i >= 0) planeMeshes.splice(i, 1);
-      if (obj.material) obj.material.dispose();
-    }
-  });
-  scene.remove(group);
-}
-
-function syncChunks(cx, cy, cz) {
-  const next = new Map();
-  CHUNK_OFFSETS.forEach((o) => {
-    const key = `${cx + o.dx},${cy + o.dy},${cz + o.dz}`;
-    next.set(key, {
-      cx: cx + o.dx,
-      cy: cy + o.dy,
-      cz: cz + o.dz,
+function mountPeriod() {
+  planeMeshes = [];
+  const tiles = buildPeriod(lightSrcs);
+  PERIOD_OFFSETS.forEach((o) => {
+    tiles.forEach((tile) => {
+      scene.add(makePlaneMesh(tile, o.ox, o.oy));
     });
-  });
-  chunkGroups.forEach((group, key) => {
-    if (!next.has(key)) {
-      disposeChunkGroup(group);
-      chunkGroups.delete(key);
-    }
-  });
-  next.forEach((chunk, key) => {
-    if (chunkGroups.has(key)) return;
-    const group = new THREE.Group();
-    generateChunkPlanesCached(chunk.cx, chunk.cy, chunk.cz).forEach((plane) => {
-      group.add(makePlaneMesh(plane));
-    });
-    scene.add(group);
-    chunkGroups.set(key, group);
   });
   applyModeTextures();
-}
-
-function fadePlanes() {
-  const cam = camera.position;
-  const cx = Math.floor(controller.basePos.x / CHUNK_SIZE);
-  const cy = Math.floor(controller.basePos.y / CHUNK_SIZE);
-  const cz = Math.floor(controller.basePos.z / CHUNK_SIZE);
-  planeMeshes.forEach((mesh) => {
-    const state = mesh.userData;
-    const material = mesh.material;
-    state.frame = (state.frame + 1) & 1;
-    if (state.opacity < INVIS_THRESHOLD && !mesh.visible && state.frame === 0) {
-      return;
-    }
-    const dist = Math.max(
-      Math.abs(state.chunkCx - cx),
-      Math.abs(state.chunkCy - cy),
-      Math.abs(state.chunkCz - cz),
-    );
-    const absDepth = Math.abs(mesh.position.z - controller.basePos.z);
-    if (absDepth > DEPTH_FADE_END + 50) {
-      state.opacity = 0;
-      material.opacity = 0;
-      material.depthWrite = false;
-      mesh.visible = false;
-      return;
-    }
-    const gridFade =
-      dist <= RENDER_DISTANCE
-        ? 1
-        : Math.max(
-            0,
-            1 - (dist - RENDER_DISTANCE) / Math.max(CHUNK_FADE_MARGIN, 0.0001),
-          );
-    const depthFade =
-      absDepth <= DEPTH_FADE_START
-        ? 1
-        : Math.max(
-            0,
-            1 -
-              (absDepth - DEPTH_FADE_START) /
-                Math.max(DEPTH_FADE_END - DEPTH_FADE_START, 0.0001),
-          );
-    const target = Math.min(gridFade, depthFade * depthFade);
-    state.opacity =
-      target < INVIS_THRESHOLD && state.opacity < INVIS_THRESHOLD
-        ? 0
-        : lerp(state.opacity, target, 0.18);
-    const isFullyOpaque = state.opacity > 0.99;
-    material.opacity = isFullyOpaque ? 1 : state.opacity;
-    material.depthWrite = isFullyOpaque;
-    mesh.visible = state.opacity > INVIS_THRESHOLD;
-  });
 }
 
 function resizeRenderer() {
   if (!galleryHost || !renderer || !camera) return;
   const width = galleryHost.clientWidth || 1;
   const height = galleryHost.clientHeight || 1;
-  camera.aspect = width / height;
+  const aspect = width / height;
+  const halfH = VIEW_H / 2;
+  const halfW = halfH * aspect;
+  camera.left = -halfW;
+  camera.right = halfW;
+  camera.top = halfH;
+  camera.bottom = -halfH;
   camera.updateProjectionMatrix();
   const dpr = Math.min(
     window.devicePixelRatio || 1,
@@ -365,15 +354,6 @@ function resizeRenderer() {
   );
   renderer.setPixelRatio(dpr);
   renderer.setSize(width, height, false);
-}
-
-function getTouchDistance(touches) {
-  if (touches.length < 2) return 0;
-  const t1 = touches[0];
-  const t2 = touches[1];
-  const dx = t1.clientX - t2.clientX;
-  const dy = t1.clientY - t2.clientY;
-  return Math.sqrt(dx * dx + dy * dy);
 }
 
 function pointerFromEvent(event) {
@@ -404,35 +384,96 @@ function setCursorLabel(hit) {
   galleryCanvas.setAttribute("custom-cursor", "");
 }
 
+/** grabGain(s, now) -> 0..1 ease-in-out on grab */
+function grabGain(s, now) {
+  if (reduceMotion) return 1;
+  const t = clamp((now - s.grabStart) / GRAB_EASE_MS, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+/** setMouseNdc(event) -> cursor in host as -1..1 */
+function setMouseNdc(event) {
+  if (!galleryHost || !controller) return;
+  const s = controller;
+  const rect = galleryHost.getBoundingClientRect();
+  const inside =
+    event.clientX >= rect.left &&
+    event.clientX <= rect.right &&
+    event.clientY >= rect.top &&
+    event.clientY <= rect.bottom;
+  if (!inside) {
+    s.mouse.x = 0;
+    s.mouse.y = 0;
+    return;
+  }
+  const w = rect.width || 1;
+  const h = rect.height || 1;
+  s.mouse.x = ((event.clientX - rect.left) / w) * 2 - 1;
+  s.mouse.y = -((event.clientY - rect.top) / h) * 2 + 1;
+}
+
+/** parallaxFactor(w) -> PARALLAX_MIN..1 from tile size */
+function parallaxFactor(w) {
+  if (reduceMotion) return 1;
+  const t = clamp(
+    (w / SIZE_BASE - SIZE_FRAC_MIN) / (SIZE_FRAC_MAX - SIZE_FRAC_MIN),
+    0,
+    1,
+  );
+  return PARALLAX_MIN + t * (1 - PARALLAX_MIN);
+}
+
+/** placeCopies() -> mesh positions around camera with follow lag */
+function placeCopies() {
+  if (!planeMeshes || !controller) return;
+  const s = controller;
+  const slipX = s.basePos.x - s.followPos.x;
+  const slipY = s.basePos.y - s.followPos.y;
+  for (let i = 0; i < planeMeshes.length; i++) {
+    const mesh = planeMeshes[i];
+    const d = mesh.userData;
+    const p = parallaxFactor(d.w);
+    const worldX = d.tileX;
+    const worldY = d.tileY;
+    const cx = Math.round((s.basePos.x - worldX) / PERIOD_W);
+    const cy = Math.round((s.basePos.y - worldY) / PERIOD_H);
+    const slip = 1 - p;
+    mesh.position.set(
+      worldX + (cx + d.ox) * PERIOD_W + slipX * slip,
+      worldY + (cy + d.oy) * PERIOD_H + slipY * slip,
+      0,
+    );
+  }
+}
+
 function onPointerDown(event) {
   if (event.pointerType === "mouse" && event.button !== 0) return;
-  controller.isDragging = true;
-  controller.pointerId = event.pointerId;
-  controller.lastMouse.x = event.clientX;
-  controller.lastMouse.y = event.clientY;
-  controller.press.x = event.clientX;
-  controller.press.y = event.clientY;
-  controller.moved = 0;
-  controller.clickCanceled = false;
+  const s = controller;
+  s.isDragging = true;
+  s.pointerId = event.pointerId;
+  s.lastMouse.x = event.clientX;
+  s.lastMouse.y = event.clientY;
+  s.press.x = event.clientX;
+  s.press.y = event.clientY;
+  s.moved = 0;
+  s.clickCanceled = false;
+  s.grabStart = event.timeStamp;
   galleryCanvas.style.cursor = "grabbing";
 }
 
 function onPointerMove(event) {
   const s = controller;
-  s.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  s.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  setMouseNdc(event);
   if (s.isDragging && event.pointerId === s.pointerId) {
     const dx = event.clientX - s.lastMouse.x;
     const dy = event.clientY - s.lastMouse.y;
     s.moved = Math.hypot(event.clientX - s.press.x, event.clientY - s.press.y);
     if (s.moved >= DRAG_CLICK_PX) s.clickCanceled = true;
-    if (event.pointerType === "touch") {
-      s.targetVel.x -= dx * 0.02;
-      s.targetVel.y += dy * 0.02;
-    } else {
-      s.targetVel.x -= dx * 0.025;
-      s.targetVel.y += dy * 0.025;
-    }
+    const gain =
+      (event.pointerType === "touch" ? 0.02 : 0.025) *
+      grabGain(s, event.timeStamp);
+    s.targetVel.x -= dx * gain;
+    s.targetVel.y += dy * gain;
     s.lastMouse.x = event.clientX;
     s.lastMouse.y = event.clientY;
   }
@@ -454,94 +495,56 @@ function onPointerUp(event) {
 
 function onWheel(event) {
   event.preventDefault();
-  controller.scrollAccum += event.deltaY * 0.006;
+  if (!controller) return;
+  const s = controller;
+  s.targetVel.x -= event.deltaX * WHEEL_GAIN;
+  s.targetVel.y += event.deltaY * WHEEL_GAIN;
 }
 
 function onTouchMove(event) {
   event.preventDefault();
-  const s = controller;
-  const touches = Array.from(event.touches);
-  if (touches.length === 2) {
-    const dist = getTouchDistance(touches);
-    if (s.lastTouchDist > 0) {
-      s.scrollAccum += (s.lastTouchDist - dist) * 0.006;
-      s.clickCanceled = true;
-    }
-    s.lastTouchDist = dist;
-  } else {
-    s.lastTouchDist = 0;
-  }
 }
 
-function tick(now) {
+function tick() {
   rafId = requestAnimationFrame(tick);
   const s = controller;
   reduceMotion = prefersReducedMotion();
-  const isZooming = Math.abs(s.velocity.z) > 0.05;
-  const zoomFactor = clamp(s.basePos.z / 50, 0.3, 2.0);
-  const driftAmount = 8.0 * zoomFactor;
-  const driftLerp = isZooming ? 0.2 : 0.12;
 
-  if (!s.isDragging) {
-    if (isTouchDevice) {
-      s.drift.x = lerp(s.drift.x, 0, driftLerp);
-      s.drift.y = lerp(s.drift.y, 0, driftLerp);
-    } else {
-      s.drift.x = lerp(s.drift.x, s.mouse.x * driftAmount, driftLerp);
-      s.drift.y = lerp(s.drift.y, s.mouse.y * driftAmount, driftLerp);
-    }
-  }
-
-  s.targetVel.z += s.scrollAccum;
-  s.scrollAccum *= 0.8;
   s.targetVel.x = clamp(s.targetVel.x, -MAX_VELOCITY, MAX_VELOCITY);
   s.targetVel.y = clamp(s.targetVel.y, -MAX_VELOCITY, MAX_VELOCITY);
-  s.targetVel.z = clamp(s.targetVel.z, -MAX_VELOCITY, MAX_VELOCITY);
 
   if (reduceMotion) {
     s.basePos.x += s.targetVel.x;
     s.basePos.y += s.targetVel.y;
-    s.basePos.z += s.targetVel.z;
     s.velocity.x = 0;
     s.velocity.y = 0;
-    s.velocity.z = 0;
     s.targetVel.x = 0;
     s.targetVel.y = 0;
-    s.targetVel.z = 0;
+    s.drift.x = 0;
+    s.drift.y = 0;
+    s.followPos.x = s.basePos.x;
+    s.followPos.y = s.basePos.y;
   } else {
     s.velocity.x = lerp(s.velocity.x, s.targetVel.x, VELOCITY_LERP);
     s.velocity.y = lerp(s.velocity.y, s.targetVel.y, VELOCITY_LERP);
-    s.velocity.z = lerp(s.velocity.z, s.targetVel.z, VELOCITY_LERP);
     s.basePos.x += s.velocity.x;
     s.basePos.y += s.velocity.y;
-    s.basePos.z += s.velocity.z;
     s.targetVel.x *= VELOCITY_DECAY;
     s.targetVel.y *= VELOCITY_DECAY;
-    s.targetVel.z *= VELOCITY_DECAY;
+    s.followPos.x = lerp(s.followPos.x, s.basePos.x, PARALLAX_FOLLOW);
+    s.followPos.y = lerp(s.followPos.y, s.basePos.y, PARALLAX_FOLLOW);
+    if (!isTouchDevice) {
+      s.drift.x = lerp(s.drift.x, s.mouse.x * DRIFT_AMOUNT, DRIFT_LERP);
+      s.drift.y = lerp(s.drift.y, s.mouse.y * DRIFT_AMOUNT, DRIFT_LERP);
+    } else {
+      s.drift.x = lerp(s.drift.x, 0, DRIFT_LERP);
+      s.drift.y = lerp(s.drift.y, 0, DRIFT_LERP);
+    }
   }
 
-  camera.position.set(
-    s.basePos.x + s.drift.x,
-    s.basePos.y + s.drift.y,
-    s.basePos.z,
-  );
+  camera.position.set(s.basePos.x + s.drift.x, s.basePos.y + s.drift.y, 10);
+  placeCopies();
 
-  const cx = Math.floor(s.basePos.x / CHUNK_SIZE);
-  const cy = Math.floor(s.basePos.y / CHUNK_SIZE);
-  const cz = Math.floor(s.basePos.z / CHUNK_SIZE);
-  const key = `${cx},${cy},${cz}`;
-  if (key !== lastChunkKey) {
-    pendingChunk = { cx, cy, cz };
-    lastChunkKey = key;
-  }
-  const throttleMs = getChunkUpdateThrottleMs(isZooming, Math.abs(s.velocity.z));
-  if (pendingChunk && shouldThrottleUpdate(lastChunkUpdate, throttleMs, now)) {
-    syncChunks(pendingChunk.cx, pendingChunk.cy, pendingChunk.cz);
-    pendingChunk = null;
-    lastChunkUpdate = now;
-  }
-
-  fadePlanes();
   renderer.render(scene, camera);
 }
 
@@ -565,8 +568,8 @@ function mountScene(host) {
   reduceMotion = prefersReducedMotion();
 
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(60, 1, 1, 500);
-  camera.position.set(0, 0, INITIAL_CAMERA_Z);
+  camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+  camera.position.set(PERIOD_W / 2, PERIOD_H / 2, 10);
   renderer = new THREE.WebGLRenderer({
     antialias: false,
     alpha: true,
@@ -583,39 +586,35 @@ function mountScene(host) {
   textureLoader = new THREE.TextureLoader();
   textureLoader.crossOrigin = "anonymous";
   textureCache = new Map();
-  chunkGroups = new Map();
-  planeMeshes = [];
   controller = {
-    velocity: { x: 0, y: 0, z: 0 },
-    targetVel: { x: 0, y: 0, z: 0 },
-    basePos: { x: 0, y: 0, z: INITIAL_CAMERA_Z },
+    velocity: { x: 0, y: 0 },
+    targetVel: { x: 0, y: 0 },
+    basePos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
+    followPos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
     drift: { x: 0, y: 0 },
     mouse: { x: 0, y: 0 },
     lastMouse: { x: 0, y: 0 },
     press: { x: 0, y: 0 },
-    scrollAccum: 0,
     isDragging: false,
     pointerId: null,
     moved: 0,
     clickCanceled: false,
-    lastTouches: [],
-    lastTouchDist: 0,
+    grabStart: 0,
   };
 
   preloadTextures();
-  lastChunkKey = "";
-  lastChunkUpdate = 0;
-  pendingChunk = null;
-  syncChunks(0, 0, Math.floor(INITIAL_CAMERA_Z / CHUNK_SIZE));
+  mountPeriod();
   resizeRenderer();
 
   galleryCanvas.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointermove", onPointerMove);
   window.addEventListener("pointerup", onPointerUp);
   galleryCanvas.addEventListener("wheel", onWheel, { passive: false });
-  galleryCanvas.addEventListener("touchstart", (event) => event.preventDefault(), {
-    passive: false,
-  });
+  galleryCanvas.addEventListener(
+    "touchstart",
+    (event) => event.preventDefault(),
+    { passive: false },
+  );
   galleryCanvas.addEventListener("touchmove", onTouchMove, { passive: false });
   window.addEventListener("resize", resizeRenderer);
   if (window.ResizeObserver) {
