@@ -2,8 +2,10 @@
  * shop.js — Shop page (/shop).
  * shopList — the Shop Collection List (not merch)
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
- * cloneGalleryThumbs — duplicate original thumbs after hydrate for gallery loop; eager-decode clone imgs
+ * cloneGalleryThumbs — duplicate original thumbs after hydrate for gallery loop
  * thumbImages — all shop thumb <img> (originals + clones)
+ * eagerThumbImages — loading=eager on every thumb img so below-fold originals actually fetch
+ * whenImageReady — decode if complete; else load/error, recheck complete to not miss the event
  * whenThumbsReady — resolve once every thumb image is decoded
  * galleryReady — blocks wrap until first real measure lands
  * loopHeight — first clone getBoundingClientRect.top minus first original
@@ -49,10 +51,6 @@ function cloneGalleryThumbs() {
     clone.classList.add("is-clone");
     clone.setAttribute("aria-hidden", "true");
     clone.querySelectorAll("a").forEach((a) => a.setAttribute("tabindex", "-1"));
-    clone.querySelectorAll("img").forEach((img) => {
-      img.loading = "eager";
-      img.decode().catch(() => {});
-    });
     el.parentNode.appendChild(clone);
   });
 }
@@ -63,16 +61,28 @@ function thumbImages() {
   return list ? [...list.querySelectorAll(".product-thumb img")] : [];
 }
 
+/** eagerThumbImages — loading=eager on every thumb img so below-fold originals actually fetch */
+function eagerThumbImages() {
+  thumbImages().forEach((img) => {
+    img.loading = "eager";
+  });
+}
+
+/** whenImageReady — decode if complete; else load/error, recheck complete to not miss the event */
+function whenImageReady(img) {
+  const decode = () => img.decode().catch(() => {});
+  if (img.complete) return decode();
+  return new Promise((r) => {
+    const done = () => decode().then(r, r);
+    img.addEventListener("load", done, { once: true });
+    img.addEventListener("error", r, { once: true });
+    if (img.complete) done();
+  });
+}
+
 /** whenThumbsReady — resolve once every thumb image is decoded */
 function whenThumbsReady() {
-  return Promise.all(
-    thumbImages().map((img) =>
-      img.complete ? img.decode().catch(() => {}) : new Promise((r) => {
-        img.addEventListener("load", r, { once: true });
-        img.addEventListener("error", r, { once: true });
-      })
-    )
-  );
+  return Promise.all(thumbImages().map(whenImageReady));
 }
 
 /** loopHeight — first clone getBoundingClientRect.top minus first original */
@@ -102,16 +112,14 @@ function jumpScrollY(y) {
 function onGalleryScroll() {
   const list = shopList();
   if (!list?.classList.contains("is-gallery")) return;
-  if (!galleryReady) return;
   const h = galleryLoopHeight;
-  if (h <= 0) return;
-  if (window.scrollY >= h) {
+  if (galleryReady && h > 0 && window.scrollY >= h) {
     document.documentElement.style.overflowAnchor = "none";
     jumpScrollY(window.scrollY - h);
     document.documentElement.style.overflowAnchor = "";
   }
   const counter = document.getElementById("gallery-scroll-counter");
-  if (counter) {
+  if (counter && h > 0) {
     const pct = Math.min(99, Math.max(0, Math.floor((window.scrollY / h) * 100)));
     counter.textContent = String(pct).padStart(2, "0");
   }
@@ -150,6 +158,7 @@ function syncActive() {
 
 hydrateThumbs();
 cloneGalleryThumbs();
+eagerThumbImages();
 syncActive();
 
 whenThumbsReady().then(() => {
