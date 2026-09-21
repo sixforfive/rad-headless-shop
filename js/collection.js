@@ -24,7 +24,7 @@
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1
  * parallaxFactor(w) -> PARALLAX_MIN..1 from tile size
- * placeCopies() -> mesh positions around camera with size lag
+ * placeCopies() -> mesh positions around camera with velocity lag
  * ============================================================================
  */
 
@@ -42,6 +42,7 @@ const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.94;
 const GRAB_EASE_MS = 280;
 const PARALLAX_MIN = 0.88;
+const PARALLAX_LAG = 24;
 const DRIFT_AMOUNT = 8;
 const DRIFT_LERP = 0.12;
 const DRAG_CLICK_PX = 8;
@@ -430,13 +431,14 @@ function placeCopies() {
     const mesh = planeMeshes[i];
     const d = mesh.userData;
     const p = parallaxFactor(d.w);
-    const worldX = d.tileX + (1 - p) * s.basePos.x;
-    const worldY = d.tileY + (1 - p) * s.basePos.y;
+    const worldX = d.tileX;
+    const worldY = d.tileY;
     const cx = Math.round((s.basePos.x - worldX) / PERIOD_W);
     const cy = Math.round((s.basePos.y - worldY) / PERIOD_H);
+    const lag = (1 - p) * PARALLAX_LAG;
     mesh.position.set(
-      worldX + (cx + d.ox) * PERIOD_W,
-      worldY + (cy + d.oy) * PERIOD_H,
+      worldX + (cx + d.ox) * PERIOD_W + lag * s.velocity.x,
+      worldY + (cy + d.oy) * PERIOD_H + lag * s.velocity.y,
       0,
     );
   }
@@ -523,10 +525,8 @@ function tick() {
     s.velocity.y = lerp(s.velocity.y, s.targetVel.y, VELOCITY_LERP);
     s.basePos.x += s.velocity.x;
     s.basePos.y += s.velocity.y;
-    if (!s.isDragging) {
-      s.targetVel.x *= VELOCITY_DECAY;
-      s.targetVel.y *= VELOCITY_DECAY;
-    }
+    s.targetVel.x *= VELOCITY_DECAY;
+    s.targetVel.y *= VELOCITY_DECAY;
     if (!isTouchDevice) {
       s.drift.x = lerp(s.drift.x, s.mouse.x * DRIFT_AMOUNT, DRIFT_LERP);
       s.drift.y = lerp(s.drift.y, s.mouse.y * DRIFT_AMOUNT, DRIFT_LERP);
