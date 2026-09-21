@@ -24,7 +24,7 @@
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1
  * parallaxFactor(w) -> class p (S 0.78 .. XL 1)
- * placeCopies() -> mesh positions around camera with velocity lag
+ * placeCopies() -> mesh positions around camera with clamped follow lag
  * ============================================================================
  */
 
@@ -34,14 +34,15 @@ const VIEW_H = 90;
 const PERIOD_W = 320;
 const PERIOD_H = 180;
 const SIZE_BASE = 180;
-const TILE_COUNT = 32;
+const TILE_COUNT = 24;
 const PLACE_TRIES = 40;
-const GUTTER = SIZE_BASE * (24 / 1440);
+const GUTTER = SIZE_BASE * (80 / 1440);
 const MAX_VELOCITY = 3.2;
 const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.94;
 const GRAB_EASE_MS = 280;
-const PARALLAX_LAG = 16;
+const PARALLAX_FOLLOW = 0.08;
+const MAX_SLIP = 28;
 const DRIFT_AMOUNT = 8;
 const DRIFT_LERP = 0.12;
 const DRAG_CLICK_PX = 8;
@@ -425,12 +426,12 @@ function parallaxFactor(w) {
   return best.p;
 }
 
-/** placeCopies() -> mesh positions around camera with velocity lag */
+/** placeCopies() -> mesh positions around camera with clamped follow lag */
 function placeCopies() {
   if (!planeMeshes || !controller) return;
   const s = controller;
-  const slipX = s.velocity.x * PARALLAX_LAG;
-  const slipY = s.velocity.y * PARALLAX_LAG;
+  const slipX = clamp(s.basePos.x - s.followPos.x, -MAX_SLIP, MAX_SLIP);
+  const slipY = clamp(s.basePos.y - s.followPos.y, -MAX_SLIP, MAX_SLIP);
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
     const d = mesh.userData;
@@ -524,6 +525,8 @@ function tick() {
     s.targetVel.y = 0;
     s.drift.x = 0;
     s.drift.y = 0;
+    s.followPos.x = s.basePos.x;
+    s.followPos.y = s.basePos.y;
   } else {
     s.velocity.x = lerp(s.velocity.x, s.targetVel.x, VELOCITY_LERP);
     s.velocity.y = lerp(s.velocity.y, s.targetVel.y, VELOCITY_LERP);
@@ -531,6 +534,8 @@ function tick() {
     s.basePos.y += s.velocity.y;
     s.targetVel.x *= VELOCITY_DECAY;
     s.targetVel.y *= VELOCITY_DECAY;
+    s.followPos.x = lerp(s.followPos.x, s.basePos.x, PARALLAX_FOLLOW);
+    s.followPos.y = lerp(s.followPos.y, s.basePos.y, PARALLAX_FOLLOW);
     if (!isTouchDevice) {
       s.drift.x = lerp(s.drift.x, s.mouse.x * DRIFT_AMOUNT, DRIFT_LERP);
       s.drift.y = lerp(s.drift.y, s.mouse.y * DRIFT_AMOUNT, DRIFT_LERP);
@@ -588,6 +593,7 @@ function mountScene(host) {
     velocity: { x: 0, y: 0 },
     targetVel: { x: 0, y: 0 },
     basePos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
+    followPos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
     drift: { x: 0, y: 0 },
     mouse: { x: 0, y: 0 },
     lastMouse: { x: 0, y: 0 },

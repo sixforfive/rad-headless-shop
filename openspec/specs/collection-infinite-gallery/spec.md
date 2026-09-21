@@ -17,17 +17,17 @@ The wrapping period SHALL be larger than the visible frustum. Tile world sizes S
 
 ### Requirement: Smaller tiles trail the pan
 
-While the viewpoint is moving, smaller tiles SHALL lag behind larger tiles. Each further size class (extra-large, large, medium, small) SHALL move a little slower than the class in front of it. After pan and coast settle, every tile SHALL sit in the unique packed arrangement (no lasting shear). The lag SHALL stay bounded so copies of the same photo do not drift into each other. Small tiles SHALL NOT keep extra chase-motion after the viewpoint has slowed or stopped.
+While the viewpoint is moving, smaller tiles SHALL lag behind larger tiles. Each further size class (extra-large, large, medium, small) SHALL move a little slower than the class in front of it. All sizes SHALL share one slip vector (same direction and clock). Lag SHALL stay inside the packed gutter so tiles do not slide through neighbors. After pan and coast settle, every tile SHALL sit in the unique packed arrangement (no lasting shear). Small tiles SHALL NOT jitter from pan-velocity noise.
 
 #### Scenario: Size lag during pan
 
 - **WHEN** the visitor drags the gallery
 - **THEN** smaller images trail larger ones in the pan direction, and each further size class moves a little slower than the one in front
 
-#### Scenario: No settle skate
+#### Scenario: Shared slip stays in gutter
 
-- **WHEN** the visitor releases a pan and coast is decaying or has ended
-- **THEN** small tiles do not keep extra independent motion beyond the current pan velocity
+- **WHEN** the visitor pans at any speed
+- **THEN** every size class offsets along the same slip vector, and that extra offset stays inside the gap between tiles
 
 #### Scenario: Unique packing at rest
 
@@ -50,9 +50,9 @@ When a fine pointer is inside `.collection-hero-gallery`, the viewpoint SHALL ea
 
 ### Requirement: Poster mosaic on a wrapping period
 
-The image space SHALL be one finite period that repeats on a torus: a tile leaving one edge SHALL enter from the opposite edge. The period SHALL be a seeded irregular field of about thirty-two tiles, not a regular cell grid. Tiles SHALL sit at random positions.
+The image space SHALL be one finite period that repeats on a torus: a tile leaving one edge SHALL enter from the opposite edge. The period SHALL be a seeded irregular field of about twenty-four tiles, not a regular cell grid. Tiles SHALL sit at random positions.
 
-Each tile SHALL show one image from `.hero-gallery-light` (dark list at the same DOM index). Size SHALL be one of four classes (small, medium, large, extra-large) with original aspect ratio. Classes SHALL sit in a band so extra-large is not much larger than small. Tiles SHALL NOT overlap. The gap between tiles SHALL be at least 24 CSS pixels at a 1440-wide host.
+Each tile SHALL show one image from `.hero-gallery-light` (dark list at the same DOM index). Size SHALL be one of four classes (small, medium, large, extra-large) with original aspect ratio. Classes SHALL sit in a band so extra-large is not much larger than small. Tiles SHALL NOT overlap. The gap between tiles SHALL be at least 80 CSS pixels at a 1440-wide host.
 
 Tiles close to each other, including across the period wrap, SHALL NOT show the same image when the light list has at least three images.
 
