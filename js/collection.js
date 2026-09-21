@@ -25,7 +25,7 @@
  * setMouseNdc(event) -> cursor in host as -1..1
  * parallaxFactor(w) -> class p (S 0.78 .. XL 1)
  * stepFollow(cur, target, vel) -> follow that cannot outrun the pan
- * placeCopies() -> mesh positions around camera with clamped follow lag
+ * placeCopies() -> mesh positions around camera; large tiles lead the pan
  * ============================================================================
  */
 
@@ -60,6 +60,7 @@ const SIZE_CLASSES = [
 ];
 
 const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
+const PARALLAX_P_MIN = SIZE_CLASSES[0].p;
 
 const PERIOD_OFFSETS = [];
 {
@@ -435,7 +436,7 @@ function parallaxFactor(w) {
   return best.p;
 }
 
-/** placeCopies() -> mesh positions around camera with clamped follow lag */
+/** placeCopies() -> mesh positions around camera; large tiles lead the pan */
 function placeCopies() {
   if (!planeMeshes || !controller) return;
   const s = controller;
@@ -449,10 +450,10 @@ function placeCopies() {
     const worldY = d.tileY;
     const cx = Math.round((s.basePos.x - worldX) / PERIOD_W);
     const cy = Math.round((s.basePos.y - worldY) / PERIOD_H);
-    const slip = 1 - p;
+    const lead = p - PARALLAX_P_MIN;
     mesh.position.set(
-      worldX + (cx + d.ox) * PERIOD_W + slipX * slip,
-      worldY + (cy + d.oy) * PERIOD_H + slipY * slip,
+      worldX + (cx + d.ox) * PERIOD_W - slipX * lead,
+      worldY + (cy + d.oy) * PERIOD_H - slipY * lead,
       0,
     );
   }
