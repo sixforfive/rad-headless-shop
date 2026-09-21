@@ -32,7 +32,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 const VIEW_H = 90;
 const PERIOD_W = 320;
 const PERIOD_H = 180;
-const SIZE_BASE = 160;
+const SIZE_BASE = 180;
 const TILE_COUNT = 32;
 const PLACE_TRIES = 40;
 const GUTTER = SIZE_BASE * (24 / 1440);
@@ -47,10 +47,10 @@ const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
 const SIZE_CLASSES = [
-  { frac: 0.12, weight: 2 },
+  { frac: 0.8, weight: 2 },
   { frac: 0.16, weight: 4 },
-  { frac: 0.2, weight: 3 },
-  { frac: 0.24, weight: 1 },
+  { frac: 0.24, weight: 3 },
+  { frac: 0.32, weight: 1 },
 ];
 
 const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
