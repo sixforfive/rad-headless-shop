@@ -10,7 +10,7 @@
  * parkThumbImages — full-size src copies clipped in the viewport so wrap does not refetch
  * galleryReady — blocks wrap until first real measure lands
  * loopHeight — first clone getBoundingClientRect.top minus first original
- * onGalleryScroll — wrap at two loop heights; write 00–99 to #gallery-scroll-counter
+ * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
  * setView — add/remove is-gallery on .product-list from data-view; jump to top when the view changes
  * syncActive — is-active on the switch button that matches the current view
@@ -139,15 +139,14 @@ function onGalleryScroll() {
   const list = shopList();
   if (!list?.classList.contains("is-gallery")) return;
   const h = galleryLoopHeight;
-  if (galleryReady && h > 0 && window.scrollY >= h * 2) {
+  if (galleryReady && h > 0 && window.scrollY >= h) {
     document.documentElement.style.overflowAnchor = "none";
     jumpScrollY(window.scrollY - h);
     document.documentElement.style.overflowAnchor = "";
   }
   const counter = document.getElementById("gallery-scroll-counter");
   if (counter && h > 0) {
-    const along = window.scrollY % h;
-    const pct = Math.min(99, Math.max(0, Math.floor((along / h) * 100)));
+    const pct = Math.min(99, Math.max(0, Math.floor((window.scrollY / h) * 100)));
     counter.textContent = String(pct).padStart(2, "0");
   }
 }
