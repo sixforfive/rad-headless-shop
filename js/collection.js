@@ -47,7 +47,7 @@ const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
 const SIZE_CLASSES = [
-  { frac: 0.8, weight: 2 },
+  { frac: 0.08, weight: 2 },
   { frac: 0.16, weight: 4 },
   { frac: 0.24, weight: 3 },
   { frac: 0.32, weight: 1 },
