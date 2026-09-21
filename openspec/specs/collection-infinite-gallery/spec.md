@@ -2,61 +2,52 @@
 
 ## Purpose
 
-Renders the Collection hero as a wrapping mosaic of CMS light and dark images that pans with inertia, bounded size lag, and cursor drift.
+Renders the Collection `/` hero as a wrapping mosaic of CMS light and dark images that pans with inertia, size-class parallax, and cursor drift.
 
 ## Requirements
 
-### Requirement: Period is larger than the viewport
+### Requirement: Canvas boots only on a gallery host with images
 
-The wrapping period SHALL be larger than the visible frustum. Tile world sizes SHALL NOT grow when the period grows. One viewport SHALL show a crop of the period, not the whole unique field.
+When `/` contains `.collection-hero-gallery` and `.hero-gallery-light` has at least one `.hero-gallery-img` whose `src` is a non-placeholder image, the site SHALL draw the mosaic inside `.collection-hero-gallery`.
 
-#### Scenario: Resize still crops
+When `.collection-hero-gallery` is absent, or the light list has no such image, the site SHALL NOT draw that canvas.
 
-- **WHEN** the visitor resizes the window while the gallery is showing
-- **THEN** tile sizes and relative arrangement stay the same; only how much of the period is visible changes
+`.hero-gallery-light` and `.hero-gallery-dark` SHALL keep class `is-none`. `.collection-hero-logo` SHALL remain visible above the canvas.
 
-### Requirement: Smaller tiles trail the pan
+The canvas SHALL be transparent. Gaps SHALL show `html`/`body` `background-color` (`--_theme---background--primary`).
 
-While the viewpoint is moving, smaller tiles SHALL lag behind larger tiles. Each further size class (extra-large, large, medium, small) SHALL move a little slower than the class in front of it. All sizes SHALL share one slip vector (same direction and clock). Lag SHALL stay inside the packed gutter so tiles do not slide through neighbors. After pan and coast settle, every tile SHALL sit in the unique packed arrangement (no lasting shear). Small tiles SHALL NOT jitter from pan-velocity noise.
+#### Scenario: Gallery format with images
 
-#### Scenario: Size lag during pan
+- **WHEN** Collection `/` loads and `.collection-hero-gallery` contains `.hero-gallery-img` nodes with real `src`
+- **THEN** the mosaic is drawn inside `.collection-hero-gallery`, the light and dark lists still have `is-none`, and `.collection-hero-logo` is visible
 
-- **WHEN** the visitor drags the gallery
-- **THEN** smaller images trail larger ones in the pan direction, and each further size class moves a little slower than the one in front
+#### Scenario: Photo or video format
 
-#### Scenario: Shared slip stays in gutter
+- **WHEN** Collection `/` loads without `.collection-hero-gallery`
+- **THEN** no infinite-gallery canvas is drawn
 
-- **WHEN** the visitor pans at any speed
-- **THEN** every size class offsets along the same slip vector, and that extra offset stays inside the gap between tiles
+#### Scenario: Empty gallery lists
 
-#### Scenario: Unique packing at rest
+- **WHEN** `.collection-hero-gallery` is present but has no `.hero-gallery-img` with a real `src`
+- **THEN** no infinite-gallery canvas is drawn
 
-- **WHEN** coast has ended and the pointer is not dragging
-- **THEN** tiles occupy the same unique packing as at load, with no extra overlap from lag
+#### Scenario: Light mode gaps
 
-### Requirement: Cursor nudges the viewpoint
+- **WHEN** the page is in light mode and the gallery canvas is showing
+- **THEN** empty space in the hero matches the light theme background
 
-When a fine pointer is inside `.collection-hero-gallery`, the viewpoint SHALL ease a short distance toward the cursor. When the pointer leaves the host, or on touch, that nudge SHALL ease back to zero. This SHALL NOT replace drag/wheel pan and SHALL NOT auto-pan the mosaic at rest.
+#### Scenario: Dark mode gaps
 
-#### Scenario: Pointer inside host
-
-- **WHEN** a mouse cursor moves inside the gallery host after coast
-- **THEN** the mosaic eases slightly toward the cursor
-
-#### Scenario: Pointer leaves host
-
-- **WHEN** the mouse leaves the gallery host
-- **THEN** the cursor nudge eases back so the viewpoint matches the settled pan position
+- **WHEN** the page is in dark mode and the gallery canvas is showing
+- **THEN** empty space in the hero matches the dark theme background
 
 ### Requirement: Poster mosaic on a wrapping period
 
-The image space SHALL be one finite period that repeats on a torus: a tile leaving one edge SHALL enter from the opposite edge. The period SHALL be a seeded irregular field of about twenty-four tiles, not a regular cell grid. Tiles SHALL sit at random positions.
+The image space SHALL be one finite period 320×180 that repeats on a torus: a tile leaving one edge SHALL enter from the opposite edge. The visible frustum height SHALL be 90, so one viewport shows a crop of the period. Tile world sizes SHALL be fractions of `SIZE_BASE` 180, not of the period; resize SHALL crop, not reflow or grow tiles.
 
-Each tile SHALL show one image from `.hero-gallery-light` (dark list at the same DOM index). Size SHALL be one of four classes (small, medium, large, extra-large) with original aspect ratio. Classes SHALL sit in a band so extra-large is not much larger than small. Tiles SHALL NOT overlap. The gap between tiles SHALL be at least 80 CSS pixels at a 1440-wide host.
+The period SHALL be a seeded dart-throw of up to 40 tiles, not a regular cell grid. Size SHALL be one of four classes (frac 0.11, 0.16, 0.21, 0.26; weights 2, 4, 3, 1) with original aspect ratio. Tiles SHALL NOT overlap. The gap SHALL be `SIZE_BASE * (40 / 1440)`.
 
-Tiles close to each other, including across the period wrap, SHALL NOT show the same image when the light list has at least three images.
-
-The same seed SHALL produce the same period on every load.
+Each tile SHALL show one image from `.hero-gallery-light` (dark list at the same DOM index). Tiles close to each other, including across the period wrap, SHALL NOT show the same image when the light list has at least three images. Image count SHALL be the light-list length in DOM order; the site SHALL NOT require a fixed N. The same seed SHALL produce the same period on every load.
 
 `.collection-hero-logo` SHALL stay fixed in the viewport while the mosaic pans. Images MAY pass under the logo.
 
@@ -68,7 +59,12 @@ The same seed SHALL produce the same period on every load.
 #### Scenario: No overlap
 
 - **WHEN** the gallery canvas is showing
-- **THEN** no two image tiles share screen pixels with each other
+- **THEN** no two image tiles share screen pixels with each other at the packed layout
+
+#### Scenario: Resize still crops
+
+- **WHEN** the visitor resizes the window while the gallery is showing
+- **THEN** tile sizes and relative arrangement stay the same; only how much of the period is visible changes
 
 #### Scenario: Dense irregular field
 
@@ -80,21 +76,23 @@ The same seed SHALL produce the same period on every load.
 - **WHEN** the light gallery has at least three images and the mosaic is showing
 - **THEN** no tile shows the same image as a nearby tile, including across the period edge
 
+#### Scenario: Six vs twenty images
+
+- **WHEN** `.hero-gallery-light` contains six images, and separately when it contains twenty
+- **THEN** the canvas uses that many unique images and still fills the period by repeating them without placing the same image on nearby tiles when N is at least three
+
 #### Scenario: Logo does not pan
 
 - **WHEN** the visitor pans the gallery
 - **THEN** `.collection-hero-logo` stays in the same viewport position
 
-#### Scenario: Dark maps follow DOM index
+### Requirement: Pan, size lag, and cursor drift
 
-- **WHEN** `body` has `dark-mode` and both gallery lists have images at the same index
-- **THEN** each tile shows the dark image at that index, not a filename-matched pair
+Inside `.collection-hero-gallery`, drag SHALL pan on X and Y. Pointer deltas SHALL add to a target velocity, scaled by a 280ms grab ease-in. Each frame SHALL lerp current velocity toward that target (0.16), move the pan by current velocity, then decay the target (0.94). Wheel SHALL pan on X and Y the same way. Pinch SHALL NOT move the viewpoint in depth. After pointer release, pan SHALL coast until the decayed target and velocity settle. After coast ends, pan SHALL NOT auto-advance. Keyboard WASD and QE SHALL NOT pan this space.
 
-### Requirement: Pannable space with inertia
+Each size class SHALL scale pan by its factor p (small 0.55, medium 0.7, large 0.85, extra-large 1). The camera SHALL stay at the period center plus cursor drift. Remaining pan MAY leave lasting shear between classes.
 
-Inside `.collection-hero-gallery`, drag SHALL pan the image space on X and Y. Pointer deltas SHALL add to a target velocity, scaled by a short grab ease-in. Each frame SHALL lerp current velocity toward that target, then move the viewpoint by current velocity, then decay the target. Wheel SHALL pan on X and Y the same way. Pinch SHALL NOT move the viewpoint in depth. After pointer release, pan motion SHALL coast until the decayed target and velocity settle. After coast ends, the space SHALL NOT auto-pan. Keyboard WASD and QE SHALL NOT pan this space.
-
-Image count SHALL be the number of `.hero-gallery-img` in `.hero-gallery-light` (DOM order). The site SHALL NOT require a fixed N.
+When a fine pointer is inside `.collection-hero-gallery` on a non-touch device, the camera SHALL ease toward the cursor (amount 8, lerp 0.12). When the pointer leaves the host, or on touch, that nudge SHALL ease back to zero. This SHALL NOT replace drag/wheel pan.
 
 When `prefers-reduced-motion: reduce` is set, the site SHALL apply pointer deltas with no grab ramp, no coast, no size lag, and no cursor nudge.
 
@@ -108,22 +106,86 @@ When `prefers-reduced-motion: reduce` is set, the site SHALL apply pointer delta
 - **WHEN** the visitor wheels over `.collection-hero-gallery`
 - **THEN** the image space pans on X and Y and does not move in depth
 
+#### Scenario: Size lag during pan
+
+- **WHEN** the visitor drags the gallery
+- **THEN** smaller images trail larger ones in the pan direction, and each further size class moves a little slower than the one in front
+
 #### Scenario: Rest has no auto-pan
 
 - **WHEN** the gallery is showing, the visitor is not dragging, and coast has ended
 - **THEN** the pan position stays put (cursor nudge may still apply when a mouse is inside the host)
+
+#### Scenario: Pointer inside host
+
+- **WHEN** a mouse cursor moves inside the gallery host after coast
+- **THEN** the mosaic eases slightly toward the cursor
+
+#### Scenario: Pointer leaves host
+
+- **WHEN** the mouse leaves the gallery host
+- **THEN** the cursor nudge eases back so the camera matches the period center
 
 #### Scenario: Keyboard ignored
 
 - **WHEN** the visitor presses W, A, S, D, Q, or E while the gallery is showing
 - **THEN** the image space does not pan from those keys
 
-#### Scenario: Six vs twenty images
-
-- **WHEN** `.hero-gallery-light` contains six images, and separately when it contains twenty
-- **THEN** the canvas uses that many unique images and still fills the period by repeating them without placing the same image on nearby tiles when N is at least three
-
 #### Scenario: Reduced motion
 
 - **WHEN** the visitor prefers reduced motion and the gallery canvas is showing
 - **THEN** drag tracks with no ramp, no coast, no size lag, no cursor nudge, and no motion at rest
+
+### Requirement: Lights swap textures without resetting the view
+
+Light-mode planes SHALL use `.hero-gallery-light .hero-gallery-img` `src` values in DOM order. Dark-mode planes SHALL use `.hero-gallery-dark .hero-gallery-img` `src` values at the same index.
+
+Toggling `#lights-switch-btn` SHALL replace those textures and SHALL NOT reset pan or plane layout.
+
+When dark has no image at an index, that plane SHALL keep the light image.
+
+#### Scenario: Dark toggle keeps position
+
+- **WHEN** the visitor has panned the gallery and then clicks `#lights-switch-btn` into dark mode
+- **THEN** the same planes show the dark `src` at each index and the viewpoint has not jumped to the start
+
+#### Scenario: Light toggle keeps position
+
+- **WHEN** the visitor is in dark mode in the gallery and clicks `#lights-switch-btn` into light mode
+- **THEN** the same planes show the light `src` at each index and the viewpoint has not jumped to the start
+
+#### Scenario: Missing dark image
+
+- **WHEN** dark mode is on and `.hero-gallery-dark` has fewer images than `.hero-gallery-light`
+- **THEN** planes past the dark list still show the matching light image
+
+### Requirement: Still click on a plane goes to shop
+
+A pointer press and release on an image plane with movement below 8px SHALL navigate to `/shop`. A drag past that threshold SHALL pan and SHALL NOT navigate. A still click on empty space SHALL NOT navigate.
+
+On a fine pointer, while the pointer is over an image plane, the canvas SHALL carry `custom-cursor="[SHOP COLLECTION]"`. While the pointer is over empty space, that attribute SHALL be empty. Coarse pointers SHALL NOT require this attribute.
+
+#### Scenario: Click a plane
+
+- **WHEN** the visitor presses and releases on a gallery image without dragging
+- **THEN** the browser goes to `/shop`
+
+#### Scenario: Drag a plane
+
+- **WHEN** the visitor presses on a gallery image and moves past the drag threshold
+- **THEN** the space pans and the page does not navigate
+
+#### Scenario: Click empty space
+
+- **WHEN** the visitor presses and releases on a gap between images without dragging
+- **THEN** the page does not navigate
+
+#### Scenario: Hover a plane
+
+- **WHEN** a fine pointer is over a gallery image plane
+- **THEN** the canvas has `custom-cursor="[SHOP COLLECTION]"` and the cursor label shows `[SHOP COLLECTION]`
+
+#### Scenario: Hover a gap
+
+- **WHEN** a fine pointer is over empty space in the gallery canvas
+- **THEN** the canvas does not have a non-empty `custom-cursor` and the cursor label is not shown
