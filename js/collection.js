@@ -29,27 +29,27 @@
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.min.js";
 
-const VIEW_H = 90;
-const PERIOD_W = 320;
-const PERIOD_H = 180;
+const VIEW_H = 80;
+const PERIOD_W = 360;
+const PERIOD_H = 200;
 const SIZE_BASE = 160;
-const TILE_COUNT = 28;
-const PLACE_TRIES = 40;
+const TILE_COUNT = 24;
+const PLACE_TRIES = 36;
 const GUTTER = SIZE_BASE * (24 / 1440);
-const MAX_VELOCITY = 3.2;
-const VELOCITY_LERP = 0.07;
-const VELOCITY_DECAY = 0.97;
-const GRAB_EASE_MS = 400;
-const PARALLAX_MIN = 0.94;
+const MAX_VELOCITY = 2.8;
+const VELOCITY_LERP = 0.085;
+const VELOCITY_DECAY = 0.985;
+const GRAB_EASE_MS = 440;
+const PARALLAX_MIN = 0.9;
 const DRAG_CLICK_PX = 8;
-const WHEEL_GAIN = 0.006;
+const WHEEL_GAIN = 0.004;
 const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
 const SIZE_CLASSES = [
   { frac: 0.12, weight: 2 },
   { frac: 0.16, weight: 4 },
-  { frac: 0.20, weight: 3 },
+  { frac: 0.2, weight: 3 },
   { frac: 0.24, weight: 1 },
 ];
 
@@ -121,9 +121,7 @@ function pickSizeClass(rand) {
 function aabbOverlap(a, b) {
   const dx = Math.abs(wrapDelta(a.x - b.x, PERIOD_W));
   const dy = Math.abs(wrapDelta(a.y - b.y, PERIOD_H));
-  return (
-    dx < a.w / 2 + b.w / 2 + GUTTER && dy < a.h / 2 + b.h / 2 + GUTTER
-  );
+  return dx < a.w / 2 + b.w / 2 + GUTTER && dy < a.h / 2 + b.h / 2 + GUTTER;
 }
 
 /** isNearby(a, b) -> tiles close enough to ban the same image */
@@ -444,7 +442,9 @@ function onPointerMove(event) {
     const dy = event.clientY - s.lastMouse.y;
     s.moved = Math.hypot(event.clientX - s.press.x, event.clientY - s.press.y);
     if (s.moved >= DRAG_CLICK_PX) s.clickCanceled = true;
-    const gain = (event.pointerType === "touch" ? 0.045 : 0.055) * grabGain(s, event.timeStamp);
+    const gain =
+      (event.pointerType === "touch" ? 0.045 : 0.055) *
+      grabGain(s, event.timeStamp);
     s.targetVel.x -= dx * gain;
     s.targetVel.y += dy * gain;
     s.lastMouse.x = event.clientX;
