@@ -21,7 +21,6 @@
  * applyModeTextures() -> swap maps from body.dark-mode
  * hitPlane(clientX, clientY) -> mesh or null
  * setCursorLabel(hit) -> custom-cursor on canvas
- * pxToWorld() -> world units per CSS pixel
  * grabGain(s, now) -> 0..1 ease-in on grab
  * ============================================================================
  */
@@ -36,19 +35,19 @@ const TILE_COUNT = 28;
 const PLACE_TRIES = 40;
 const GUTTER = SIZE_BASE * (24 / 1440);
 const MAX_VELOCITY = 3.2;
-const FRICTION = 0.92;
+const VELOCITY_LERP = 0.16;
+const VELOCITY_DECAY = 0.92;
 const GRAB_EASE_MS = 220;
-const REST_EPS = 0.012;
 const DRAG_CLICK_PX = 8;
 const WHEEL_GAIN = 0.006;
 const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
 const SIZE_CLASSES = [
-  { frac: 0.08, weight: 2 },
-  { frac: 0.14, weight: 3 },
-  { frac: 0.22, weight: 3 },
-  { frac: 0.32, weight: 2 },
+  { frac: 0.12, weight: 2 },
+  { frac: 0.16, weight: 4 },
+  { frac: 0.20, weight: 3 },
+  { frac: 0.24, weight: 1 },
 ];
 
 const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
@@ -380,12 +379,6 @@ function setCursorLabel(hit) {
   galleryCanvas.setAttribute("custom-cursor", "");
 }
 
-/** pxToWorld() -> world units per CSS pixel */
-function pxToWorld() {
-  const h = (galleryHost && galleryHost.clientHeight) || 1;
-  return VIEW_H / h;
-}
-
 /** grabGain(s, now) -> 0..1 ease-in on grab */
 function grabGain(s, now) {
   if (reduceMotion) return 1;
@@ -407,8 +400,6 @@ function onPointerDown(event) {
   s.moved = 0;
   s.clickCanceled = false;
   s.grabStart = event.timeStamp;
-  s.velocity.x = 0;
-  s.velocity.y = 0;
   galleryCanvas.style.cursor = "grabbing";
 }
 
@@ -419,13 +410,9 @@ function onPointerMove(event) {
     const dy = event.clientY - s.lastMouse.y;
     s.moved = Math.hypot(event.clientX - s.press.x, event.clientY - s.press.y);
     if (s.moved >= DRAG_CLICK_PX) s.clickCanceled = true;
-    const scale = pxToWorld() * grabGain(s, event.timeStamp);
-    const wx = -dx * scale;
-    const wy = dy * scale;
-    s.basePos.x += wx;
-    s.basePos.y += wy;
-    s.velocity.x = clamp(wx, -MAX_VELOCITY, MAX_VELOCITY);
-    s.velocity.y = clamp(wy, -MAX_VELOCITY, MAX_VELOCITY);
+    const gain = (event.pointerType === "touch" ? 0.045 : 0.055) * grabGain(s, event.timeStamp);
+    s.targetVel.x -= dx * gain;
+    s.targetVel.y += dy * gain;
     s.lastMouse.x = event.clientX;
     s.lastMouse.y = event.clientY;
   }
@@ -440,8 +427,6 @@ function onPointerUp(event) {
   s.isDragging = false;
   galleryCanvas.style.cursor = "grab";
   if (s.clickCanceled || s.moved >= DRAG_CLICK_PX) return;
-  s.velocity.x = 0;
-  s.velocity.y = 0;
   if (hitPlane(event.clientX, event.clientY)) {
     window.location.assign(SHOP_HREF);
   }
@@ -451,12 +436,8 @@ function onWheel(event) {
   event.preventDefault();
   if (!controller) return;
   const s = controller;
-  const wx = -event.deltaX * WHEEL_GAIN;
-  const wy = event.deltaY * WHEEL_GAIN;
-  s.basePos.x += wx;
-  s.basePos.y += wy;
-  s.velocity.x = clamp(wx, -MAX_VELOCITY, MAX_VELOCITY);
-  s.velocity.y = clamp(wy, -MAX_VELOCITY, MAX_VELOCITY);
+  s.targetVel.x -= event.deltaX * WHEEL_GAIN;
+  s.targetVel.y += event.deltaY * WHEEL_GAIN;
 }
 
 function onTouchMove(event) {
@@ -468,22 +449,23 @@ function tick() {
   const s = controller;
   reduceMotion = prefersReducedMotion();
 
-  if (!s.isDragging) {
-    if (reduceMotion) {
-      s.velocity.x = 0;
-      s.velocity.y = 0;
-    } else {
-      const speed = Math.hypot(s.velocity.x, s.velocity.y);
-      if (speed < REST_EPS) {
-        s.velocity.x = 0;
-        s.velocity.y = 0;
-      } else {
-        s.basePos.x += s.velocity.x;
-        s.basePos.y += s.velocity.y;
-        s.velocity.x *= FRICTION;
-        s.velocity.y *= FRICTION;
-      }
-    }
+  s.targetVel.x = clamp(s.targetVel.x, -MAX_VELOCITY, MAX_VELOCITY);
+  s.targetVel.y = clamp(s.targetVel.y, -MAX_VELOCITY, MAX_VELOCITY);
+
+  if (reduceMotion) {
+    s.basePos.x += s.targetVel.x;
+    s.basePos.y += s.targetVel.y;
+    s.velocity.x = 0;
+    s.velocity.y = 0;
+    s.targetVel.x = 0;
+    s.targetVel.y = 0;
+  } else {
+    s.velocity.x = lerp(s.velocity.x, s.targetVel.x, VELOCITY_LERP);
+    s.velocity.y = lerp(s.velocity.y, s.targetVel.y, VELOCITY_LERP);
+    s.basePos.x += s.velocity.x;
+    s.basePos.y += s.velocity.y;
+    s.targetVel.x *= VELOCITY_DECAY;
+    s.targetVel.y *= VELOCITY_DECAY;
   }
 
   s.basePos.x = wrap(s.basePos.x, PERIOD_W);
@@ -533,6 +515,7 @@ function mountScene(host) {
   textureCache = new Map();
   controller = {
     velocity: { x: 0, y: 0 },
+    targetVel: { x: 0, y: 0 },
     basePos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
     lastMouse: { x: 0, y: 0 },
     press: { x: 0, y: 0 },

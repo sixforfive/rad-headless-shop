@@ -1,22 +1,23 @@
 ## Context
 
-See proposal.md. Base is the reverted dart-throw gallery in `js/collection.js` (`PERIOD` 160×90, 14 tiles, sizes `0.10–0.36` of period, lerp/decay pan, no drift). `520ebdd` failed because size was a fraction of a doubled period and rest auto-drift ran.
+See proposal.md. Base is the dart-throw gallery in `js/collection.js` (`PERIOD` 320×180, 28 tiles, `SIZE_BASE` 160, `VIEW_H` 90). 1:1 drag wrote `basePos` and zeroed coast when the last `dx` was 0. Size classes `0.08–0.32` read too extreme.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Same visual tile scale, more size contrast, slower wrap, grab-to-coast easing.
+- Same dense diverse field, tighter size contrast, lerp inertia with grab ease-in.
 
 **Non-Goals:**
 
 - Three parallax groups.
 - Rest auto-drift.
+- Dropping to a 14-tile viewport period.
 - Tiles that grow with the period.
 
 ## Decisions
 
-### Period grows; sizes stay on `SIZE_BASE` 160
+### Period stays 320×180; sizes stay on `SIZE_BASE` 160
 
 ```
 VIEW_H = 90
@@ -32,23 +33,23 @@ TILE_COUNT = 28
 
 | class | frac × 160 | weight |
 | ----- | ---------- | ------ |
-| S     | 0.08       | 2      |
-| M     | 0.14       | 3      |
-| L     | 0.22       | 3      |
-| XL    | 0.32       | 2      |
+| S     | 0.12       | 2      |
+| M     | 0.16       | 4      |
+| L     | 0.20       | 3      |
+| XL    | 0.24       | 1      |
 
-XL 51 world units vs previous 58. More S. Depth is size, not extra groups.
+XL 38.4 world units. Depth is size, not extra groups.
 
-### Grab ease, 1:1, friction 0.92, rest still
+### Grab ramp, lerp inertia, rest still
 
-On grab, scale pointer delta by `t²` over 220ms. Then `VIEW_H / hostHeight` 1:1 onto `basePos`. On release, last frame delta is `velocity`; tick `velocity *= 0.92` until `|v| < REST_EPS`, then stop. No drift. Reduced motion: 1:1, no ramp, no coast. Wheel writes `basePos` and `velocity`.
+On grab, multiply pointer gain by `t²` over 220ms. Mouse gain 0.055, touch 0.045. Pointer writes `targetVel` only. Tick: `velocity = lerp(velocity, targetVel, 0.16)`, add `velocity` to `basePos`, `targetVel *= 0.92`. Clamp `targetVel` to `MAX_VELOCITY` 3.2. No auto-drift. Reduced motion: apply `targetVel` 1:1 then zero, no ramp, no coast. Wheel writes `targetVel`.
 
 Camera still follows `basePos`; wrap on the period. 3×3 copies stay.
 
 ## Risks / Trade-offs
 
 - [28 tiles × 9 copies] → ~252 planes, under the old cache scale.
-- [Empty larger period] → 28 tiles keeps density near the 14-in-160 field.
+- [Few CMS images] → copies repeat until the catalog grows; layout stays diverse.
 
 ## Migration Plan
 

@@ -15,7 +15,7 @@ The wrapping period SHALL be larger than the visible frustum. Tile world sizes S
 
 The image space SHALL be one finite period that repeats on a torus: a tile leaving one edge SHALL enter from the opposite edge. The period SHALL be a seeded irregular field of about twenty-eight tiles, not a regular cell grid. Tiles SHALL sit at random positions.
 
-Each tile SHALL show one image from `.hero-gallery-light` (dark list at the same index). Size SHALL be one of four classes (small, medium, large, extra-large) with original aspect ratio. Small and extra-large SHALL differ enough to read as depth. Extra-large SHALL NOT exceed the current visual scale. Tiles SHALL NOT overlap. The gap between tiles SHALL be at least 24 CSS pixels at a 1440-wide host.
+Each tile SHALL show one image from `.hero-gallery-light` (dark list at the same index). Size SHALL be one of four classes (small, medium, large, extra-large) with original aspect ratio. Classes SHALL sit in a tight band so extra-large is not much larger than small. Tiles SHALL NOT overlap. The gap between tiles SHALL be at least 24 CSS pixels at a 1440-wide host.
 
 Tiles close to each other, including across the period wrap, SHALL NOT show the same image when the light list has at least three images.
 
@@ -50,16 +50,16 @@ The same seed SHALL produce the same period on every load.
 
 ### Requirement: Pannable space with inertia
 
-Inside `.collection-hero-gallery`, drag SHALL pan the image space on X and Y. At grab, pan speed SHALL ease in from zero over a short ramp, then track the pointer 1:1 for the rest of the drag. Wheel SHALL pan on X and Y. Pinch SHALL NOT move the viewpoint in depth. After pointer release, motion SHALL coast with exponential friction. After coast ends, the space SHALL stay still. Keyboard WASD and QE SHALL NOT pan this space.
+Inside `.collection-hero-gallery`, drag SHALL pan the image space on X and Y. Pointer deltas SHALL add to a target velocity, scaled by a short grab ease-in. Each frame SHALL lerp current velocity toward that target, then move the viewpoint by current velocity, then decay the target. Wheel SHALL pan on X and Y the same way. Pinch SHALL NOT move the viewpoint in depth. After pointer release, motion SHALL coast until the decayed target and velocity settle. After coast ends, the space SHALL stay still. Keyboard WASD and QE SHALL NOT pan this space.
 
 Image count SHALL be the number of `.hero-gallery-img` in `.hero-gallery-light` (DOM order). The site SHALL NOT require a fixed N.
 
-When `prefers-reduced-motion: reduce` is set, the site SHALL track the pointer 1:1 with no grab ramp and no coast.
+When `prefers-reduced-motion: reduce` is set, the site SHALL apply pointer deltas with no grab ramp and no coast.
 
 #### Scenario: Drag pans
 
 - **WHEN** the visitor drags inside `.collection-hero-gallery`
-- **THEN** the images ease in at grab, then follow the pointer 1:1, and continue with friction coast after release
+- **THEN** the images ease in at grab, follow through lerp inertia, and continue with decay coast after release
 
 #### Scenario: Wheel pans
 
@@ -84,4 +84,4 @@ When `prefers-reduced-motion: reduce` is set, the site SHALL track the pointer 1
 #### Scenario: Reduced motion
 
 - **WHEN** the visitor prefers reduced motion and the gallery canvas is showing
-- **THEN** drag tracks 1:1 with no ramp, no coast, and no motion at rest
+- **THEN** drag tracks with no ramp, no coast, and no motion at rest
