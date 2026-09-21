@@ -163,6 +163,11 @@ body:has(.product-list:not(.is-gallery):not(.is-merch))
   opacity: 1;
 }
 
+/* Theme fill under the transparent canvas so hover opacity mixes light/dark. */
+.collection-hero-gallery {
+  background-color: var(--_theme---background--primary);
+}
+
 /* Infinite gallery canvas fills the CMS host; logo overlay does not eat pan. */
 .collection-hero-gallery > canvas {
   position: absolute;
