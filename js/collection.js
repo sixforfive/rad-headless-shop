@@ -11,7 +11,7 @@
  * hashString(str) -> integer seed
  * seededRandom(seed) -> 0..1
  * makeRng(seed) -> (n) -> 0..1
- * pickSizeClass(rand) -> class width / PERIOD_W
+ * pickSizeClass(rand) -> class width / SIZE_BASE
  * aabbOverlap(a, b) -> torus boxes collide (with gutter)
  * isNearby(a, b) -> tiles close enough to ban the same image
  * pickMediaIndex(tile, tiles, n, rand) -> image index
@@ -21,29 +21,34 @@
  * applyModeTextures() -> swap maps from body.dark-mode
  * hitPlane(clientX, clientY) -> mesh or null
  * setCursorLabel(hit) -> custom-cursor on canvas
+ * pxToWorld() -> world units per CSS pixel
+ * grabGain(s, now) -> 0..1 ease-in on grab
  * ============================================================================
  */
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.min.js";
 
-const PERIOD_W = 160;
-const PERIOD_H = 90;
-const TILE_COUNT = 14;
+const VIEW_H = 90;
+const PERIOD_W = 320;
+const PERIOD_H = 180;
+const SIZE_BASE = 160;
+const TILE_COUNT = 28;
 const PLACE_TRIES = 40;
-const GUTTER = PERIOD_W * (24 / 1440);
-const MAX_VELOCITY = 1.8;
-const VELOCITY_LERP = 0.16;
-const VELOCITY_DECAY = 0.9;
+const GUTTER = SIZE_BASE * (24 / 1440);
+const MAX_VELOCITY = 3.2;
+const FRICTION = 0.92;
+const GRAB_EASE_MS = 220;
+const REST_EPS = 0.012;
 const DRAG_CLICK_PX = 8;
-const WHEEL_GAIN = 0.008;
+const WHEEL_GAIN = 0.006;
 const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
 const SIZE_CLASSES = [
-  { frac: 0.1, weight: 2 },
-  { frac: 0.16, weight: 3 },
-  { frac: 0.24, weight: 3 },
-  { frac: 0.36, weight: 2 },
+  { frac: 0.08, weight: 2 },
+  { frac: 0.14, weight: 3 },
+  { frac: 0.22, weight: 3 },
+  { frac: 0.32, weight: 2 },
 ];
 
 const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
@@ -104,7 +109,7 @@ function makeRng(seed) {
   };
 }
 
-/** pickSizeClass(rand) -> class width / PERIOD_W */
+/** pickSizeClass(rand) -> class width / SIZE_BASE */
 function pickSizeClass(rand) {
   let t = rand() * SIZE_WEIGHT_SUM;
   for (let i = 0; i < SIZE_CLASSES.length; i++) {
@@ -163,7 +168,7 @@ function buildPeriod(srcs) {
   const maxH = PERIOD_H - GUTTER;
   const tiles = [];
   for (let i = 0; i < TILE_COUNT; i++) {
-    const classW = pickSizeClass(rand) * PERIOD_W;
+    const classW = pickSizeClass(rand) * SIZE_BASE;
     const w = Math.min(classW, maxW);
     const h = Math.min(w, maxH);
     const tile = { x: 0, y: 0, w, h, mediaIndex: 0 };
@@ -332,7 +337,7 @@ function resizeRenderer() {
   const width = galleryHost.clientWidth || 1;
   const height = galleryHost.clientHeight || 1;
   const aspect = width / height;
-  const halfH = PERIOD_H / 2;
+  const halfH = VIEW_H / 2;
   const halfW = halfH * aspect;
   camera.left = -halfW;
   camera.right = halfW;
@@ -375,16 +380,35 @@ function setCursorLabel(hit) {
   galleryCanvas.setAttribute("custom-cursor", "");
 }
 
+/** pxToWorld() -> world units per CSS pixel */
+function pxToWorld() {
+  const h = (galleryHost && galleryHost.clientHeight) || 1;
+  return VIEW_H / h;
+}
+
+/** grabGain(s, now) -> 0..1 ease-in on grab */
+function grabGain(s, now) {
+  if (reduceMotion) return 1;
+  const t = (now - s.grabStart) / GRAB_EASE_MS;
+  if (t >= 1) return 1;
+  if (t <= 0) return 0;
+  return t * t;
+}
+
 function onPointerDown(event) {
   if (event.pointerType === "mouse" && event.button !== 0) return;
-  controller.isDragging = true;
-  controller.pointerId = event.pointerId;
-  controller.lastMouse.x = event.clientX;
-  controller.lastMouse.y = event.clientY;
-  controller.press.x = event.clientX;
-  controller.press.y = event.clientY;
-  controller.moved = 0;
-  controller.clickCanceled = false;
+  const s = controller;
+  s.isDragging = true;
+  s.pointerId = event.pointerId;
+  s.lastMouse.x = event.clientX;
+  s.lastMouse.y = event.clientY;
+  s.press.x = event.clientX;
+  s.press.y = event.clientY;
+  s.moved = 0;
+  s.clickCanceled = false;
+  s.grabStart = event.timeStamp;
+  s.velocity.x = 0;
+  s.velocity.y = 0;
   galleryCanvas.style.cursor = "grabbing";
 }
 
@@ -395,9 +419,13 @@ function onPointerMove(event) {
     const dy = event.clientY - s.lastMouse.y;
     s.moved = Math.hypot(event.clientX - s.press.x, event.clientY - s.press.y);
     if (s.moved >= DRAG_CLICK_PX) s.clickCanceled = true;
-    const gain = event.pointerType === "touch" ? 0.045 : 0.055;
-    s.targetVel.x -= dx * gain;
-    s.targetVel.y += dy * gain;
+    const scale = pxToWorld() * grabGain(s, event.timeStamp);
+    const wx = -dx * scale;
+    const wy = dy * scale;
+    s.basePos.x += wx;
+    s.basePos.y += wy;
+    s.velocity.x = clamp(wx, -MAX_VELOCITY, MAX_VELOCITY);
+    s.velocity.y = clamp(wy, -MAX_VELOCITY, MAX_VELOCITY);
     s.lastMouse.x = event.clientX;
     s.lastMouse.y = event.clientY;
   }
@@ -412,6 +440,8 @@ function onPointerUp(event) {
   s.isDragging = false;
   galleryCanvas.style.cursor = "grab";
   if (s.clickCanceled || s.moved >= DRAG_CLICK_PX) return;
+  s.velocity.x = 0;
+  s.velocity.y = 0;
   if (hitPlane(event.clientX, event.clientY)) {
     window.location.assign(SHOP_HREF);
   }
@@ -420,8 +450,13 @@ function onPointerUp(event) {
 function onWheel(event) {
   event.preventDefault();
   if (!controller) return;
-  controller.targetVel.x -= event.deltaX * WHEEL_GAIN;
-  controller.targetVel.y += event.deltaY * WHEEL_GAIN;
+  const s = controller;
+  const wx = -event.deltaX * WHEEL_GAIN;
+  const wy = event.deltaY * WHEEL_GAIN;
+  s.basePos.x += wx;
+  s.basePos.y += wy;
+  s.velocity.x = clamp(wx, -MAX_VELOCITY, MAX_VELOCITY);
+  s.velocity.y = clamp(wy, -MAX_VELOCITY, MAX_VELOCITY);
 }
 
 function onTouchMove(event) {
@@ -433,23 +468,22 @@ function tick() {
   const s = controller;
   reduceMotion = prefersReducedMotion();
 
-  s.targetVel.x = clamp(s.targetVel.x, -MAX_VELOCITY, MAX_VELOCITY);
-  s.targetVel.y = clamp(s.targetVel.y, -MAX_VELOCITY, MAX_VELOCITY);
-
-  if (reduceMotion) {
-    s.basePos.x += s.targetVel.x;
-    s.basePos.y += s.targetVel.y;
-    s.velocity.x = 0;
-    s.velocity.y = 0;
-    s.targetVel.x = 0;
-    s.targetVel.y = 0;
-  } else {
-    s.velocity.x = lerp(s.velocity.x, s.targetVel.x, VELOCITY_LERP);
-    s.velocity.y = lerp(s.velocity.y, s.targetVel.y, VELOCITY_LERP);
-    s.basePos.x += s.velocity.x;
-    s.basePos.y += s.velocity.y;
-    s.targetVel.x *= VELOCITY_DECAY;
-    s.targetVel.y *= VELOCITY_DECAY;
+  if (!s.isDragging) {
+    if (reduceMotion) {
+      s.velocity.x = 0;
+      s.velocity.y = 0;
+    } else {
+      const speed = Math.hypot(s.velocity.x, s.velocity.y);
+      if (speed < REST_EPS) {
+        s.velocity.x = 0;
+        s.velocity.y = 0;
+      } else {
+        s.basePos.x += s.velocity.x;
+        s.basePos.y += s.velocity.y;
+        s.velocity.x *= FRICTION;
+        s.velocity.y *= FRICTION;
+      }
+    }
   }
 
   s.basePos.x = wrap(s.basePos.x, PERIOD_W);
@@ -499,7 +533,6 @@ function mountScene(host) {
   textureCache = new Map();
   controller = {
     velocity: { x: 0, y: 0 },
-    targetVel: { x: 0, y: 0 },
     basePos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
     lastMouse: { x: 0, y: 0 },
     press: { x: 0, y: 0 },
@@ -507,6 +540,7 @@ function mountScene(host) {
     pointerId: null,
     moved: 0,
     clickCanceled: false,
+    grabStart: 0,
   };
 
   preloadTextures();
