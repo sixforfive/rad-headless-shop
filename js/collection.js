@@ -41,8 +41,8 @@ const MAX_VELOCITY = 3.2;
 const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.94;
 const GRAB_EASE_MS = 280;
-const PARALLAX_MIN = 0.88;
-const PARALLAX_LAG = 24;
+const PARALLAX_MIN = 0.85;
+const PARALLAX_LAG = 30;
 const DRIFT_AMOUNT = 8;
 const DRIFT_LERP = 0.12;
 const DRAG_CLICK_PX = 8;
@@ -51,10 +51,10 @@ const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
 const SIZE_CLASSES = [
-  { frac: 0.12, weight: 2 },
+  { frac: 0.11, weight: 2 },
   { frac: 0.16, weight: 4 },
-  { frac: 0.2, weight: 3 },
-  { frac: 0.24, weight: 1 },
+  { frac: 0.21, weight: 3 },
+  { frac: 0.26, weight: 1 },
 ];
 
 const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
