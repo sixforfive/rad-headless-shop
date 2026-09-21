@@ -30,13 +30,13 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.min.js";
 
 const VIEW_H = 90;
-const PERIOD_W = 360;
-const PERIOD_H = 200;
+const PERIOD_W = 320;
+const PERIOD_H = 180;
 const SIZE_BASE = 160;
 const TILE_COUNT = 24;
 const PLACE_TRIES = 36;
 const GUTTER = SIZE_BASE * (24 / 1440);
-const MAX_VELOCITY = 3.6;
+const MAX_VELOCITY = 4.0;
 const VELOCITY_LERP = 0.085;
 const VELOCITY_DECAY = 0.985;
 const GRAB_EASE_MS = 440;
