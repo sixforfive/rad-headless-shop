@@ -24,7 +24,7 @@
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1
  * parallaxFactor(w) -> class p (S 0.55 .. XL 1)
- * placeCopies() -> mesh positions from lagged pan * p; camera stays home
+ * placeCopies() -> mesh positions from pan * p; camera stays home
  * ============================================================================
  */
 
@@ -436,10 +436,8 @@ function placeCopies() {
     const p = parallaxFactor(d.w);
     const worldX = d.tileX;
     const worldY = d.tileY;
-    d.px = lerp(d.px ?? panX, panX, 0.04 + 0.12 * p);
-    d.py = lerp(d.py ?? panY, panY, 0.04 + 0.12 * p);
-    const shiftX = d.px * p;
-    const shiftY = d.py * p;
+    const shiftX = panX * p;
+    const shiftY = panY * p;
     const cx = Math.round((shiftX + PERIOD_W / 2 - worldX) / PERIOD_W);
     const cy = Math.round((shiftY + PERIOD_H / 2 - worldY) / PERIOD_H);
     mesh.position.set(
