@@ -3,11 +3,8 @@
  * shopList — the Shop Collection List (not merch)
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
  * cloneGalleryThumbs — one .is-clone copy of each original for the gallery loop
- * thumbImages — all shop thumb <img> (originals + clones)
- * eagerThumbImages — loading=eager on every thumb img so below-fold originals actually fetch
- * whenImageReady — decode if complete; else load/error, recheck complete to not miss the event
- * whenThumbsReady — resolve once every thumb image is decoded
- * galleryReady — blocks wrap until first real measure lands
+ * eagerThumbImages — loading=eager on every thumb img so below-fold thumbs actually fetch
+ * originalsSized — every original thumb has layout height
  * loopHeight — first clone getBoundingClientRect.top minus first original
  * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
@@ -16,7 +13,6 @@
  */
 
 let galleryLoopHeight = 0;
-let galleryReady = false;
 
 /** shopLists — Shop Collection Lists only (not merch) */
 function shopLists() {
@@ -55,34 +51,22 @@ function cloneGalleryThumbs() {
   });
 }
 
-/** thumbImages — all shop thumb <img> (originals + clones) */
-function thumbImages() {
-  const list = shopList();
-  return list ? [...list.querySelectorAll(".product-thumb img")] : [];
-}
-
-/** eagerThumbImages — loading=eager on every thumb img so below-fold originals actually fetch */
+/** eagerThumbImages — loading=eager on every shop thumb img */
 function eagerThumbImages() {
-  thumbImages().forEach((img) => {
+  const list = shopList();
+  if (!list) return;
+  list.querySelectorAll(".product-thumb img").forEach((img) => {
     img.loading = "eager";
   });
 }
 
-/** whenImageReady — decode if complete; else load/error, recheck complete to not miss the event */
-function whenImageReady(img) {
-  const decode = () => img.decode().catch(() => {});
-  if (img.complete) return decode();
-  return new Promise((r) => {
-    const done = () => decode().then(r, r);
-    img.addEventListener("load", done, { once: true });
-    img.addEventListener("error", r, { once: true });
-    if (img.complete) done();
-  });
-}
-
-/** whenThumbsReady — resolve once every thumb image is decoded */
-function whenThumbsReady() {
-  return Promise.all(thumbImages().map(whenImageReady));
+/** originalsSized — every original thumb has layout height */
+function originalsSized() {
+  const list = shopList();
+  if (!list) return false;
+  const originals = list.querySelectorAll(".product-thumb:not(.is-clone)");
+  if (!originals.length) return false;
+  return [...originals].every((el) => el.getBoundingClientRect().height > 1);
 }
 
 /** loopHeight — first clone getBoundingClientRect.top minus first original */
@@ -113,7 +97,7 @@ function onGalleryScroll() {
   const list = shopList();
   if (!list?.classList.contains("is-gallery")) return;
   const h = galleryLoopHeight;
-  if (galleryReady && h > 0 && window.scrollY >= h) {
+  if (h > 0 && originalsSized() && window.scrollY >= h) {
     document.documentElement.style.overflowAnchor = "none";
     jumpScrollY(window.scrollY - h);
     document.documentElement.style.overflowAnchor = "";
@@ -160,12 +144,8 @@ hydrateThumbs();
 cloneGalleryThumbs();
 eagerThumbImages();
 syncActive();
-
-whenThumbsReady().then(() => {
-  measureLoopHeight();
-  galleryReady = true;
-  onGalleryScroll();
-});
+measureLoopHeight();
+onGalleryScroll();
 
 window.addEventListener("scroll", onGalleryScroll, { passive: true });
 window.addEventListener("resize", () => {
