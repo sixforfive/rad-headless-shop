@@ -7,9 +7,14 @@
  * bootInfiniteGallery() -> mount canvas or no-op
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
+ * wrap(v, period) -> v in [0, period)
  * hashString(str) -> integer seed
  * seededRandom(seed) -> 0..1
- * generateChunkPlanes(cx, cy) -> plane layouts for one XY chunk
+ * makeRng(seed) -> (n) -> 0..1
+ * pickSizeClass(rand) -> class width / PERIOD_W
+ * aabbOverlap(a, b) -> torus boxes collide (with gutter)
+ * pickMediaIndex(col, row, grid, n, rand) -> image index
+ * buildPeriod(srcs) -> tiles for one wrapping poster
  * urlForIndex(i) -> current-mode src
  * getTexture(url) -> cached THREE.Texture
  * applyModeTextures() -> swap maps from body.dark-mode
@@ -20,28 +25,35 @@
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.min.js";
 
-const CHUNK_SIZE = 50;
-const RENDER_DISTANCE = 2;
-const MAX_VELOCITY = 3.2;
+const PERIOD_W = 160;
+const PERIOD_H = 90;
+const GRID_COLS = 6;
+const GRID_ROWS = 4;
+const FILL = 0.35;
+const GUTTER = PERIOD_W * (24 / 1440);
+const DRIFT = 0.04;
+const MAX_VELOCITY = 1.8;
 const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.9;
-const INVIS_THRESHOLD = 0.01;
-const EDGE_FADE_IN = 0.78;
-const EDGE_FADE_OUT = 1.18;
-const EDGE_LERP = 0.14;
-const VIEW_HEIGHT = 72;
-const ITEMS_PER_CHUNK = 2;
-const MAX_PLANE_CACHE = 256;
 const DRAG_CLICK_PX = 8;
-const CHUNK_THROTTLE_MS = 100;
+const WHEEL_GAIN = 0.008;
 const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
-const CHUNK_OFFSETS = [];
+const SIZE_CLASSES = [
+  { frac: 0.07, weight: 3 },
+  { frac: 0.11, weight: 4 },
+  { frac: 0.16, weight: 2 },
+  { frac: 0.2, weight: 1 },
+];
+
+const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
+
+const PERIOD_OFFSETS = [];
 {
-  for (let dx = -RENDER_DISTANCE; dx <= RENDER_DISTANCE; dx++) {
-    for (let dy = -RENDER_DISTANCE; dy <= RENDER_DISTANCE; dy++) {
-      CHUNK_OFFSETS.push({ dx, dy });
+  for (let ox = -1; ox <= 1; ox++) {
+    for (let oy = -1; oy <= 1; oy++) {
+      PERIOD_OFFSETS.push({ ox, oy });
     }
   }
 }
@@ -54,6 +66,19 @@ function clamp(v, min, max) {
 /** lerp(a, b, t) -> mix */
 function lerp(a, b, t) {
   return a + (b - a) * t;
+}
+
+/** wrap(v, period) -> v in [0, period) */
+function wrap(v, period) {
+  const r = v % period;
+  return r < 0 ? r + period : r;
+}
+
+function wrapDelta(d, period) {
+  let r = d % period;
+  if (r > period / 2) r -= period;
+  if (r < -period / 2) r += period;
+  return r;
 }
 
 /** hashString(str) -> integer seed */
@@ -71,47 +96,126 @@ function seededRandom(seed) {
   return x - Math.floor(x);
 }
 
-/** generateChunkPlanes(cx, cy) -> plane layouts for one XY chunk */
-function generateChunkPlanes(cx, cy) {
-  const planes = [];
-  const seed = hashString(`${cx},${cy}`);
-  const pad = CHUNK_SIZE * 0.16;
-  const span = CHUNK_SIZE - pad * 2;
-  for (let i = 0; i < ITEMS_PER_CHUNK; i++) {
-    const s = seed + i * 1000;
-    const r = (n) => seededRandom(s + n);
-    const size = 9 + r(4) * 22;
-    planes.push({
-      id: `${cx}-${cy}-${i}`,
-      x: cx * CHUNK_SIZE + pad + r(0) * span,
-      y: cy * CHUNK_SIZE + pad + r(1) * span,
-      size,
-      mediaIndex: Math.floor(r(5) * 1_000_000),
-      chunkCx: cx,
-      chunkCy: cy,
-    });
-  }
-  return planes;
+/** makeRng(seed) -> (n) -> 0..1 */
+function makeRng(seed) {
+  let s = seed + 1;
+  return (n) => {
+    s += 1 + (n || 0);
+    return seededRandom(s);
+  };
 }
 
-const planeCache = new Map();
+/** pickSizeClass(rand) -> class width / PERIOD_W */
+function pickSizeClass(rand) {
+  let t = rand() * SIZE_WEIGHT_SUM;
+  for (let i = 0; i < SIZE_CLASSES.length; i++) {
+    t -= SIZE_CLASSES[i].weight;
+    if (t <= 0) return SIZE_CLASSES[i].frac;
+  }
+  return SIZE_CLASSES[SIZE_CLASSES.length - 1].frac;
+}
 
-function generateChunkPlanesCached(cx, cy) {
-  const key = `${cx},${cy}`;
-  const cached = planeCache.get(key);
-  if (cached) {
-    planeCache.delete(key);
-    planeCache.set(key, cached);
-    return cached;
+/** aabbOverlap(a, b) -> torus boxes collide (with gutter) */
+function aabbOverlap(a, b) {
+  const dx = Math.abs(wrapDelta(a.x - b.x, PERIOD_W));
+  const dy = Math.abs(wrapDelta(a.y - b.y, PERIOD_H));
+  return (
+    dx < a.w / 2 + b.w / 2 + GUTTER && dy < a.h / 2 + b.h / 2 + GUTTER
+  );
+}
+
+/** pickMediaIndex(col, row, grid, n, rand) -> image index */
+function pickMediaIndex(col, row, grid, n, rand) {
+  if (n <= 0) return 0;
+  if (n < 3) return Math.floor(rand() * n);
+  const banned = new Set();
+  for (let dc = -1; dc <= 1; dc++) {
+    for (let dr = -1; dr <= 1; dr++) {
+      if (dc === 0 && dr === 0) continue;
+      const nc = (col + dc + GRID_COLS) % GRID_COLS;
+      const nr = (row + dr + GRID_ROWS) % GRID_ROWS;
+      const used = grid[nr][nc];
+      if (used >= 0) banned.add(used);
+    }
   }
-  const planes = generateChunkPlanes(cx, cy);
-  planeCache.set(key, planes);
-  while (planeCache.size > MAX_PLANE_CACHE) {
-    const firstKey = planeCache.keys().next().value;
-    if (!firstKey) break;
-    planeCache.delete(firstKey);
+  const order = [];
+  for (let i = 0; i < n; i++) order.push(i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = order[i];
+    order[i] = order[j];
+    order[j] = tmp;
   }
-  return planes;
+  for (let i = 0; i < order.length; i++) {
+    if (!banned.has(order[i])) return order[i];
+  }
+  return order[0];
+}
+
+/** buildPeriod(srcs) -> tiles for one wrapping poster */
+function buildPeriod(srcs) {
+  const n = srcs.length;
+  const rand = makeRng(hashString(srcs.slice().sort().join("|")));
+  const cellW = PERIOD_W / GRID_COLS;
+  const cellH = PERIOD_H / GRID_ROWS;
+  const maxW = Math.max(1, cellW - GUTTER);
+  const maxH = Math.max(1, cellH - GUTTER);
+  const jitterCap = GUTTER / 2;
+  const targetCount = Math.max(1, Math.round(GRID_COLS * GRID_ROWS * FILL));
+  const cells = [];
+  for (let row = 0; row < GRID_ROWS; row++) {
+    for (let col = 0; col < GRID_COLS; col++) {
+      cells.push({ col, row });
+    }
+  }
+  for (let i = cells.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = cells[i];
+    cells[i] = cells[j];
+    cells[j] = tmp;
+  }
+  const grid = [];
+  for (let row = 0; row < GRID_ROWS; row++) {
+    grid[row] = [];
+    for (let col = 0; col < GRID_COLS; col++) grid[row][col] = -1;
+  }
+  const tiles = [];
+  for (let c = 0; c < cells.length && tiles.length < targetCount; c++) {
+    const cell = cells[c];
+    const classW = pickSizeClass(rand) * PERIOD_W;
+    const w = Math.min(classW, maxW);
+    const h = Math.min(w, maxH);
+    const slackX = Math.max(0, (cellW - w) / 2);
+    const slackY = Math.max(0, (cellH - h) / 2);
+    const spanX = Math.min(slackX, jitterCap);
+    const spanY = Math.min(slackY, jitterCap);
+    const tile = {
+      x: 0,
+      y: 0,
+      w,
+      h,
+      col: cell.col,
+      row: cell.row,
+      mediaIndex: 0,
+    };
+    let hits = true;
+    for (let attempt = 0; attempt < 8 && hits; attempt++) {
+      tile.x = cell.col * cellW + cellW / 2 + (rand() - 0.5) * 2 * spanX;
+      tile.y = cell.row * cellH + cellH / 2 + (rand() - 0.5) * 2 * spanY;
+      hits = false;
+      for (let t = 0; t < tiles.length; t++) {
+        if (aabbOverlap(tiles[t], tile)) {
+          hits = true;
+          break;
+        }
+      }
+    }
+    if (hits) continue;
+    tile.mediaIndex = pickMediaIndex(cell.col, cell.row, grid, n, rand);
+    grid[cell.row][cell.col] = tile.mediaIndex;
+    tiles.push(tile);
+  }
+  return tiles;
 }
 
 /** readGallerySrcs(list) -> img srcs in DOM order, skip empty/placeholder */
@@ -136,16 +240,11 @@ let scene = null;
 let camera = null;
 let raycaster = null;
 let pointerNdc = null;
-let ndcScratch = null;
 let planeGeometry = null;
 let textureLoader = null;
 let textureCache = null;
-let chunkGroups = null;
 let planeMeshes = null;
 let controller = null;
-let lastChunkKey = "";
-let lastChunkUpdate = 0;
-let pendingChunk = null;
 let reduceMotion = false;
 let finePointer = false;
 let isTouchDevice = false;
@@ -191,15 +290,23 @@ function getTexture(url) {
 }
 
 function fitPlaneScale(mesh, texture) {
+  const maxW = mesh.userData.w;
+  const maxH = mesh.userData.h;
   const img = texture && texture.image;
   const width = img && (img.naturalWidth || img.width);
   const height = img && (img.naturalHeight || img.height);
-  const size = mesh.userData.size;
   if (width && height) {
-    mesh.scale.set(size * (width / height), size, 1);
+    const aspect = width / height;
+    let w = maxW;
+    let h = w / aspect;
+    if (h > maxH) {
+      h = maxH;
+      w = h * aspect;
+    }
+    mesh.scale.set(w, h, 1);
     return;
   }
-  mesh.scale.set(size, size, 1);
+  mesh.scale.set(maxW, maxH, 1);
 }
 
 /** applyModeTextures() -> swap maps from body.dark-mode */
@@ -222,83 +329,34 @@ function preloadTextures() {
   darkSrcs.forEach(getTexture);
 }
 
-function makePlaneMesh(plane) {
+function makePlaneMesh(tile, ox, oy) {
   const material = new THREE.MeshBasicMaterial({
     transparent: true,
-    opacity: 0,
+    opacity: 1,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
   const mesh = new THREE.Mesh(planeGeometry, material);
-  mesh.position.set(plane.x, plane.y, 0);
-  mesh.renderOrder = Math.round(plane.size * 10);
-  mesh.visible = false;
-  mesh.userData.size = plane.size;
-  mesh.userData.mediaIndex = plane.mediaIndex;
-  mesh.userData.chunkCx = plane.chunkCx;
-  mesh.userData.chunkCy = plane.chunkCy;
-  mesh.userData.opacity = 0;
+  mesh.position.set(tile.x + ox * PERIOD_W, tile.y + oy * PERIOD_H, 0);
+  mesh.renderOrder = Math.round(tile.w * 10);
+  mesh.visible = true;
+  mesh.userData.w = tile.w;
+  mesh.userData.h = tile.h;
+  mesh.userData.mediaIndex = tile.mediaIndex;
   fitPlaneScale(mesh, null);
   planeMeshes.push(mesh);
   return mesh;
 }
 
-function disposeChunkGroup(group) {
-  group.traverse((obj) => {
-    if (obj.isMesh) {
-      const i = planeMeshes.indexOf(obj);
-      if (i >= 0) planeMeshes.splice(i, 1);
-      if (obj.material) obj.material.dispose();
-    }
-  });
-  scene.remove(group);
-}
-
-function syncChunks(cx, cy) {
-  const next = new Map();
-  CHUNK_OFFSETS.forEach((o) => {
-    const key = `${cx + o.dx},${cy + o.dy}`;
-    next.set(key, { cx: cx + o.dx, cy: cy + o.dy });
-  });
-  chunkGroups.forEach((group, key) => {
-    if (!next.has(key)) {
-      disposeChunkGroup(group);
-      chunkGroups.delete(key);
-    }
-  });
-  next.forEach((chunk, key) => {
-    if (chunkGroups.has(key)) return;
-    const group = new THREE.Group();
-    generateChunkPlanesCached(chunk.cx, chunk.cy).forEach((plane) => {
-      group.add(makePlaneMesh(plane));
+function mountPeriod() {
+  planeMeshes = [];
+  const tiles = buildPeriod(lightSrcs);
+  PERIOD_OFFSETS.forEach((o) => {
+    tiles.forEach((tile) => {
+      scene.add(makePlaneMesh(tile, o.ox, o.oy));
     });
-    scene.add(group);
-    chunkGroups.set(key, group);
   });
   applyModeTextures();
-}
-
-function edgeFade(mesh) {
-  ndcScratch.copy(mesh.position).project(camera);
-  const mx = Math.max(Math.abs(ndcScratch.x), Math.abs(ndcScratch.y));
-  if (mx <= EDGE_FADE_IN) return 1;
-  if (mx >= EDGE_FADE_OUT) return 0;
-  return 1 - (mx - EDGE_FADE_IN) / (EDGE_FADE_OUT - EDGE_FADE_IN);
-}
-
-function fadePlanes() {
-  const ease = reduceMotion ? 1 : EDGE_LERP;
-  planeMeshes.forEach((mesh) => {
-    const material = mesh.material;
-    const target = edgeFade(mesh);
-    const state = mesh.userData;
-    state.opacity =
-      target < INVIS_THRESHOLD && state.opacity < INVIS_THRESHOLD
-        ? 0
-        : lerp(state.opacity, target, ease);
-    material.opacity = state.opacity > 0.99 ? 1 : state.opacity;
-    mesh.visible = state.opacity > INVIS_THRESHOLD;
-  });
 }
 
 function resizeRenderer() {
@@ -306,7 +364,7 @@ function resizeRenderer() {
   const width = galleryHost.clientWidth || 1;
   const height = galleryHost.clientHeight || 1;
   const aspect = width / height;
-  const halfH = VIEW_HEIGHT / 2;
+  const halfH = PERIOD_H / 2;
   const halfW = halfH * aspect;
   camera.left = -halfW;
   camera.right = halfW;
@@ -393,16 +451,24 @@ function onPointerUp(event) {
 
 function onWheel(event) {
   event.preventDefault();
+  if (!controller) return;
+  controller.targetVel.x -= event.deltaX * WHEEL_GAIN;
+  controller.targetVel.y += event.deltaY * WHEEL_GAIN;
 }
 
 function onTouchMove(event) {
   event.preventDefault();
 }
 
-function tick(now) {
+function tick() {
   rafId = requestAnimationFrame(tick);
   const s = controller;
   reduceMotion = prefersReducedMotion();
+
+  if (!reduceMotion && !s.isDragging) {
+    s.targetVel.x += DRIFT;
+    s.targetVel.y += DRIFT;
+  }
 
   s.targetVel.x = clamp(s.targetVel.x, -MAX_VELOCITY, MAX_VELOCITY);
   s.targetVel.y = clamp(s.targetVel.y, -MAX_VELOCITY, MAX_VELOCITY);
@@ -423,22 +489,10 @@ function tick(now) {
     s.targetVel.y *= VELOCITY_DECAY;
   }
 
+  s.basePos.x = wrap(s.basePos.x, PERIOD_W);
+  s.basePos.y = wrap(s.basePos.y, PERIOD_H);
   camera.position.set(s.basePos.x, s.basePos.y, 10);
 
-  const cx = Math.floor(s.basePos.x / CHUNK_SIZE);
-  const cy = Math.floor(s.basePos.y / CHUNK_SIZE);
-  const key = `${cx},${cy}`;
-  if (key !== lastChunkKey) {
-    pendingChunk = { cx, cy };
-    lastChunkKey = key;
-  }
-  if (pendingChunk && now - lastChunkUpdate >= CHUNK_THROTTLE_MS) {
-    syncChunks(pendingChunk.cx, pendingChunk.cy);
-    pendingChunk = null;
-    lastChunkUpdate = now;
-  }
-
-  fadePlanes();
   renderer.render(scene, camera);
 }
 
@@ -463,7 +517,7 @@ function mountScene(host) {
 
   scene = new THREE.Scene();
   camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
-  camera.position.set(0, 0, 10);
+  camera.position.set(PERIOD_W / 2, PERIOD_H / 2, 10);
   renderer = new THREE.WebGLRenderer({
     antialias: false,
     alpha: true,
@@ -476,17 +530,14 @@ function mountScene(host) {
 
   raycaster = new THREE.Raycaster();
   pointerNdc = new THREE.Vector2();
-  ndcScratch = new THREE.Vector3();
   planeGeometry = new THREE.PlaneGeometry(1, 1);
   textureLoader = new THREE.TextureLoader();
   textureLoader.crossOrigin = "anonymous";
   textureCache = new Map();
-  chunkGroups = new Map();
-  planeMeshes = [];
   controller = {
     velocity: { x: 0, y: 0 },
     targetVel: { x: 0, y: 0 },
-    basePos: { x: 0, y: 0 },
+    basePos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
     lastMouse: { x: 0, y: 0 },
     press: { x: 0, y: 0 },
     isDragging: false,
@@ -496,10 +547,7 @@ function mountScene(host) {
   };
 
   preloadTextures();
-  lastChunkKey = "";
-  lastChunkUpdate = 0;
-  pendingChunk = null;
-  syncChunks(0, 0);
+  mountPeriod();
   resizeRenderer();
 
   galleryCanvas.addEventListener("pointerdown", onPointerDown);
