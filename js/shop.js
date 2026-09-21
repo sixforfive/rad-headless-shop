@@ -2,17 +2,15 @@
  * shop.js — Shop page (/shop).
  * shopList — the Shop Collection List (not merch)
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
- * cloneGalleryThumbs — duplicate original thumbs after hydrate for gallery loop
+ * cloneGalleryThumbs — two .is-clone copies of each original so wrap lands on a just-seen set
  * thumbImages — all shop thumb <img> (originals + clones)
  * eagerThumbImages — loading=eager on every thumb img so below-fold originals actually fetch
  * whenImageReady — decode if complete; else load/error, recheck complete to not miss the event
  * whenThumbsReady — resolve once every thumb image is decoded
- * pinThumbSrcs — freeze currentSrc so wrap does not srcset-refetch
+ * parkThumbImages — full-size src copies clipped in the viewport so wrap does not refetch
  * galleryReady — blocks wrap until first real measure lands
- * wrapGallery — decode originals, then instant-jump back one loop
- * originalThumbImages — shop thumb imgs that are not clones
  * loopHeight — first clone getBoundingClientRect.top minus first original
- * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
+ * onGalleryScroll — wrap at two loop heights; write 00–99 to #gallery-scroll-counter
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
  * setView — add/remove is-gallery on .product-list from data-view; jump to top when the view changes
  * syncActive — is-active on the switch button that matches the current view
@@ -20,7 +18,6 @@
 
 let galleryLoopHeight = 0;
 let galleryReady = false;
-let wrapPending = false;
 
 /** shopLists — Shop Collection Lists only (not merch) */
 function shopLists() {
@@ -46,17 +43,22 @@ function hydrateThumbs() {
   });
 }
 
-/** cloneGalleryThumbs — one .is-clone copy of each original shop thumb; skip if already cloned */
+/** cloneGalleryThumbs — two .is-clone copies of each original shop thumb; skip if already cloned */
 function cloneGalleryThumbs() {
   const list = shopList();
-  if (!list || list.querySelector(".product-thumb.is-clone")) return;
-  list.querySelectorAll(".product-thumb:not(.is-clone)").forEach((el) => {
-    const clone = el.cloneNode(true);
-    clone.classList.add("is-clone");
-    clone.setAttribute("aria-hidden", "true");
-    clone.querySelectorAll("a").forEach((a) => a.setAttribute("tabindex", "-1"));
-    el.parentNode.appendChild(clone);
-  });
+  if (!list) return;
+  const originals = [...list.querySelectorAll(".product-thumb:not(.is-clone)")];
+  if (!originals.length) return;
+  if (list.querySelectorAll(".product-thumb.is-clone").length >= originals.length * 2) return;
+  for (let i = 0; i < 2; i++) {
+    originals.forEach((el) => {
+      const clone = el.cloneNode(true);
+      clone.classList.add("is-clone");
+      clone.setAttribute("aria-hidden", "true");
+      clone.querySelectorAll("a").forEach((a) => a.setAttribute("tabindex", "-1"));
+      el.parentNode.appendChild(clone);
+    });
+  }
 }
 
 /** thumbImages — all shop thumb <img> (originals + clones) */
@@ -89,15 +91,24 @@ function whenThumbsReady() {
   return Promise.all(thumbImages().map(whenImageReady));
 }
 
-/** pinThumbSrcs — freeze currentSrc so wrap does not srcset-refetch */
-function pinThumbSrcs() {
+/** parkThumbImages — full-size src copies clipped in the viewport so wrap does not refetch */
+function parkThumbImages() {
+  if (document.getElementById("gallery-thumb-park")) return;
+  const park = document.createElement("div");
+  park.id = "gallery-thumb-park";
+  park.setAttribute("aria-hidden", "true");
+  park.style.cssText =
+    "position:fixed;top:0;left:0;width:1px;height:1px;overflow:hidden;pointer-events:none";
   thumbImages().forEach((img) => {
-    const src = img.currentSrc;
+    const src = img.currentSrc || img.src;
     if (!src) return;
-    img.removeAttribute("srcset");
-    img.removeAttribute("sizes");
-    img.src = src;
+    const copy = new Image();
+    copy.src = src;
+    copy.width = img.naturalWidth || img.width;
+    copy.height = img.naturalHeight || img.height;
+    park.appendChild(copy);
   });
+  document.body.appendChild(park);
 }
 
 /** loopHeight — first clone getBoundingClientRect.top minus first original */
@@ -123,36 +134,20 @@ function jumpScrollY(y) {
   window.scrollTo({ top: y, behavior: "auto" });
 }
 
-/** originalThumbImages — shop thumb imgs that are not clones */
-function originalThumbImages() {
-  const list = shopList();
-  return list ? [...list.querySelectorAll(".product-thumb:not(.is-clone) img")] : [];
-}
-
-/** wrapGallery — decode originals (they were off-screen), then jump one loop */
-function wrapGallery() {
-  if (wrapPending) return;
-  wrapPending = true;
-  Promise.all(originalThumbImages().map((img) => img.decode().catch(() => {}))).then(() => {
-    const h = galleryLoopHeight;
-    if (h > 0 && window.scrollY >= h) {
-      document.documentElement.style.overflowAnchor = "none";
-      jumpScrollY(window.scrollY - h);
-      document.documentElement.style.overflowAnchor = "";
-    }
-    wrapPending = false;
-  });
-}
-
 /** onGalleryScroll — wrap down in gallery; write 00–99 into #gallery-scroll-counter */
 function onGalleryScroll() {
   const list = shopList();
   if (!list?.classList.contains("is-gallery")) return;
   const h = galleryLoopHeight;
-  if (galleryReady && h > 0 && window.scrollY >= h) wrapGallery();
+  if (galleryReady && h > 0 && window.scrollY >= h * 2) {
+    document.documentElement.style.overflowAnchor = "none";
+    jumpScrollY(window.scrollY - h);
+    document.documentElement.style.overflowAnchor = "";
+  }
   const counter = document.getElementById("gallery-scroll-counter");
   if (counter && h > 0) {
-    const pct = Math.min(99, Math.max(0, Math.floor((window.scrollY / h) * 100)));
+    const along = window.scrollY % h;
+    const pct = Math.min(99, Math.max(0, Math.floor((along / h) * 100)));
     counter.textContent = String(pct).padStart(2, "0");
   }
 }
@@ -194,7 +189,7 @@ eagerThumbImages();
 syncActive();
 
 whenThumbsReady().then(() => {
-  pinThumbSrcs();
+  parkThumbImages();
   measureLoopHeight();
   galleryReady = true;
   onGalleryScroll();
