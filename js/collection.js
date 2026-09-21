@@ -23,9 +23,8 @@
  * setCursorLabel(hit) -> custom-cursor on canvas
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1
- * parallaxFactor(w) -> class p (S 0.78 .. XL 1)
- * stepFollow(cur, target, vel) -> follow that cannot outrun the pan
- * placeCopies() -> mesh positions around camera; large tiles lead the pan
+ * parallaxFactor(w) -> class p (S 0.55 .. XL 1)
+ * placeCopies() -> mesh positions from pan * p; camera stays home
  * ============================================================================
  */
 
@@ -42,9 +41,6 @@ const MAX_VELOCITY = 3.2;
 const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.94;
 const GRAB_EASE_MS = 280;
-const PARALLAX_FOLLOW = 0.08;
-const MAX_SLIP = 28;
-const SLIP_CATCHUP = 0.35;
 const DRIFT_AMOUNT = 8;
 const DRIFT_LERP = 0.12;
 const DRAG_CLICK_PX = 8;
@@ -53,14 +49,13 @@ const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
 const SIZE_CLASSES = [
-  { frac: 0.11, weight: 2, p: 0.78 },
-  { frac: 0.16, weight: 4, p: 0.88 },
-  { frac: 0.21, weight: 3, p: 0.94 },
+  { frac: 0.11, weight: 2, p: 0.55 },
+  { frac: 0.16, weight: 4, p: 0.7 },
+  { frac: 0.21, weight: 3, p: 0.85 },
   { frac: 0.26, weight: 1, p: 1 },
 ];
 
 const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
-const PARALLAX_P_MIN = SIZE_CLASSES[0].p;
 
 const PERIOD_OFFSETS = [];
 {
@@ -413,14 +408,7 @@ function setMouseNdc(event) {
   s.mouse.y = -((event.clientY - rect.top) / h) * 2 + 1;
 }
 
-/** stepFollow(cur, target, vel) -> follow that cannot outrun the pan */
-function stepFollow(cur, target, vel) {
-  const next = lerp(cur, target, PARALLAX_FOLLOW);
-  const maxStep = Math.max(Math.abs(vel), SLIP_CATCHUP);
-  return cur + clamp(next - cur, -maxStep, maxStep);
-}
-
-/** parallaxFactor(w) -> class p (S 0.78 .. XL 1) */
+/** parallaxFactor(w) -> class p (S 0.55 .. XL 1) */
 function parallaxFactor(w) {
   if (reduceMotion) return 1;
   const frac = w / SIZE_BASE;
@@ -436,24 +424,25 @@ function parallaxFactor(w) {
   return best.p;
 }
 
-/** placeCopies() -> mesh positions around camera; large tiles lead the pan */
+/** placeCopies() -> mesh positions from pan * p; camera stays home */
 function placeCopies() {
   if (!planeMeshes || !controller) return;
   const s = controller;
-  const slipX = clamp(s.basePos.x - s.followPos.x, -MAX_SLIP, MAX_SLIP);
-  const slipY = clamp(s.basePos.y - s.followPos.y, -MAX_SLIP, MAX_SLIP);
+  const panX = s.basePos.x - PERIOD_W / 2;
+  const panY = s.basePos.y - PERIOD_H / 2;
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
     const d = mesh.userData;
     const p = parallaxFactor(d.w);
     const worldX = d.tileX;
     const worldY = d.tileY;
-    const cx = Math.round((s.basePos.x - worldX) / PERIOD_W);
-    const cy = Math.round((s.basePos.y - worldY) / PERIOD_H);
-    const lead = p - PARALLAX_P_MIN;
+    const shiftX = panX * p;
+    const shiftY = panY * p;
+    const cx = Math.round((shiftX + PERIOD_W / 2 - worldX) / PERIOD_W);
+    const cy = Math.round((shiftY + PERIOD_H / 2 - worldY) / PERIOD_H);
     mesh.position.set(
-      worldX + (cx + d.ox) * PERIOD_W - slipX * lead,
-      worldY + (cy + d.oy) * PERIOD_H - slipY * lead,
+      worldX + (cx + d.ox) * PERIOD_W - shiftX,
+      worldY + (cy + d.oy) * PERIOD_H - shiftY,
       0,
     );
   }
@@ -535,8 +524,6 @@ function tick() {
     s.targetVel.y = 0;
     s.drift.x = 0;
     s.drift.y = 0;
-    s.followPos.x = s.basePos.x;
-    s.followPos.y = s.basePos.y;
   } else {
     s.velocity.x = lerp(s.velocity.x, s.targetVel.x, VELOCITY_LERP);
     s.velocity.y = lerp(s.velocity.y, s.targetVel.y, VELOCITY_LERP);
@@ -544,8 +531,6 @@ function tick() {
     s.basePos.y += s.velocity.y;
     s.targetVel.x *= VELOCITY_DECAY;
     s.targetVel.y *= VELOCITY_DECAY;
-    s.followPos.x = stepFollow(s.followPos.x, s.basePos.x, s.velocity.x);
-    s.followPos.y = stepFollow(s.followPos.y, s.basePos.y, s.velocity.y);
     if (!isTouchDevice) {
       s.drift.x = lerp(s.drift.x, s.mouse.x * DRIFT_AMOUNT, DRIFT_LERP);
       s.drift.y = lerp(s.drift.y, s.mouse.y * DRIFT_AMOUNT, DRIFT_LERP);
@@ -555,7 +540,7 @@ function tick() {
     }
   }
 
-  camera.position.set(s.basePos.x + s.drift.x, s.basePos.y + s.drift.y, 10);
+  camera.position.set(PERIOD_W / 2 + s.drift.x, PERIOD_H / 2 + s.drift.y, 10);
   placeCopies();
 
   renderer.render(scene, camera);
@@ -603,7 +588,6 @@ function mountScene(host) {
     velocity: { x: 0, y: 0 },
     targetVel: { x: 0, y: 0 },
     basePos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
-    followPos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
     drift: { x: 0, y: 0 },
     mouse: { x: 0, y: 0 },
     lastMouse: { x: 0, y: 0 },
