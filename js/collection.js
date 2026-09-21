@@ -39,7 +39,7 @@ const PLACE_TRIES = 40;
 const GUTTER = SIZE_BASE * (24 / 1440);
 const MAX_VELOCITY = 3.2;
 const VELOCITY_LERP = 0.16;
-const VELOCITY_DECAY = 0.9;
+const VELOCITY_DECAY = 0.94;
 const GRAB_EASE_MS = 280;
 const PARALLAX_MIN = 0.88;
 const DRIFT_AMOUNT = 8;
@@ -523,13 +523,16 @@ function tick() {
     s.velocity.y = lerp(s.velocity.y, s.targetVel.y, VELOCITY_LERP);
     s.basePos.x += s.velocity.x;
     s.basePos.y += s.velocity.y;
-    s.targetVel.x *= VELOCITY_DECAY;
-    s.targetVel.y *= VELOCITY_DECAY;
     if (!s.isDragging) {
-      const tx = isTouchDevice ? 0 : s.mouse.x * DRIFT_AMOUNT;
-      const ty = isTouchDevice ? 0 : s.mouse.y * DRIFT_AMOUNT;
-      s.drift.x = lerp(s.drift.x, tx, DRIFT_LERP);
-      s.drift.y = lerp(s.drift.y, ty, DRIFT_LERP);
+      s.targetVel.x *= VELOCITY_DECAY;
+      s.targetVel.y *= VELOCITY_DECAY;
+    }
+    if (!isTouchDevice) {
+      s.drift.x = lerp(s.drift.x, s.mouse.x * DRIFT_AMOUNT, DRIFT_LERP);
+      s.drift.y = lerp(s.drift.y, s.mouse.y * DRIFT_AMOUNT, DRIFT_LERP);
+    } else {
+      s.drift.x = lerp(s.drift.x, 0, DRIFT_LERP);
+      s.drift.y = lerp(s.drift.y, 0, DRIFT_LERP);
     }
   }
 
