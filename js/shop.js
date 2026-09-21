@@ -2,7 +2,7 @@
  * shop.js — Shop page (/shop).
  * shopList — the Shop Collection List (not merch)
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
- * cloneGalleryThumbs — duplicate original thumbs after hydrate for gallery loop
+ * cloneGalleryThumbs — duplicate original thumbs after hydrate for gallery loop; eager-decode clone imgs
  * loopHeight — first clone getBoundingClientRect.top minus first original
  * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
@@ -45,6 +45,10 @@ function cloneGalleryThumbs() {
     clone.classList.add("is-clone");
     clone.setAttribute("aria-hidden", "true");
     clone.querySelectorAll("a").forEach((a) => a.setAttribute("tabindex", "-1"));
+    clone.querySelectorAll("img").forEach((img) => {
+      img.loading = "eager";
+      img.decode().catch(() => {});
+    });
     el.parentNode.appendChild(clone);
   });
 }
