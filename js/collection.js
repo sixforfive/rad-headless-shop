@@ -23,8 +23,8 @@
  * setCursorLabel(hit) -> custom-cursor on canvas
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1
- * parallaxFactor(w) -> PARALLAX_MIN..1 from tile size
- * placeCopies() -> mesh positions around camera with follow lag
+ * parallaxFactor(w) -> class p (S 0.78 .. XL 1)
+ * placeCopies() -> mesh positions around camera with velocity lag
  * ============================================================================
  */
 
@@ -41,8 +41,7 @@ const MAX_VELOCITY = 3.2;
 const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.94;
 const GRAB_EASE_MS = 280;
-const PARALLAX_MIN = 0.82;
-const PARALLAX_FOLLOW = 0.03;
+const PARALLAX_LAG = 16;
 const DRIFT_AMOUNT = 8;
 const DRIFT_LERP = 0.12;
 const DRAG_CLICK_PX = 8;
@@ -51,15 +50,13 @@ const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 
 const SIZE_CLASSES = [
-  { frac: 0.11, weight: 2 },
-  { frac: 0.16, weight: 4 },
-  { frac: 0.21, weight: 3 },
-  { frac: 0.26, weight: 1 },
+  { frac: 0.11, weight: 2, p: 0.78 },
+  { frac: 0.16, weight: 4, p: 0.88 },
+  { frac: 0.21, weight: 3, p: 0.94 },
+  { frac: 0.26, weight: 1, p: 1 },
 ];
 
 const SIZE_WEIGHT_SUM = SIZE_CLASSES.reduce((sum, c) => sum + c.weight, 0);
-const SIZE_FRAC_MIN = SIZE_CLASSES[0].frac;
-const SIZE_FRAC_MAX = SIZE_CLASSES[SIZE_CLASSES.length - 1].frac;
 
 const PERIOD_OFFSETS = [];
 {
@@ -412,23 +409,28 @@ function setMouseNdc(event) {
   s.mouse.y = -((event.clientY - rect.top) / h) * 2 + 1;
 }
 
-/** parallaxFactor(w) -> PARALLAX_MIN..1 from tile size */
+/** parallaxFactor(w) -> class p (S 0.78 .. XL 1) */
 function parallaxFactor(w) {
   if (reduceMotion) return 1;
-  const t = clamp(
-    (w / SIZE_BASE - SIZE_FRAC_MIN) / (SIZE_FRAC_MAX - SIZE_FRAC_MIN),
-    0,
-    1,
-  );
-  return PARALLAX_MIN + t * (1 - PARALLAX_MIN);
+  const frac = w / SIZE_BASE;
+  let best = SIZE_CLASSES[0];
+  let bestD = Math.abs(frac - best.frac);
+  for (let i = 1; i < SIZE_CLASSES.length; i++) {
+    const d = Math.abs(frac - SIZE_CLASSES[i].frac);
+    if (d < bestD) {
+      best = SIZE_CLASSES[i];
+      bestD = d;
+    }
+  }
+  return best.p;
 }
 
-/** placeCopies() -> mesh positions around camera with follow lag */
+/** placeCopies() -> mesh positions around camera with velocity lag */
 function placeCopies() {
   if (!planeMeshes || !controller) return;
   const s = controller;
-  const slipX = s.basePos.x - s.followPos.x;
-  const slipY = s.basePos.y - s.followPos.y;
+  const slipX = s.velocity.x * PARALLAX_LAG;
+  const slipY = s.velocity.y * PARALLAX_LAG;
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
     const d = mesh.userData;
@@ -522,8 +524,6 @@ function tick() {
     s.targetVel.y = 0;
     s.drift.x = 0;
     s.drift.y = 0;
-    s.followPos.x = s.basePos.x;
-    s.followPos.y = s.basePos.y;
   } else {
     s.velocity.x = lerp(s.velocity.x, s.targetVel.x, VELOCITY_LERP);
     s.velocity.y = lerp(s.velocity.y, s.targetVel.y, VELOCITY_LERP);
@@ -531,8 +531,6 @@ function tick() {
     s.basePos.y += s.velocity.y;
     s.targetVel.x *= VELOCITY_DECAY;
     s.targetVel.y *= VELOCITY_DECAY;
-    s.followPos.x = lerp(s.followPos.x, s.basePos.x, PARALLAX_FOLLOW);
-    s.followPos.y = lerp(s.followPos.y, s.basePos.y, PARALLAX_FOLLOW);
     if (!isTouchDevice) {
       s.drift.x = lerp(s.drift.x, s.mouse.x * DRIFT_AMOUNT, DRIFT_LERP);
       s.drift.y = lerp(s.drift.y, s.mouse.y * DRIFT_AMOUNT, DRIFT_LERP);
@@ -590,7 +588,6 @@ function mountScene(host) {
     velocity: { x: 0, y: 0 },
     targetVel: { x: 0, y: 0 },
     basePos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
-    followPos: { x: PERIOD_W / 2, y: PERIOD_H / 2 },
     drift: { x: 0, y: 0 },
     mouse: { x: 0, y: 0 },
     lastMouse: { x: 0, y: 0 },
