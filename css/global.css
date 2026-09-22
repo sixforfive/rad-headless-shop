@@ -69,7 +69,7 @@ html.lenis:not(.lenis-stopped) body {
   grid-column: var(--merch-column);
 }
 
-.product-list:not(.is-gallery) .product-thumb.is-clone {
+.product-list.is-clone:not(.is-gallery) {
   display: none;
 }
 
@@ -112,7 +112,14 @@ body:has(.product-list:not(.is-gallery):not(.is-merch))
     transition: opacity 0.3s ease;
   }
 
-  .product-list:has(.product-link:hover) .product-link:not(:hover) {
+  .product-list.is-merch:has(.product-link:hover) .product-link:not(:hover) {
+    opacity: 0.5;
+  }
+
+  /* Shop spans the original list and its loop clone; merch stays out of it. */
+  body:has(.product-list:not(.is-merch) .product-link:hover)
+    .product-list:not(.is-merch)
+    .product-link:not(:hover) {
     opacity: 0.5;
   }
 

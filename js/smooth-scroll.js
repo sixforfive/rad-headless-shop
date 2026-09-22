@@ -4,6 +4,8 @@
  * radNestedLenis — nested Lenis on .product-gallery-col, or null
  * radScrollTo — scroll the window instance (or native window)
  * radScrollToTop — nested col if live, otherwise window; slower duration
+ * radScrollShift — move the window position by a delta, keeping Lenis momentum
+ * radOnScroll — run a callback on the Lenis frame, or on a passive window scroll
  * radLenisStop / radLenisStart — drawer lock; both instances
  * radNestedGallerySync — nested on desktop default gallery only; off in fullscreen and ≤767
  * dampVirtualScroll — scale wheel delta in the last 160px of a real bound
@@ -72,6 +74,26 @@ function radScrollToTop(options) {
     return;
   }
   radScrollTo(0, options);
+}
+
+/** radScrollShift — move both Lenis scroll values by delta so velocity survives */
+function radScrollShift(delta) {
+  if (radLenis) {
+    radLenis.animatedScroll -= delta;
+    radLenis.targetScroll -= delta;
+    window.scrollTo(0, radLenis.animatedScroll);
+    return;
+  }
+  window.scrollTo(0, window.scrollY - delta);
+}
+
+/** radOnScroll — Lenis frame callback when live, else passive window scroll */
+function radOnScroll(fn) {
+  if (radLenis) {
+    radLenis.on("scroll", fn);
+    return;
+  }
+  window.addEventListener("scroll", fn, { passive: true });
 }
 
 /** radLenisStop — freeze window and nested while a drawer is open */
