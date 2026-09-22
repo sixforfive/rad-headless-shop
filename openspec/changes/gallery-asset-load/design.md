@@ -10,7 +10,7 @@ See proposal.md for motivation. `preloadTextures` in `js/collection.js` calls `g
 
 - Boot the canvas with one mode's files.
 - Use an 800w `srcset` candidate when the attribute is there.
-- Eager-load only the first shop row, and keep the clone.
+- A shop loop height that is final at load, with the clone not repeating eager work.
 
 **Non-Goals:**
 
@@ -38,18 +38,22 @@ Alternative considered: always request the `-p-800` sibling. Rejected — those 
 
 Until the Designer gives those images a `srcset`, this branch keeps today's `src`. That is the whole size cut, and it is a Designer change, not a code change.
 
-### Eager the first measured row, then clone
+### Eager originals, lazy clone
 
-After `hydrateThumbs` and before `cloneGalleryList`, read each original thumb's top. Set `loading="eager"` on thumbs whose top is within 0.5px of the minimum top. Leave every other thumb at the HTML `loading="lazy"`. Cloning still copies the attribute, so the seam's first clone row is the same URLs as the first original row.
+`eagerThumbImages` keeps `loading="eager"` on every original thumb image, and `cloneGalleryList` sets the clone's images back to `lazy` after the copy. The originals are what `loopHeight` measures, so their height has to be final before the visitor can reach the seam. The clone's URLs are the originals' URLs, so nothing is saved by fetching them early.
 
-Gallery and list both go through this, because both are the same list with or without `is-gallery`. Merch stays out because `shopList` already excludes `.is-merch`.
+Attempted and reverted: eager on the first laid-out row only. Rows below the fold then gained height during the scroll, the measured loop height grew behind the visitor, and the wrap threw the page backward at the end of the set.
 
-Alternative considered: eager the first N thumbs. Rejected — gallery column spans mean N is not a row.
+Merch stays out because `shopList` already excludes `.is-merch`.
 
-Alternative considered: eager anything in the viewport. Rejected — the first screen can be more than one row, which is the download this change is cutting.
+### Thumb height cannot answer for the image
+
+`originalsSized` gated the wrap on `height > 1`, which a `.product-thumb` satisfies from its SKU and price text even with no image. That guard was effectively always true. It now also requires every `img` in the thumb to be `complete`, so the wrap waits for real geometry.
+
+`complete` is used rather than `naturalHeight`, because it is also true for an image that failed, which keeps a broken CMS thumbnail from disabling the loop forever. It is read on the elements present rather than a specific class, so the gate does not depend on `.thumb-light` existing.
 
 ## Risks / Trade-offs
 
 - [Hero images have no `srcset` today] → The mode split still drops half the files. The 800w pick stays dormant until those images are responsive in the Designer.
-- [Thumbs have no height at boot] → If no original thumb has height, skip the eager pass and leave them lazy, instead of marking every thumb eager.
-- [Fast scroll reaches a lazy row before it decodes] → The seam itself is the first row's URLs, which are eager. Later rows load as they approach the viewport.
+- [Eager originals are the same request count as before this change] → The shop saving is the clone, not the originals. Cutting the originals breaks the loop, which is worse than the bytes.
+- [A slow original image delays the first wrap] → The gate is per image `complete`, so the loop starts working as soon as the set has arrived, and the page never shifts backward in the meantime.

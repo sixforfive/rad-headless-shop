@@ -6,6 +6,7 @@
 
 ## 2. Shop first row
 
-- [x] 2.1 In `js/shop.js` `eagerThumbImages`, if no original thumb has height, leave every image `loading="lazy"`. Otherwise set `loading="eager"` only on original thumbs whose top is within 0.5px of the minimum top, and leave the rest untouched.
-- [x] 2.2 Keep the `eagerThumbImages()` call before `cloneGalleryList()` in the boot sequence.
-- [x] 2.3 Update the `js/shop.js` header explainer for `eagerThumbImages`.
+- [x] 2.1 In `js/shop.js` `eagerThumbImages`, set `loading="eager"` on every original shop thumb image so the measured loop height is final at load.
+- [x] 2.2 In `js/shop.js` `cloneGalleryList`, set `loading="lazy"` on the clone's images after `cloneNode`.
+- [x] 2.3 In `js/shop.js` `originalsSized`, also require every `img` in each original thumb to be `complete`, since thumb text alone satisfies the height check.
+- [x] 2.4 Update the `js/shop.js` header explainer for `eagerThumbImages`, `cloneGalleryList`, and `originalsSized`.
