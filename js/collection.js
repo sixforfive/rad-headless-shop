@@ -595,7 +595,10 @@ function onPointerUp(event) {
   if (finePointer) setCursorLabel(hit);
   hoveredMesh = canHoverDim() && inside ? hit : null;
   if (s.clickCanceled || s.moved >= DRAG_CLICK_PX) return;
-  if (hit) window.location.assign(SHOP_HREF);
+  if (hit) {
+    if (typeof window.radLeaveTo === "function") window.radLeaveTo(SHOP_HREF);
+    else window.location.assign(SHOP_HREF);
+  }
 }
 
 function onWheel(event) {
@@ -738,3 +741,5 @@ function bootInfiniteGallery() {
 }
 
 bootInfiniteGallery();
+window.radPageReadyFired = true;
+if (typeof window.radPageReady === "function") window.radPageReady();

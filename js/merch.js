@@ -14,3 +14,5 @@ function hydrateMerchThumbs() {
 }
 
 hydrateMerchThumbs();
+window.radPageReadyFired = true;
+if (typeof radPageReady === "function") radPageReady();

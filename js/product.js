@@ -136,3 +136,5 @@ function setPaginationTicks() {
 
 setPaginationTicks();
 if (typeof radNestedGallerySync === "function") radNestedGallerySync();
+window.radPageReadyFired = true;
+if (typeof radPageReady === "function") radPageReady();

@@ -16,7 +16,9 @@
  * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
  * initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers
  * revealPage — add html.is-ready on the next frame so the rise can paint
- * schedulePageReveal — every page: rise after the next document can render, or on the next frame
+ * radPageReady — page scripts call this after layout; first paint stays hidden until then
+ * radLeaveTo — sink content, keep the drawer, prefetch, then go
+ * interceptPageClicks — same-origin links run radLeaveTo instead of a raw navigation
  */
 
 const FAVICON_LIGHT =
@@ -337,31 +339,131 @@ function initCursorLabel() {
 
 initCursorLabel();
 
+const PAGE_LEAVE_MS = 600;
+const PAGE_HOLD_MS = 350;
+const SKIP_LEAVE_IDS = new Set([
+  "menu-open",
+  "menu-close",
+  "cart-open",
+  "cart-close",
+  "back-to-top",
+  "keep-shopping",
+  "full-screen-open",
+  "full-screen-close",
+  "currency-btn",
+  "lights-switch-btn",
+  "checkout-btn",
+  "download-spec",
+]);
+
+let pageRevealed = false;
+let pageLeaving = false;
+const prefetchedHrefs = new Set();
+
 /** revealPage — add html.is-ready on the next frame so the rise can paint */
 function revealPage() {
+  if (pageRevealed) return;
+  pageRevealed = true;
   requestAnimationFrame(() => {
     document.documentElement.classList.add("is-ready");
   });
 }
 
-/** schedulePageReveal — every page: rise after the next document can render, or on the next frame */
-function schedulePageReveal() {
-  let pageRevealSeen = false;
+/** radPageReady — layout scripts call this; global.js also exposes it on window */
+function radPageReady() {
+  revealPage();
+}
+window.radPageReady = radPageReady;
+if (window.radPageReadyFired) revealPage();
 
-  window.addEventListener("pagereveal", (event) => {
-    pageRevealSeen = true;
-    if (event.viewTransition) {
-      event.viewTransition.finished.then(revealPage, revealPage);
-      return;
-    }
-    revealPage();
-  });
-
+document.addEventListener("DOMContentLoaded", () => {
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (!pageRevealSeen) revealPage();
-    });
+    if (window.radPageReadyFired) return;
+    const needsLayout =
+      document.querySelector(".product-list .product-thumb") ||
+      document.querySelector(".collection-hero-gallery");
+    if (!needsLayout) revealPage();
   });
+});
+setTimeout(revealPage, 2000);
+window.addEventListener("pageshow", (event) => {
+  if (!event.persisted) return;
+  pageLeaving = false;
+  document.documentElement.classList.remove("is-leaving");
+  document.documentElement.classList.add("is-ready");
+  pageRevealed = true;
+});
+
+/** prefetchHref — warm the next document during the leave */
+function prefetchHref(href) {
+  if (prefetchedHrefs.has(href)) return;
+  prefetchedHrefs.add(href);
+  const link = document.createElement("link");
+  link.rel = "prefetch";
+  link.href = href;
+  document.head.appendChild(link);
 }
 
-schedulePageReveal();
+/** navHref — same-origin page URL, or empty for hash / external / non-http */
+function navHref(anchor) {
+  if (!anchor?.href) return "";
+  if (anchor.hasAttribute("download")) return "";
+  if (anchor.target && anchor.target !== "" && anchor.target !== "_self") {
+    return "";
+  }
+  try {
+    const url = new URL(anchor.href, location.href);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    if (url.origin !== location.origin) return "";
+    if (
+      url.pathname === location.pathname &&
+      url.search === location.search
+    ) {
+      return "";
+    }
+    return url.href;
+  } catch (e) {
+    return "";
+  }
+}
+
+/** radLeaveTo — sink content, keep the drawer, prefetch, then assign */
+function radLeaveTo(href) {
+  if (!href || pageLeaving) return;
+  pageLeaving = true;
+  prefetchHref(href);
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  if (reduceMotion) {
+    location.href = href;
+    return;
+  }
+  document.documentElement.classList.add("is-leaving");
+  setTimeout(() => {
+    location.href = href;
+  }, PAGE_LEAVE_MS + PAGE_HOLD_MS);
+}
+window.radLeaveTo = radLeaveTo;
+
+/** interceptPageClicks — same-origin page links leave, then go */
+function interceptPageClicks(event) {
+  if (event.defaultPrevented || event.button !== 0) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const anchor = event.target.closest?.("a[href]");
+  if (!anchor) return;
+  if (SKIP_LEAVE_IDS.has(anchor.id)) return;
+  if (anchor.closest("[data-add-to-cart], [data-cart-remove]")) return;
+  const href = navHref(anchor);
+  if (!href) return;
+  event.preventDefault();
+  radLeaveTo(href);
+}
+
+document.addEventListener("click", interceptPageClicks);
+document.addEventListener("pointerenter", (event) => {
+  const anchor = event.target.closest?.("a[href]");
+  if (!anchor || SKIP_LEAVE_IDS.has(anchor.id)) return;
+  const href = navHref(anchor);
+  if (href) prefetchHref(href);
+}, true);

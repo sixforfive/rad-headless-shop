@@ -220,6 +220,8 @@ cloneGalleryList();
 syncActive();
 measureLoopHeight();
 onGalleryScroll();
+window.radPageReadyFired = true;
+if (typeof radPageReady === "function") radPageReady();
 
 if (typeof radOnScroll === "function") {
   radOnScroll(onGalleryScroll);
