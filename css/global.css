@@ -35,7 +35,9 @@ html.lenis.lenis-stopped {
 /* White chrome inverts against page content. Antialias: blend + subpixel is muddy. */
 .navbar,
 .second-menu,
+.second-menu .text-meta,
 .footer,
+.footer-link,
 .layer.is-blend {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
