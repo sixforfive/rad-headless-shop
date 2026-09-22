@@ -3,7 +3,9 @@
  * ============================================================================
  * FUNCTIONS EXPLAINER
  * ----------------------------------------------------------------------------
- * readGallerySrcs(list) -> img srcs in DOM order, skip empty/placeholder
+ * displayUrl(img) -> srcset candidate nearest 800w, else src
+ * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
+ * preloadTextures() -> fetch urlForIndex for each light index
  * bootInfiniteGallery() -> mount canvas or no-op
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
@@ -192,12 +194,39 @@ function buildPeriod(srcs) {
   return tiles;
 }
 
-/** readGallerySrcs(list) -> img srcs in DOM order, skip empty/placeholder */
+const DISPLAY_W = 800;
+
+/** displayUrl(img) -> srcset candidate nearest 800w, else src */
+function displayUrl(img) {
+  const src = img.getAttribute("src") || "";
+  const srcset = img.getAttribute("srcset");
+  if (!srcset) return src;
+  let best = "";
+  let bestDelta = Infinity;
+  let bestW = Infinity;
+  srcset.split(",").forEach((part) => {
+    const bits = part.trim().split(/\s+/);
+    if (bits.length < 2) return;
+    const desc = bits[bits.length - 1];
+    if (!desc.endsWith("w")) return;
+    const w = parseInt(desc, 10);
+    if (!Number.isFinite(w)) return;
+    const delta = Math.abs(w - DISPLAY_W);
+    if (delta < bestDelta || (delta === bestDelta && w < bestW)) {
+      best = bits[0];
+      bestDelta = delta;
+      bestW = w;
+    }
+  });
+  return best || src;
+}
+
+/** readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder */
 function readGallerySrcs(list) {
   if (!list) return [];
   const srcs = [];
   list.querySelectorAll(".hero-gallery-img").forEach((img) => {
-    const src = img.currentSrc || img.src || "";
+    const src = displayUrl(img);
     if (!src) return;
     if (src.includes("placeholder")) return;
     srcs.push(src);
@@ -308,9 +337,11 @@ function applyModeTextures() {
   });
 }
 
+/** preloadTextures() -> fetch urlForIndex for each light index */
 function preloadTextures() {
-  lightSrcs.forEach(getTexture);
-  darkSrcs.forEach(getTexture);
+  for (let i = 0; i < lightSrcs.length; i++) {
+    getTexture(urlForIndex(i));
+  }
 }
 
 /** patchHoverMaterial(material) -> uDim / uBg in the basic fragment shader */

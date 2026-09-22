@@ -3,7 +3,7 @@
  * shopList — the Shop Collection List (not merch)
  * cloneList — the cloned Shop Collection List, or null
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
- * eagerThumbImages — loading=eager on every thumb img so below-fold thumbs actually fetch
+ * eagerThumbImages — loading=eager on the first row when thumbs have height; otherwise leave lazy
  * cloneGalleryList — one .is-clone copy of the whole list, appended as its sibling
  * alignCloneGap — clone list margin-top so the seam gap equals the grid row gap
  * originalsSized — every original thumb has layout height
@@ -47,12 +47,28 @@ function hydrateThumbs() {
   });
 }
 
-/** eagerThumbImages — loading=eager on every shop thumb img */
+/** eagerThumbImages — loading=eager on the first row when thumbs have height */
 function eagerThumbImages() {
   const list = shopList();
   if (!list) return;
-  list.querySelectorAll(".product-thumb img").forEach((img) => {
-    img.loading = "eager";
+  const thumbs = [...list.querySelectorAll(".product-thumb")];
+  const sized = thumbs.filter((el) => el.getBoundingClientRect().height > 0);
+  if (!sized.length) {
+    list.querySelectorAll(".product-thumb img").forEach((img) => {
+      img.loading = "lazy";
+    });
+    return;
+  }
+  let minTop = Infinity;
+  sized.forEach((el) => {
+    const top = el.getBoundingClientRect().top;
+    if (top < minTop) minTop = top;
+  });
+  sized.forEach((el) => {
+    if (Math.abs(el.getBoundingClientRect().top - minTop) > 0.5) return;
+    el.querySelectorAll("img").forEach((img) => {
+      img.loading = "eager";
+    });
   });
 }
 
