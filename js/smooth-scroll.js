@@ -126,7 +126,7 @@ function createNested(col) {
   let nested;
   nested = new Lenis({
     wrapper: col,
-    content: col,
+    content: col.querySelector(".product-gallery-list"),
     autoRaf: true,
     syncTouch: false,
     overscroll: false,
