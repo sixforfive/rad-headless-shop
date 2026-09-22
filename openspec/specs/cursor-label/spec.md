@@ -10,7 +10,7 @@ Shows an informational `.text-meta` label next to the pointer over areas marked 
 
 While the pointer is over an element that carries a non-empty `custom-cursor` attribute, the site SHALL show a label whose text is that attribute's value and whose class list includes `text-meta`. The label SHALL be created by the site; the marked element SHALL NOT be replaced or wrapped.
 
-An empty `custom-cursor` value SHALL be treated as unmarked.
+An empty `custom-cursor` value SHALL be treated as unmarked. The shown text SHALL match the current attribute of the node under the pointer, including when that node or value changes without pointer movement.
 
 #### Scenario: Hover a marked area
 
@@ -21,6 +21,16 @@ An empty `custom-cursor` value SHALL be treated as unmarked.
 
 - **WHEN** the pointer is over an element with `custom-cursor=""`
 - **THEN** no cursor label is shown
+
+#### Scenario: Full-width gallery open
+
+- **WHEN** the pointer stays over the full-width gallery control and the visitor opens the gallery so the node under the pointer now has `custom-cursor="Close"`
+- **THEN** the label shows `Close` without requiring the pointer to move
+
+#### Scenario: Full-width gallery close
+
+- **WHEN** the pointer stays over the full-width gallery control and the visitor closes the gallery so the node under the pointer now has `custom-cursor="Open"`
+- **THEN** the label shows `Open` without requiring the pointer to move
 
 ### Requirement: Native cursor and existing activation stay
 
@@ -47,7 +57,7 @@ While the label is shown, it SHALL lag the pointer with easing rather than sitti
 
 ### Requirement: Fade on enter and leave
 
-Entering a marked area SHALL fade the label in. Leaving SHALL fade the label out. Moving from one marked area to another SHALL update the label text without fading out.
+Entering a marked area SHALL fade the label in. Leaving SHALL fade the label out. Leave SHALL include the pointer exiting all marked areas, and scroll or layout moving every marked area out from under a still pointer. Moving from one marked area to another SHALL update the label text without fading out.
 
 When `prefers-reduced-motion: reduce` is set, the fade SHALL NOT run: the label SHALL appear and disappear immediately.
 
@@ -61,6 +71,11 @@ When `prefers-reduced-motion: reduce` is set, the fade SHALL NOT run: the label 
 - **WHEN** the pointer leaves all marked areas
 - **THEN** the label fades out
 
+#### Scenario: Scroll off a marked area
+
+- **WHEN** the label is visible over a marked area and the visitor scrolls until that area is no longer under the pointer
+- **THEN** the label fades out
+
 #### Scenario: Switch areas
 
 - **WHEN** the pointer moves from one marked area to another whose `custom-cursor` value is different
@@ -68,7 +83,7 @@ When `prefers-reduced-motion: reduce` is set, the fade SHALL NOT run: the label 
 
 #### Scenario: Reduced motion fade
 
-- **WHEN** the visitor prefers reduced motion and the pointer enters or leaves a marked area
+- **WHEN** the visitor prefers reduced motion and a marked area is entered or left, including by scroll
 - **THEN** the label appears or disappears with no fade
 
 ### Requirement: Nearest marked ancestor
