@@ -8,14 +8,10 @@ body {
   overscroll-behavior: none;
 }
 
-/* Lenis companion: document can grow; stopped = drawer lock. */
+/* Lenis companion: document can grow. */
 html.lenis,
 html.lenis body {
   height: auto;
-}
-
-html.lenis.lenis-stopped {
-  overflow: clip;
 }
 
 [data-lenis-prevent] {

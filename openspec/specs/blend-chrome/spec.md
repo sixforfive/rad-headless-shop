@@ -1,12 +1,14 @@
+# blend-chrome Specification
+
 ## Purpose
 
 Keeps difference-blended chrome type on grayscale antialias so navbar, second-menu, footer, and the blend layer match in weight.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Chrome type uses grayscale antialias
 
-`.navbar`, `.second-menu`, `.footer`, and `.layer.is-blend` SHALL paint type with grayscale antialias, not subpixel.
+`.navbar`, `.second-menu`, `.second-menu .text-meta`, `.footer`, `.footer-link`, and `.layer.is-blend` SHALL paint type with grayscale antialias, not subpixel.
 
 #### Scenario: Navbar matches second-menu
 
@@ -16,7 +18,12 @@ Keeps difference-blended chrome type on grayscale antialias so navbar, second-me
 #### Scenario: Footer matches navbar
 
 - **WHEN** `.footer` is on the page
-- **THEN** type in `.footer` uses the same grayscale antialias as `.navbar`
+- **THEN** `.footer-link` uses the same grayscale antialias as `.navbar`
+
+#### Scenario: Scroll counter matches navbar
+
+- **WHEN** `.second-menu .text-meta` is on the page
+- **THEN** it uses the same grayscale antialias as `.navbar`
 
 ### Requirement: Difference blend stays on navbar, second-menu, and the blend layer
 

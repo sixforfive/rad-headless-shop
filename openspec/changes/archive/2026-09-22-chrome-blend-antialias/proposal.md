@@ -4,15 +4,15 @@ Difference-blended chrome on `.second-menu` and `.footer` still uses subpixel an
 
 ## What Changes
 
-- `.second-menu` gets the same grayscale font-smoothing as `.navbar`.
-- `.footer` gets that same smoothing.
+- `.second-menu` and `.second-menu .text-meta` get the same grayscale font-smoothing as `.navbar`.
+- `.footer` and `.footer-link` get that same smoothing.
 - `.footer` still does not set `mix-blend-mode`; product and merch fullscreen already forbid blend on nodes inside `.layer`.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `blend-chrome`: Grayscale antialias on difference-blended chrome — `.navbar`, `.second-menu`, `.footer`, and `.layer.is-blend`.
+- `blend-chrome`: Grayscale antialias on difference-blended chrome — `.navbar`, `.second-menu`, `.second-menu .text-meta`, `.footer`, `.footer-link`, and `.layer.is-blend`.
 
 ### Modified Capabilities
 

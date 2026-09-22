@@ -6,7 +6,7 @@ See proposal.md for motivation. `css/global.css` already sets `mix-blend-mode: d
 
 **Goals:**
 
-- One smoothing list covering `.navbar`, `.second-menu`, `.footer`, and `.layer.is-blend`.
+- One smoothing list covering `.navbar`, `.second-menu`, `.second-menu .text-meta`, `.footer`, `.footer-link`, and `.layer.is-blend`.
 - Keep difference blend on `.navbar`, `.second-menu`, and `.layer.is-blend` only.
 
 **Non-Goals:**
@@ -18,7 +18,9 @@ See proposal.md for motivation. `css/global.css` already sets `mix-blend-mode: d
 
 ### Split smoothing from blend
 
-Smoothing on `.navbar`, `.second-menu`, `.footer`, `.layer.is-blend`. Blend on `.navbar`, `.second-menu`, `.layer.is-blend`. Rename `.second-men` to `.second-menu`.
+Smoothing on `.navbar`, `.second-menu`, `.second-menu .text-meta`, `.footer`, `.footer-link`, `.layer.is-blend`. Blend on `.navbar`, `.second-menu`, `.layer.is-blend`. Rename `.second-men` to `.second-menu`.
+
+`mix-blend-mode` on `.second-menu` isolates glyph paint, so smoothing on the bar does not reach `.text-meta`. `.footer-link` paints its own color, so it needs the same declaration. Put grayscale AA on those type nodes, not only the chrome roots.
 
 Alternative considered: add `.footer` to the existing combined rule. Rejected — that would set mix-blend on `.footer` inside `.layer.is-blend`.
 
@@ -31,7 +33,7 @@ Site-wide sheet already loaded. Same chrome block.
 ## Risks / Trade-offs
 
 - [jsDelivr pin] → New SHA in the Webflow Head `<link>` for `css/global.css` after commit; do not rely on `@main`.
-- [Footer inside `.layer.is-blend`] → Smoothing inherits; mix-blend stays off `.footer`.
+- [Footer inside `.layer.is-blend`] → Smoothing on `.footer` and `.footer-link`; mix-blend stays off `.footer`.
 
 ## Migration Plan
 
