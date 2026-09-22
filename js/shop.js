@@ -6,9 +6,9 @@
  * eagerThumbImages — loading=eager on the first row when thumbs have height; otherwise leave lazy
  * cloneGalleryList — one .is-clone copy of the whole list, appended as its sibling
  * alignCloneGap — clone list margin-top so the seam gap equals the grid row gap
- * originalsSized — every original thumb has layout height
+ * originalsSized — every original .thumb-light has decoded height
  * loopHeight — clone list getBoundingClientRect.top minus original list top
- * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
+ * onGalleryScroll — wrap only when a downward scroll crosses the loop; write 00–99 to #gallery-scroll-counter
  * shiftScrollY — momentum-preserving radScrollShift (Lenis) or window.scrollTo
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
  * setView — add/remove is-gallery on .product-list from data-view; jump to top when the view changes
@@ -17,6 +17,7 @@
 
 let galleryLoopHeight = 0;
 let galleryOriginalsSized = false;
+let galleryScrollY = window.scrollY;
 
 /** shopLists — Shop Collection Lists only (not merch) */
 function shopLists() {
@@ -101,13 +102,20 @@ function alignCloneGap() {
   }
 }
 
-/** originalsSized — every original thumb has layout height */
+/** originalsSized — every original .thumb-light has decoded height */
 function originalsSized() {
   const list = shopList();
   if (!list) return false;
   const originals = list.querySelectorAll(".product-thumb");
   if (!originals.length) return false;
-  return [...originals].every((el) => el.getBoundingClientRect().height > 1);
+  return [...originals].every((el) => {
+    const img = el.querySelector(".thumb-light");
+    return (
+      el.getBoundingClientRect().height > 1 &&
+      !!img &&
+      img.naturalHeight > 0
+    );
+  });
 }
 
 /** loopHeight — clone list top minus original list top */
@@ -149,14 +157,24 @@ function jumpScrollY(y) {
   window.scrollTo({ top: y, behavior: "auto" });
 }
 
-/** onGalleryScroll — wrap down in gallery; write 00–99 into #gallery-scroll-counter */
+/** onGalleryScroll — wrap when a downward scroll crosses the loop */
 function onGalleryScroll() {
   const list = shopList();
   if (!list?.classList.contains("is-gallery")) return;
+  const y = window.scrollY;
+  const prev = galleryScrollY;
+  galleryScrollY = y;
   const h = galleryLoopHeight;
-  if (h > 0 && galleryOriginalsSized && window.scrollY >= h) {
+  if (
+    h > 0 &&
+    galleryOriginalsSized &&
+    prev < h &&
+    y >= h &&
+    y - prev < h
+  ) {
     document.documentElement.style.overflowAnchor = "none";
     shiftScrollY(h);
+    galleryScrollY = window.scrollY;
     document.documentElement.style.overflowAnchor = "";
   }
   const counter = document.getElementById("gallery-scroll-counter");
@@ -209,17 +227,11 @@ if (typeof radOnScroll === "function") {
 } else {
   window.addEventListener("scroll", onGalleryScroll, { passive: true });
 }
-window.addEventListener("resize", () => {
-  measureLoopHeight();
-  onGalleryScroll();
-});
+window.addEventListener("resize", measureLoopHeight);
 
 const galleryList = shopList();
 if (galleryList) {
-  new ResizeObserver(() => {
-    measureLoopHeight();
-    onGalleryScroll();
-  }).observe(galleryList);
+  new ResizeObserver(measureLoopHeight).observe(galleryList);
 }
 
 document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
