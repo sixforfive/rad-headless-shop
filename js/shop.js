@@ -3,10 +3,10 @@
  * shopList — the Shop Collection List (not merch)
  * cloneList — the cloned Shop Collection List, or null
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
- * eagerThumbImages — loading=eager on every original thumb img so loop height settles at load
- * cloneGalleryList — one .is-clone copy of the whole list, appended as its sibling; clone imgs stay lazy
+ * eagerThumbImages — loading=eager on every thumb img so below-fold thumbs actually fetch
+ * cloneGalleryList — one .is-clone copy of the whole list, appended as its sibling
  * alignCloneGap — clone list margin-top so the seam gap equals the grid row gap
- * originalsSized — every original thumb has layout height and no pending img
+ * originalsSized — every original thumb has layout height
  * loopHeight — clone list getBoundingClientRect.top minus original list top
  * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
  * shiftScrollY — momentum-preserving radScrollShift (Lenis) or window.scrollTo
@@ -47,7 +47,7 @@ function hydrateThumbs() {
   });
 }
 
-/** eagerThumbImages — loading=eager on every original shop thumb img */
+/** eagerThumbImages — loading=eager on every shop thumb img */
 function eagerThumbImages() {
   const list = shopList();
   if (!list) return;
@@ -66,9 +66,6 @@ function cloneGalleryList() {
   clone.removeAttribute("id");
   clone.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
   clone.querySelectorAll("a").forEach((a) => a.setAttribute("tabindex", "-1"));
-  clone.querySelectorAll("img").forEach((img) => {
-    img.loading = "lazy";
-  });
   list.insertAdjacentElement("afterend", clone);
 }
 
@@ -88,18 +85,13 @@ function alignCloneGap() {
   }
 }
 
-/** originalsSized — every original thumb has layout height and no pending img */
+/** originalsSized — every original thumb has layout height */
 function originalsSized() {
   const list = shopList();
   if (!list) return false;
   const originals = list.querySelectorAll(".product-thumb");
   if (!originals.length) return false;
-  // A thumb is tall from its text alone, so height cannot answer for the image.
-  return [...originals].every(
-    (el) =>
-      el.getBoundingClientRect().height > 1 &&
-      [...el.querySelectorAll("img")].every((img) => img.complete),
-  );
+  return [...originals].every((el) => el.getBoundingClientRect().height > 1);
 }
 
 /** loopHeight — clone list top minus original list top */

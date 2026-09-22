@@ -4,9 +4,6 @@
 - [x] 1.2 In `js/collection.js` `preloadTextures`, load `urlForIndex` for each light index only. Do not walk `darkSrcs` on its own.
 - [x] 1.3 Update the `js/collection.js` header explainer for `readGallerySrcs` and `preloadTextures`.
 
-## 2. Shop first row
+## 2. Revert the shop scope
 
-- [x] 2.1 In `js/shop.js` `eagerThumbImages`, set `loading="eager"` on every original shop thumb image so the measured loop height is final at load.
-- [x] 2.2 In `js/shop.js` `cloneGalleryList`, set `loading="lazy"` on the clone's images after `cloneNode`.
-- [x] 2.3 In `js/shop.js` `originalsSized`, also require every `img` in each original thumb to be `complete`, since thumb text alone satisfies the height check.
-- [x] 2.4 Update the `js/shop.js` header explainer for `eagerThumbImages`, `cloneGalleryList`, and `originalsSized`.
+- [x] 2.1 Restore `js/shop.js` to its `a8dc990` state, dropping the first-row eager pass, the clone lazy pass, and the `originalsSized` image gate.
