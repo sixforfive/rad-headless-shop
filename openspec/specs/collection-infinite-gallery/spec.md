@@ -163,7 +163,7 @@ When dark has no image at an index, that plane SHALL keep the light image.
 
 A pointer press and release on an image plane with movement below 8px SHALL navigate to `/shop`. A drag past that threshold SHALL pan and SHALL NOT navigate. A still click on empty space SHALL NOT navigate.
 
-On a fine pointer, while the pointer is over an image plane, the canvas SHALL carry `custom-cursor="[SHOP COLLECTION]"`. While the pointer is over empty space, that attribute SHALL be empty. Coarse pointers SHALL NOT require this attribute.
+On a fine pointer, while the pointer is over an image plane, the canvas SHALL carry `custom-cursor="[SHOP COLLECTION]"` and SHALL use the pointer cursor. While the pointer is over empty space, that attribute SHALL be empty and the canvas SHALL use the grab cursor. Coarse pointers SHALL NOT require this attribute.
 
 #### Scenario: Click a plane
 
@@ -183,9 +183,9 @@ On a fine pointer, while the pointer is over an image plane, the canvas SHALL ca
 #### Scenario: Hover a plane
 
 - **WHEN** a fine pointer is over a gallery image plane
-- **THEN** the canvas has `custom-cursor="[SHOP COLLECTION]"` and the cursor label shows `[SHOP COLLECTION]`
+- **THEN** the canvas has `custom-cursor="[SHOP COLLECTION]"`, the cursor label shows `[SHOP COLLECTION]`, and the native cursor is pointer
 
 #### Scenario: Hover a gap
 
 - **WHEN** a fine pointer is over empty space in the gallery canvas
-- **THEN** the canvas does not have a non-empty `custom-cursor` and the cursor label is not shown
+- **THEN** the canvas does not have a non-empty `custom-cursor`, the cursor label is not shown, and the native cursor is grab

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Shows an informational `.text-meta` label next to the default pointer over areas marked `custom-cursor`, without changing clicks or the native arrow.
+Shows an informational `.text-meta` label next to the pointer over areas marked `custom-cursor`, without changing clicks or hiding the native cursor.
 
 ## Requirements
 
@@ -22,23 +22,23 @@ An empty `custom-cursor` value SHALL be treated as unmarked.
 - **WHEN** the pointer is over an element with `custom-cursor=""`
 - **THEN** no cursor label is shown
 
-### Requirement: Default arrow and existing activation stay
+### Requirement: Native cursor and existing activation stay
 
-The site SHALL keep the default arrow cursor. The label SHALL NOT receive pointer events. Clicks, hrefs, and other activation on the marked area SHALL behave as they did without the label.
+The label SHALL NOT hide or replace the native cursor. The label SHALL NOT receive pointer events. Clicks, hrefs, and other activation on the marked area SHALL behave as they did without the label.
 
 #### Scenario: Click through the label
 
 - **WHEN** the visitor clicks the marked area while the label is visible
-- **THEN** the click reaches the marked area and the native arrow remains the cursor
+- **THEN** the click reaches the marked area and the native cursor remains visible
 
 ### Requirement: Rubber follow
 
-While the label is shown, it SHALL lag the pointer with easing rather than sitting on the hotspot. The native arrow SHALL stay on the pointer.
+While the label is shown, it SHALL lag the pointer with easing rather than sitting on the hotspot. The native cursor SHALL stay on the pointer.
 
 #### Scenario: Move inside a marked area
 
 - **WHEN** the pointer moves inside a `[custom-cursor]` area
-- **THEN** the label trails the pointer with easing and the arrow stays on the pointer
+- **THEN** the label trails the pointer with easing and the native cursor stays on the pointer
 
 #### Scenario: Reduced motion follow
 
