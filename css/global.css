@@ -34,11 +34,17 @@ html.lenis.lenis-stopped {
 
 /* White chrome inverts against page content. Antialias: blend + subpixel is muddy. */
 .navbar,
-.second-men,
+.second-menu,
+.footer,
 .layer.is-blend {
-  mix-blend-mode: difference;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.navbar,
+.second-menu,
+.layer.is-blend {
+  mix-blend-mode: difference;
 }
 
 /* Drawer open: drop difference so links stay readable on the overlay. */
