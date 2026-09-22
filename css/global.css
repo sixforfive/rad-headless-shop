@@ -255,12 +255,12 @@ body * {
 .main-wrapper,
 .gallery-full-screen {
   opacity: 1;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.6s ease-out;
 }
 
 .main-wrapper.is-dimmed,
 .gallery-full-screen.is-dimmed {
-  opacity: 0.15;
+  opacity: 0.3;
 }
 
 /* Repo hide class. Dark mode always hides the lights plus, not the minus. */
