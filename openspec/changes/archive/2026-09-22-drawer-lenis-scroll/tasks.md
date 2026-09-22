@@ -10,4 +10,4 @@
 
 ## 3. Check
 
-- [ ] 3.1 Open menu and cart: lists scroll when taller than the viewport; page behind stays locked; closed drawers have no `data-lenis-prevent`
+- [x] 3.1 Open menu and cart: lists scroll when taller than the viewport; page behind stays locked; closed drawers have no `data-lenis-prevent`
