@@ -272,6 +272,9 @@ function initCursorLabel() {
   document.body.appendChild(label);
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let hasPointer = false;
+  let pointerX = 0;
+  let pointerY = 0;
   let targetX = 0;
   let targetY = 0;
   let currentX = 0;
@@ -281,14 +284,11 @@ function initCursorLabel() {
     label.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
   }
 
-  function onPointerMove(event) {
-    targetX = event.clientX + CURSOR_LABEL_OFFSET_X;
-    targetY = event.clientY + CURSOR_LABEL_OFFSET_Y;
-
+  function applyLabel() {
+    if (!hasPointer) return;
+    const el = document.elementFromPoint(pointerX, pointerY);
     const node =
-      event.target instanceof Element
-        ? event.target.closest("[custom-cursor]")
-        : null;
+      el instanceof Element ? el.closest("[custom-cursor]") : null;
     const text = node?.getAttribute("custom-cursor")?.trim() ?? "";
     const show = text.length > 0;
     const wasVisible = label.classList.contains("is-visible");
@@ -304,15 +304,26 @@ function initCursorLabel() {
     label.classList.toggle("is-visible", show);
   }
 
+  function onPointerMove(event) {
+    hasPointer = true;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    targetX = pointerX + CURSOR_LABEL_OFFSET_X;
+    targetY = pointerY + CURSOR_LABEL_OFFSET_Y;
+    applyLabel();
+  }
+
   function tick() {
     const factor = reduceMotion.matches ? 1 : CURSOR_LABEL_LERP;
     currentX += (targetX - currentX) * factor;
     currentY += (targetY - currentY) * factor;
     applyTransform();
+    applyLabel();
     requestAnimationFrame(tick);
   }
 
   document.addEventListener("pointermove", onPointerMove);
+  document.addEventListener("scroll", applyLabel, true);
   requestAnimationFrame(tick);
 }
 
