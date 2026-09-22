@@ -162,6 +162,8 @@ function hideDrawerOverlay() {
   if (drawerWrapper) drawerWrapper.style.display = "none";
   if (menuDrawer) menuDrawer.style.display = "none";
   if (cartDrawer) cartDrawer.style.display = "none";
+  menuDrawer?.removeAttribute("data-lenis-prevent");
+  cartDrawer?.removeAttribute("data-lenis-prevent");
   document.body.classList.remove("is-scroll-locked");
   if (typeof radLenisStart === "function") radLenisStart();
 }
@@ -175,6 +177,10 @@ function openDrawer(kind, event) {
   activeDrawer = kind;
   setDrawerButtons(kind);
   showDrawerPanel(kind);
+  const show = kind === "menu" ? menuDrawer : cartDrawer;
+  const hide = kind === "menu" ? cartDrawer : menuDrawer;
+  hide?.removeAttribute("data-lenis-prevent");
+  show?.setAttribute("data-lenis-prevent", "");
   notificationBarBox?.classList.add("is-hidden");
   document.body.classList.add("is-scroll-locked");
   if (typeof radLenisStop === "function") radLenisStop();

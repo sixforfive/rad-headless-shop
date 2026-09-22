@@ -1,18 +1,18 @@
 ## Why
 
-Menu and cart lists scroll in Webflow Designer but not on the published site. `radLenisStop()` adds `lenis-stopped` on `html`, and `html.lenis.lenis-stopped { overflow: clip }` clips the document so the drawer lists have no overflow.
+Menu and cart lists scroll in Designer but not live. Stopped Lenis `preventDefault`s wheel/touch unless `data-lenis-prevent` is on the path. The clip and `height: auto` CSS cuts did not fix that.
 
 ## What Changes
 
-- Remove `html.lenis.lenis-stopped { overflow: clip }` from `css/global.css`.
-- Keep `body.is-scroll-locked` so the page stays locked behind an open drawer.
-- Keep `radLenisStop` / `radLenisStart` so window Lenis still freezes while a drawer is open.
+- Set `data-lenis-prevent` on `.menu-drawer` and `.cart-drawer` while open; clear it on close.
+- Keep `radLenisStop` / `radLenisStart` and `body.is-scroll-locked`.
+- Leave the clip / `height: auto` CSS cuts as they are.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `drawer-scroll`: Menu and cart lists keep their own scroll while the page is locked. `html` SHALL NOT use `overflow: clip` from `lenis-stopped`.
+- `drawer-scroll`: Menu and cart lists keep their own scroll while the page is locked. Open drawers SHALL carry `data-lenis-prevent` so stopped Lenis does not eat their gestures.
 
 ### Modified Capabilities
 
@@ -20,6 +20,6 @@ Menu and cart lists scroll in Webflow Designer but not on the published site. `r
 
 ## Impact
 
-- `css/global.css` only.
-- No JS, no Webflow markup, no new dependencies.
-- Rollback: restore the `html.lenis.lenis-stopped` rule.
+- `js/global.js` (`openDrawer` / `hideDrawerOverlay`).
+- No Webflow markup, no new dependencies.
+- Rollback: drop the attr writes.
