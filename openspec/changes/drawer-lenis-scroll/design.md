@@ -2,7 +2,7 @@
 
 See proposal.md for motivation. All of this lives in `css/global.css`.
 
-Today, `openDrawer` calls `radLenisStop()` and adds `body.is-scroll-locked`. Stopped Lenis adds `lenis-stopped` on `html`. This file then sets `html.lenis.lenis-stopped { overflow: clip }`. `body.is-scroll-locked { overflow: hidden }` already locks the page. Webflow owns overflow on `.menu-list` / `.cart-list`.
+Today, `openDrawer` calls `radLenisStop()` and adds `body.is-scroll-locked`. Stopped Lenis adds `lenis-stopped` on `html`. The `overflow: clip` companion is gone; lists still do not scroll live. `html.lenis, html.lenis body { height: auto }` is still on. Designer inner-scroll means Webflow already owns overflow on `.menu-list` / `.cart-list`. `body.is-scroll-locked { overflow: hidden }` still locks the page.
 
 ## Goals / Non-Goals
 
@@ -21,19 +21,23 @@ Today, `openDrawer` calls `radLenisStop()` and adds `body.is-scroll-locked`. Sto
 
 ### Drop the `lenis-stopped` clip only
 
-`overflow: clip` on `html` is the extra lock Designer never has. Page lock stays on `body.is-scroll-locked`. Leave `html.lenis, html.lenis body { height: auto }` until a list still fails to scroll after the clip is gone.
+Done. Live still failed. Designer inner-scroll confirmed the lists already have a scrollport.
 
-Alternative considered: stop calling `radLenisStop`. Rejected — window Lenis should stay frozen behind the drawer.
+### `height: auto` only when not stopped
 
-Alternative considered: `data-lenis-prevent` on the lists. Rejected — Lenis is already stopped; the clip is the live-only difference.
+`height: auto` on `html`/`body` collapses the Webflow `height: 100%` chain, so the list has no box. Scope it to `html.lenis:not(.lenis-stopped)`. Drawer open already adds `lenis-stopped` via `radLenisStop()`. Page lock stays on `body.is-scroll-locked`.
+
+Alternative considered: drop `height: auto` entirely. Rejected — window Lenis still needs the document to grow when it is running.
+
+Alternative considered: `overflow` / `max-height` on the lists. Rejected — Webflow already owns that; restore the height chain.
 
 ## Risks / Trade-offs
 
-- [Lists still do not scroll] → Next cut is `height: auto` on `html.lenis body`, not a JS change.
-- [Page scrolls behind the drawer] → `body.is-scroll-locked` stays; do not restore the clip to fix that.
+- [Lists still do not scroll] → Then set overflow / max-height on the lists in this file; do not touch JS.
+- [Page scrolls behind the drawer] → `body.is-scroll-locked` stays; do not put `height: auto` back on while stopped.
 
 ## Migration Plan
 
-1. Delete the `html.lenis.lenis-stopped` rule in `css/global.css`.
+1. Scope the companion `height: auto` rule to `:not(.lenis-stopped)` in `css/global.css`.
 2. After commit, point the site-wide Head `<link>` at the new SHA.
-3. Rollback: restore that one rule.
+3. Rollback: restore `html.lenis, html.lenis body { height: auto }`.

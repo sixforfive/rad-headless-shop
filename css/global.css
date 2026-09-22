@@ -8,9 +8,9 @@ body {
   overscroll-behavior: none;
 }
 
-/* Lenis companion: document can grow. */
-html.lenis,
-html.lenis body {
+/* Lenis companion: document can grow while running. */
+html.lenis:not(.lenis-stopped),
+html.lenis:not(.lenis-stopped) body {
   height: auto;
 }
 
