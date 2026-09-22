@@ -20,7 +20,7 @@
  * getTexture(url) -> cached THREE.Texture
  * applyModeTextures() -> swap maps from body.dark-mode
  * hitPlane(clientX, clientY) -> mesh or null
- * setCursorLabel(hit) -> custom-cursor on canvas
+ * setCursorLabel(hit) -> custom-cursor + pointer on canvas
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1; true if inside
  * canHoverDim() -> 768+ fine hover (same gate as shop)
@@ -404,14 +404,16 @@ function hitPlane(clientX, clientY) {
   return null;
 }
 
-/** setCursorLabel(hit) -> custom-cursor on canvas */
+/** setCursorLabel(hit) -> custom-cursor + pointer on canvas */
 function setCursorLabel(hit) {
   if (!galleryCanvas || !finePointer) return;
   if (hit) {
     galleryCanvas.setAttribute("custom-cursor", SHOP_CURSOR);
+    galleryCanvas.style.cursor = "pointer";
     return;
   }
   galleryCanvas.setAttribute("custom-cursor", "");
+  galleryCanvas.style.cursor = "grab";
 }
 
 /** grabGain(s, now) -> 0..1 ease-in-out on grab */
