@@ -12,6 +12,8 @@
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
+ * pagePointerId — pathname first segment → #pointer-* id (domain ignored)
+ * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
  * initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers
  */
 
@@ -228,6 +230,32 @@ document
   .getElementById("keep-shopping")
   ?.addEventListener("click", closeDrawer);
 drawerWrapper?.addEventListener("click", onDrawerBackdrop);
+
+const PAGE_POINTER_IDS = {
+  "": "pointer-collection",
+  collection: "pointer-collection",
+  shop: "pointer-shop",
+  merch: "pointer-merch",
+  faq: "pointer-faq",
+};
+
+/** pagePointerId — pathname first segment → #pointer-* id; domain ignored */
+function pagePointerId() {
+  const segment = location.pathname.replace(/\/+$/, "").split("/")[1] || "";
+  return PAGE_POINTER_IDS[segment] || null;
+}
+
+/** syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer */
+function syncMenuPointer() {
+  const activeId = pagePointerId();
+  document
+    .querySelectorAll(".menu-drawer .menu-list .menu-pointer")
+    .forEach((el) => {
+      el.classList.toggle("is-none", el.id !== activeId);
+    });
+}
+
+syncMenuPointer();
 
 const CURSOR_LABEL_OFFSET_X = 16;
 const CURSOR_LABEL_OFFSET_Y = 20;
