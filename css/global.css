@@ -143,7 +143,7 @@ body:has(.product-list:not(.is-gallery):not(.is-merch))
   inset: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.6s ease-out;
+  transition: opacity 0.45s ease-out;
 }
 
 .thumb-dark.w-dyn-bind-empty {
@@ -159,7 +159,7 @@ body:has(.product-list:not(.is-gallery):not(.is-merch))
   inset: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.6s ease-out;
+  transition: opacity 0.45s ease-out;
 }
 
 .hero-photo-dark.is-none {
@@ -255,16 +255,58 @@ body * {
   transform: none;
 }
 
-/* Every route: content rises after html.is-ready. No leave motion. */
+/* Content sinks on leave and rises after html.is-ready. On / the logo's
+   siblings move, never its ancestors. */
 @view-transition {
   navigation: auto;
 }
 
 ::view-transition-old(root),
 ::view-transition-new(root),
-::view-transition-old(page),
 ::view-transition-new(page) {
   animation: none;
+}
+
+::view-transition-old(page) {
+  animation: page-out 0.6s ease both;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+}
+
+.main-wrapper,
+.collection-hero-gallery {
+  view-transition-name: page;
+}
+
+.main-wrapper:has(.collection-hero-logo) {
+  view-transition-name: none;
+}
+
+/* No animation parks the old snapshot until page-out ends, so these hold. */
+.collection-hero-logo {
+  view-transition-name: hero-logo;
+}
+
+.drawer-wrapper {
+  view-transition-name: drawer;
+}
+
+/* Groups paint in DOM order, and .drawer-wrapper precedes .main-wrapper. */
+::view-transition-group(page) {
+  z-index: 1;
+}
+
+::view-transition-group(hero-logo) {
+  z-index: 2;
+}
+
+::view-transition-group(drawer) {
+  z-index: 3;
 }
 
 .gallery-full-screen {
@@ -272,24 +314,23 @@ body * {
   transition: opacity 0.45s ease-out;
 }
 
-.main-wrapper {
-  view-transition-name: page;
+.main-wrapper:not(:has(.collection-hero-logo)),
+:has(> .collection-hero-logo) > :not(.collection-hero-logo),
+.products-collection.is-leaving {
+  opacity: 0;
+  transform: translateY(1.25rem);
 }
 
 .main-wrapper:not(:has(.collection-hero-logo)),
-.main-wrapper:has(.collection-hero-logo)
-  > :not(.collection-hero-logo):not(:has(.collection-hero-logo)) {
-  opacity: 0;
-  transform: translateY(0.625rem);
+:has(> .collection-hero-logo) > :not(.collection-hero-logo),
+.products-collection {
   transition:
     opacity 0.6s ease,
     transform 0.6s ease;
 }
 
 html.is-ready .main-wrapper:not(:has(.collection-hero-logo)),
-html.is-ready
-  .main-wrapper:has(.collection-hero-logo)
-  > :not(.collection-hero-logo):not(:has(.collection-hero-logo)) {
+html.is-ready :has(> .collection-hero-logo) > :not(.collection-hero-logo) {
   opacity: 1;
   transform: none;
 }
@@ -457,8 +498,8 @@ body.is-scroll-locked {
   }
 
   .main-wrapper:not(:has(.collection-hero-logo)),
-  .main-wrapper:has(.collection-hero-logo)
-    > :not(.collection-hero-logo):not(:has(.collection-hero-logo)) {
+  :has(> .collection-hero-logo) > :not(.collection-hero-logo),
+  .products-collection.is-leaving {
     transform: none;
   }
 
@@ -471,8 +512,8 @@ body.is-scroll-locked {
 
   .drawer-wrapper,
   .main-wrapper,
-  .main-wrapper:has(.collection-hero-logo)
-    > :not(.collection-hero-logo):not(:has(.collection-hero-logo)),
+  :has(> .collection-hero-logo) > :not(.collection-hero-logo),
+  .products-collection,
   .gallery-full-screen,
   .error-wrapper [id^="error-"],
   body,

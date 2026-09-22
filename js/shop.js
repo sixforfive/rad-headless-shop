@@ -11,9 +11,12 @@
  * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
  * shiftScrollY — momentum-preserving radScrollShift (Lenis) or window.scrollTo
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
- * setView — add/remove is-gallery on .product-list from data-view; jump to top when the view changes
+ * applyView — swap is-gallery from data-view, sync buttons, jump to top, re-measure
+ * setView — sink .products-collection, applyView while hidden, then rise it
  * syncActive — is-active on the switch button that matches the current view
  */
+
+const VIEW_SINK_MS = 700;
 
 let galleryLoopHeight = 0;
 let galleryOriginalsSized = false;
@@ -150,12 +153,8 @@ function onGalleryScroll() {
   }
 }
 
-/** setView — gallery adds is-gallery; list removes it; is-active follows data-view; jump to top on change */
-function setView(view) {
-  const list = shopList();
-  const current = list?.classList.contains("is-gallery") ? "gallery" : "list";
-  if (current === view) return;
-
+/** applyView — swap is-gallery, sync buttons, jump to top, re-measure the loop */
+function applyView(view) {
   document.documentElement.style.overflowAnchor = "none";
   shopLists().forEach((el) => {
     el.classList.toggle("is-gallery", view === "gallery");
@@ -170,6 +169,40 @@ function setView(view) {
     measureLoopHeight();
     onGalleryScroll();
   });
+}
+
+/** setView — sink the grid, swap the view while it is hidden, then rise it */
+function setView(view) {
+  const list = shopList();
+  const current = list?.classList.contains("is-gallery") ? "gallery" : "list";
+  if (current === view) return;
+
+  const wrapper = document.querySelector(".products-collection");
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  if (!wrapper || reduceMotion) {
+    applyView(view);
+    return;
+  }
+
+  let swapped = false;
+  const swap = () => {
+    if (swapped) return;
+    swapped = true;
+    clearTimeout(fallback);
+    wrapper.removeEventListener("transitionend", onSink);
+    applyView(view);
+    requestAnimationFrame(() => wrapper.classList.remove("is-leaving"));
+  };
+  function onSink(event) {
+    if (event.target !== wrapper || event.propertyName !== "opacity") return;
+    swap();
+  }
+
+  wrapper.addEventListener("transitionend", onSink);
+  const fallback = setTimeout(swap, VIEW_SINK_MS);
+  wrapper.classList.add("is-leaving");
 }
 
 /** syncActive — is-active matches whether the grid currently has is-gallery */
