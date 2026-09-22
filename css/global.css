@@ -255,29 +255,16 @@ body * {
   transform: none;
 }
 
-/* Every route: content rises in after html.is-ready; the leave is the view transition. */
+/* Every route: content rises after html.is-ready. No leave motion. */
 @view-transition {
   navigation: auto;
 }
 
 ::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-}
-
-::view-transition-old(page) {
-  animation: page-out 0.6s ease both;
-}
-
+::view-transition-new(root),
+::view-transition-old(page),
 ::view-transition-new(page) {
   animation: none;
-}
-
-@keyframes page-out {
-  to {
-    opacity: 0;
-    transform: translateY(1.25rem);
-  }
 }
 
 .gallery-full-screen {
@@ -286,24 +273,32 @@ body * {
 }
 
 .main-wrapper {
-  opacity: 0;
-  transform: translateY(1.25rem);
   view-transition-name: page;
+}
+
+.main-wrapper:not(:has(.collection-hero-logo)),
+.main-wrapper:has(.collection-hero-logo)
+  > :not(.collection-hero-logo):not(:has(.collection-hero-logo)) {
+  opacity: 0;
+  transform: translateY(0.625rem);
   transition:
     opacity 0.6s ease,
     transform 0.6s ease;
 }
 
-html.is-ready .main-wrapper.is-dimmed {
-  transition: opacity 0.45s ease-out;
-}
-
-html.is-ready .main-wrapper {
+html.is-ready .main-wrapper:not(:has(.collection-hero-logo)),
+html.is-ready
+  .main-wrapper:has(.collection-hero-logo)
+  > :not(.collection-hero-logo):not(:has(.collection-hero-logo)) {
   opacity: 1;
   transform: none;
 }
 
-html.is-ready .main-wrapper.is-dimmed,
+html.is-ready .main-wrapper.is-dimmed {
+  opacity: 0.2;
+  transition: opacity 0.45s ease-out;
+}
+
 .gallery-full-screen.is-dimmed {
   opacity: 0.2;
 }
@@ -461,10 +456,14 @@ body.is-scroll-locked {
     navigation: none;
   }
 
-  .main-wrapper {
+  .main-wrapper:not(:has(.collection-hero-logo)),
+  .main-wrapper:has(.collection-hero-logo)
+    > :not(.collection-hero-logo):not(:has(.collection-hero-logo)) {
     transform: none;
   }
 
+  ::view-transition-old(root),
+  ::view-transition-new(root),
   ::view-transition-old(page),
   ::view-transition-new(page) {
     animation: none;
@@ -472,6 +471,8 @@ body.is-scroll-locked {
 
   .drawer-wrapper,
   .main-wrapper,
+  .main-wrapper:has(.collection-hero-logo)
+    > :not(.collection-hero-logo):not(:has(.collection-hero-logo)),
   .gallery-full-screen,
   .error-wrapper [id^="error-"],
   body,

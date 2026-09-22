@@ -16,7 +16,7 @@
  * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
  * initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers
  * revealPage — add html.is-ready on the next frame so the rise can paint
- * schedulePageReveal — every page: rise after the leave transition, or on the next frame
+ * schedulePageReveal — every page: rise after the next document can render, or on the next frame
  */
 
 const FAVICON_LIGHT =
@@ -344,7 +344,7 @@ function revealPage() {
   });
 }
 
-/** schedulePageReveal — every page: rise after the leave transition, or on the next frame */
+/** schedulePageReveal — every page: rise after the next document can render, or on the next frame */
 function schedulePageReveal() {
   let pageRevealSeen = false;
 
