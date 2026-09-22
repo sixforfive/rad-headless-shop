@@ -1,32 +1,21 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Shown to AI when creating artifacts.
+context: |
+  After a change that touches js/*.js or css/*.css, remind the user which
+  Webflow Head/Footer jsDelivr tags need a new SHA after they commit. Do not
+  put SHA-pin or publish steps in tasks.md. The user commits and pins.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+# Per-artifact rules
+rules:
+  tasks:
+    - Do not add Webflow SHA pin or publish steps. Those are a post-commit reminder, not implementable tasks.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+# Advisory guidance for apply and archive
+operations:
+  apply:
+    guidance:
+      - When implementation is done, remind the user which Head/Footer tags need a new SHA after they commit.
+  archive:
+    guidance:
+      - If the change touched published JS/CSS, mention the SHA pin reminder in the archive summary. Do not treat a missing pin task as incomplete work.

@@ -124,7 +124,7 @@ Navbar collection list, limit 1. Three `.notification-text` nodes in the item bi
 |---|---|---|
 | `navbar` | Global | 4 link props; notification bar bound to Notifications (limit 1) |
 | `footer` | Global | link + "back to top" text |
-| `drawer-wrapper` | Global | mobile nav + brand copy + legal links |
+| `drawer-wrapper` | Global | mobile nav + brand copy + legal links; `.menu-list .menu-pointer` ids: `#pointer-collection` `/`, `#pointer-shop` `/shop`, `#pointer-merch` `/merch`, `#pointer-faq` `/faq` |
 | `second-menu` | — | variant `Collection`; Gallery/List toggle (`data-view` on `.switch-btn`) |
 | `Global / Styles` | Global | |
 | `Template / Section` | Template | |
