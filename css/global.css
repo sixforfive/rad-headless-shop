@@ -255,13 +255,55 @@ body * {
   transform: none;
 }
 
-.main-wrapper,
+/* Every route: content rises in after html.is-ready; the leave is the view transition. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-old(page) {
+  animation: page-out 0.6s ease both;
+}
+
+::view-transition-new(page) {
+  animation: none;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+}
+
 .gallery-full-screen {
   opacity: 1;
   transition: opacity 0.45s ease-out;
 }
 
-.main-wrapper.is-dimmed,
+.main-wrapper {
+  opacity: 0;
+  transform: translateY(1.25rem);
+  view-transition-name: page;
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+}
+
+html.is-ready .main-wrapper.is-dimmed {
+  transition: opacity 0.45s ease-out;
+}
+
+html.is-ready .main-wrapper {
+  opacity: 1;
+  transform: none;
+}
+
+html.is-ready .main-wrapper.is-dimmed,
 .gallery-full-screen.is-dimmed {
   opacity: 0.2;
 }
@@ -415,6 +457,19 @@ body.is-scroll-locked {
 
 /* Kill the 0.3s fades; marquee is left running (infinite, not a transition). */
 @media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+
+  .main-wrapper {
+    transform: none;
+  }
+
+  ::view-transition-old(page),
+  ::view-transition-new(page) {
+    animation: none;
+  }
+
   .drawer-wrapper,
   .main-wrapper,
   .gallery-full-screen,

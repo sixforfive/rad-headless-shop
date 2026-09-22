@@ -15,6 +15,8 @@
  * pagePointerId — pathname first segment → #pointer-* id (domain ignored)
  * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
  * initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers
+ * revealPage — add html.is-ready on the next frame so the rise can paint
+ * schedulePageReveal — every page: rise after the leave transition, or on the next frame
  */
 
 const FAVICON_LIGHT =
@@ -334,3 +336,32 @@ function initCursorLabel() {
 }
 
 initCursorLabel();
+
+/** revealPage — add html.is-ready on the next frame so the rise can paint */
+function revealPage() {
+  requestAnimationFrame(() => {
+    document.documentElement.classList.add("is-ready");
+  });
+}
+
+/** schedulePageReveal — every page: rise after the leave transition, or on the next frame */
+function schedulePageReveal() {
+  let pageRevealSeen = false;
+
+  window.addEventListener("pagereveal", (event) => {
+    pageRevealSeen = true;
+    if (event.viewTransition) {
+      event.viewTransition.finished.then(revealPage, revealPage);
+      return;
+    }
+    revealPage();
+  });
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!pageRevealSeen) revealPage();
+    });
+  });
+}
+
+schedulePageReveal();
