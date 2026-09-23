@@ -11,7 +11,10 @@
  * closeDrawer — fade overlay out, then hideDrawerOverlay; remove is-hidden on notification
  * parseMenuReveal — menu-reveal value → { order, stagger, dir } or null
  * markMenuRevealFade — is-fade and is-from-up/down on order greater than 2
- * writeMenuRevealTiming — order 1 lines, then order 2 lines, then both order 3; reverse leaves 3 first
+ * writeMenuRevealTiming — order 1 lines from the bottom, then order 2, then both order 3; reverse leaves 3 first
+ * menuRevealReverseMs — length of the close stages, in ms
+ * clearMenuRevealHide — drop a pending shell fade
+ * fadeDrawerOut — drop is-visible, then hide after the opacity fade
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
@@ -165,8 +168,8 @@ function showDrawerPanel(kind) {
   if (show) show.style.display = "flex";
 }
 
-const MENU_REVEAL_DURATION = 1.47;
-const MENU_REVEAL_LINE_STEP = 0.07;
+const MENU_REVEAL_DURATION = 0.45;
+const MENU_REVEAL_LINE_STEP = 0.04;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
 function prefersReducedMotion() {
@@ -211,7 +214,7 @@ function setRevealTiming(el, delay, duration) {
   el.style.setProperty("--menu-reveal-duration", `${duration}s`);
 }
 
-/** revealStageLength — one move, plus 0.07s for each line after the first */
+/** revealStageLength — one move, plus 0.04s for each line after the first */
 function revealStageLength(count) {
   if (count <= 0) return 0;
   return (count - 1) * MENU_REVEAL_LINE_STEP + MENU_REVEAL_DURATION;
@@ -244,7 +247,7 @@ function writeMenuRevealTiming(opening) {
     }
     const inners = [...el.querySelectorAll(".menu-reveal-line-inner")];
     inners.forEach((inner, index) => {
-      const lineIndex = opening ? index : inners.length - 1 - index;
+      const lineIndex = opening ? inners.length - 1 - index : index;
       setRevealTiming(
         inner,
         stageStart + lineIndex * MENU_REVEAL_LINE_STEP,
@@ -340,11 +343,51 @@ function hideDrawerOverlay() {
   if (typeof radLenisStart === "function") radLenisStart();
 }
 
+let menuRevealHideTimer = 0;
+
+/** menuRevealReverseMs — length of the close stages, in ms */
+function menuRevealReverseMs() {
+  const entries = menuRevealEntries();
+  const order1 = revealStageLength(lineCountForOrder(entries, 1));
+  const order2 = revealStageLength(lineCountForOrder(entries, 2));
+  const order3 = entries.some((entry) => entry.parsed.order === 3)
+    ? MENU_REVEAL_DURATION
+    : 0;
+  return (order3 + order2 + order1) * 1000;
+}
+
+/** clearMenuRevealHide — drop a pending shell fade */
+function clearMenuRevealHide() {
+  if (!menuRevealHideTimer) return;
+  clearTimeout(menuRevealHideTimer);
+  menuRevealHideTimer = 0;
+}
+
+/** fadeDrawerOut — drop is-visible, then hide after the opacity fade */
+function fadeDrawerOut() {
+  drawerWrapper?.classList.remove("is-visible");
+  mainWrapper?.classList.remove("is-dimmed");
+  dimGallery?.classList.remove("is-dimmed");
+  notificationBarBox?.classList.remove("is-hidden");
+  if (prefersReducedMotion() || !drawerWrapper) {
+    hideDrawerOverlay();
+    return;
+  }
+  drawerWrapper.addEventListener("transitionend", function onFadeOut(event) {
+    if (event.target !== drawerWrapper || event.propertyName !== "opacity") {
+      return;
+    }
+    drawerWrapper.removeEventListener("transitionend", onFadeOut);
+    hideDrawerOverlay();
+  });
+}
+
 /** openDrawer — kind is "menu" | "cart"; swap if the other is already open */
 function openDrawer(kind, event) {
   event.preventDefault();
   if (!drawerWrapper) return;
 
+  clearMenuRevealHide();
   const overlayOpen = activeDrawer !== null;
   const openingMenu = kind === "menu" && menuDrawer;
   if (openingMenu) {
@@ -372,34 +415,25 @@ function openDrawer(kind, event) {
   dimGallery?.classList.add("is-dimmed");
 }
 
-/** closeDrawer — fade overlay out, then hideDrawerOverlay */
+/** closeDrawer — menu reverse finishes, then the overlay fades; cart fades immediately */
 function closeDrawer(event) {
   event.preventDefault();
   if (activeDrawer === null) return;
 
-  if (activeDrawer === "menu") playMenuReveal(false);
+  const closingMenu = activeDrawer === "menu";
+  if (closingMenu) playMenuReveal(false);
   activeDrawer = null;
   setDrawerButtons(null);
-  drawerWrapper?.classList.remove("is-visible");
-  mainWrapper?.classList.remove("is-dimmed");
-  dimGallery?.classList.remove("is-dimmed");
-  notificationBarBox?.classList.remove("is-hidden");
-
-  const reduceMotion = window.matchMedia(
-    "(prefers-reduced-motion: reduce)",
-  ).matches;
-  if (reduceMotion || !drawerWrapper) {
-    hideDrawerOverlay();
+  if (closingMenu && !prefersReducedMotion()) {
+    clearMenuRevealHide();
+    menuRevealHideTimer = setTimeout(() => {
+      menuRevealHideTimer = 0;
+      if (activeDrawer !== null) return;
+      fadeDrawerOut();
+    }, menuRevealReverseMs());
     return;
   }
-
-  drawerWrapper.addEventListener("transitionend", function onFadeOut(event) {
-    if (event.target !== drawerWrapper || event.propertyName !== "opacity") {
-      return;
-    }
-    drawerWrapper.removeEventListener("transitionend", onFadeOut);
-    hideDrawerOverlay();
-  });
+  fadeDrawerOut();
 }
 
 /** onDrawerBackdrop — empty grid cells of .drawer-wrapper close the overlay */
