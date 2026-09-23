@@ -257,8 +257,8 @@ body * {
 }
 
 /* Page content stays hidden until html.is-ready, sinks on html.is-leaving.
-   On / each hero tile fades on the canvas. Leave still fades the gallery.
-   Other pages rise and sink. Logo stays out. */
+   On / the logo rises and sinks. Hero tiles fade on the canvas.
+   Leave still fades the gallery. Other pages rise and sink. */
 .gallery-full-screen {
   opacity: 1;
   transition:
@@ -269,12 +269,14 @@ body * {
 }
 
 .main-wrapper:not(:has(.collection-hero-logo)),
+.collection-hero-logo,
 .products-collection.is-leaving {
   opacity: 0;
   transform: translateY(1.25rem);
 }
 
 .main-wrapper:not(:has(.collection-hero-logo)),
+.collection-hero-logo,
 :has(> .collection-hero-logo) > :not(.collection-hero-logo),
 .products-collection {
   transition:
@@ -285,12 +287,14 @@ body * {
     border-color 0.45s ease-out;
 }
 
-html.is-ready .main-wrapper:not(:has(.collection-hero-logo)) {
+html.is-ready .main-wrapper:not(:has(.collection-hero-logo)),
+html.is-ready .collection-hero-logo {
   opacity: 1;
   transform: none;
 }
 
-html.is-leaving .main-wrapper:not(:has(.collection-hero-logo)) {
+html.is-leaving .main-wrapper:not(:has(.collection-hero-logo)),
+html.is-leaving .collection-hero-logo {
   opacity: 0;
   transform: translateY(1.25rem);
 }
@@ -462,6 +466,7 @@ body.is-scroll-locked {
 /* Kill the 0.3s fades; marquee is left running (infinite, not a transition). */
 @media (prefers-reduced-motion: reduce) {
   .main-wrapper:not(:has(.collection-hero-logo)),
+  .collection-hero-logo,
   :has(> .collection-hero-logo) > :not(.collection-hero-logo),
   .products-collection.is-leaving {
     transform: none;
