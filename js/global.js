@@ -214,10 +214,10 @@ function setRevealTiming(el, delay, duration) {
   el.style.setProperty("--menu-reveal-duration", `${duration}s`);
 }
 
-/** revealStageLength — one move, plus 0.07s for each line after the first */
+/** revealStageLength — delay until the last line of a stage begins */
 function revealStageLength(count) {
   if (count <= 0) return 0;
-  return (count - 1) * MENU_REVEAL_LINE_STEP + MENU_REVEAL_DURATION;
+  return (count - 1) * MENU_REVEAL_LINE_STEP;
 }
 
 /** lineCountForOrder — longest split row count among nodes of that order */
@@ -234,11 +234,8 @@ function writeMenuRevealTiming(opening) {
   if (entries.length === 0) return;
   const order1 = revealStageLength(lineCountForOrder(entries, 1));
   const order2 = revealStageLength(lineCountForOrder(entries, 2));
-  const order3 = entries.some((entry) => entry.parsed.order === 3)
-    ? MENU_REVEAL_DURATION
-    : 0;
   const openStart = { 1: 0, 2: order1, 3: order1 + order2 };
-  const closeStart = { 3: 0, 2: order3, 1: order3 + order2 };
+  const closeStart = { 3: 0, 2: 0, 1: order2 };
   entries.forEach(({ el, parsed }) => {
     const stageStart = (opening ? openStart : closeStart)[parsed.order] ?? 0;
     if (parsed.order > 2) {
@@ -350,10 +347,7 @@ function menuRevealReverseMs() {
   const entries = menuRevealEntries();
   const order1 = revealStageLength(lineCountForOrder(entries, 1));
   const order2 = revealStageLength(lineCountForOrder(entries, 2));
-  const order3 = entries.some((entry) => entry.parsed.order === 3)
-    ? MENU_REVEAL_DURATION
-    : 0;
-  return (order3 + order2 + order1) * 1000;
+  return (order1 + order2 + MENU_REVEAL_DURATION) * 1000;
 }
 
 /** clearMenuRevealHide — drop a pending shell fade */
