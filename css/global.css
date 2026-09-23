@@ -242,13 +242,13 @@ body * {
   opacity: 1;
 }
 
-/* menu-reveal: from-state until .menu-drawer.is-revealed. Stagger hosts stay put. */
-[menu-reveal$="-up"]:not([menu-reveal*="-stagger-"]) {
-  transform: translateY(1.25rem);
+/* menu-reveal: order 3 travels its own height. Line hosts stay put. */
+[menu-reveal].is-from-up {
+  transform: translateY(100%);
 }
 
-[menu-reveal$="-down"]:not([menu-reveal*="-stagger-"]) {
-  transform: translateY(-1.25rem);
+[menu-reveal].is-from-down {
+  transform: translateY(-100%);
 }
 
 [menu-reveal].is-fade {
@@ -266,8 +266,8 @@ body * {
 [menu-reveal],
 .menu-reveal-line-inner {
   transition:
-    transform var(--menu-reveal-duration, 0.45s) ease-out var(--menu-reveal-delay, 0s),
-    opacity var(--menu-reveal-duration, 0.45s) ease-out var(--menu-reveal-delay, 0s),
+    transform var(--menu-reveal-duration, 1.47s) cubic-bezier(0.62, 0.05, 0.01, 0.99) var(--menu-reveal-delay, 0s),
+    opacity var(--menu-reveal-duration, 1.47s) cubic-bezier(0.62, 0.05, 0.01, 0.99) var(--menu-reveal-delay, 0s),
     background-color 0.45s ease-out,
     color 0.45s ease-out,
     border-color 0.45s ease-out;
@@ -280,14 +280,8 @@ body * {
 
 .menu-reveal-line-inner {
   display: block;
-}
-
-[menu-reveal$="-up"] .menu-reveal-line-inner {
+  white-space: nowrap;
   transform: translateY(100%);
-}
-
-[menu-reveal$="-down"] .menu-reveal-line-inner {
-  transform: translateY(-100%);
 }
 
 .menu-drawer.is-revealed .menu-reveal-line-inner {
@@ -521,10 +515,9 @@ body.is-scroll-locked {
   .collection-hero-logo,
   :has(> .collection-hero-logo) > :not(.collection-hero-logo),
   .products-collection.is-leaving,
-  [menu-reveal$="-up"]:not([menu-reveal*="-stagger-"]),
-  [menu-reveal$="-down"]:not([menu-reveal*="-stagger-"]),
-  [menu-reveal$="-up"] .menu-reveal-line-inner,
-  [menu-reveal$="-down"] .menu-reveal-line-inner {
+  [menu-reveal].is-from-up,
+  [menu-reveal].is-from-down,
+  [menu-reveal] .menu-reveal-line-inner {
     transform: none;
   }
 

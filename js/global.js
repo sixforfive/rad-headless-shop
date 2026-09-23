@@ -10,9 +10,9 @@
  * openDrawer — fade overlay in, or swap panel if the other is already open; is-hidden on notification
  * closeDrawer — fade overlay out, then hideDrawerOverlay; remove is-hidden on notification
  * parseMenuReveal — menu-reveal value → { order, stagger, dir } or null
- * markMenuRevealFade — is-fade on [menu-reveal] when order is greater than 2
- * writeMenuRevealTiming — delay and duration custom props; reverse flips order and line index
- * splitMenuRevealLines — mask each wrapped line of a stagger node; rebuild when width changes
+ * markMenuRevealFade — is-fade and is-from-up/down on order greater than 2
+ * writeMenuRevealTiming — order 1 lines, then order 2 lines, then both order 3; reverse leaves 3 first
+ * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
@@ -165,9 +165,8 @@ function showDrawerPanel(kind) {
   if (show) show.style.display = "flex";
 }
 
-const MENU_REVEAL_TOTAL = 0.45;
-const MENU_REVEAL_STEP = 0.06;
-const MENU_REVEAL_LINE_STEP = 0.03;
+const MENU_REVEAL_DURATION = 1.47;
+const MENU_REVEAL_LINE_STEP = 0.07;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
 function prefersReducedMotion() {
@@ -196,10 +195,13 @@ function menuRevealEntries() {
     .filter((entry) => entry.parsed);
 }
 
-/** markMenuRevealFade — is-fade on [menu-reveal] when order is greater than 2 */
+/** markMenuRevealFade — is-fade and is-from-up/down on order greater than 2 */
 function markMenuRevealFade() {
   menuRevealEntries().forEach(({ el, parsed }) => {
-    el.classList.toggle("is-fade", parsed.order > 2);
+    const fromSide = parsed.order > 2;
+    el.classList.toggle("is-fade", fromSide);
+    el.classList.toggle("is-from-up", fromSide && parsed.dir === "up");
+    el.classList.toggle("is-from-down", fromSide && parsed.dir === "down");
   });
 }
 
@@ -209,50 +211,50 @@ function setRevealTiming(el, delay, duration) {
   el.style.setProperty("--menu-reveal-duration", `${duration}s`);
 }
 
-/** lineRevealTiming — step and duration so the last line ends at 0.45s */
-function lineRevealTiming(groupDelay, duration, count) {
-  let lineStep = MENU_REVEAL_LINE_STEP;
-  let lineDuration = duration;
-  if (count > 1) {
-    const end = groupDelay + (count - 1) * lineStep + lineDuration;
-    if (end > MENU_REVEAL_TOTAL) {
-      const room = MENU_REVEAL_TOTAL - groupDelay - lineDuration;
-      if (room > 0) lineStep = room / (count - 1);
-      else {
-        lineStep = 0;
-        lineDuration = Math.max(0, MENU_REVEAL_TOTAL - groupDelay);
-      }
-    }
-  }
-  return { lineStep, lineDuration };
+/** revealStageLength — one move, plus 0.07s for each line after the first */
+function revealStageLength(count) {
+  if (count <= 0) return 0;
+  return (count - 1) * MENU_REVEAL_LINE_STEP + MENU_REVEAL_DURATION;
 }
 
-/** writeMenuRevealTiming — delay and duration custom props; reverse flips order and line index */
+/** lineCountForOrder — longest split row count among nodes of that order */
+function lineCountForOrder(entries, order) {
+  const counts = entries
+    .filter((entry) => entry.parsed.order === order)
+    .map((entry) => entry.el.querySelectorAll(".menu-reveal-line-inner").length);
+  return counts.length ? Math.max(...counts) : 0;
+}
+
+/** writeMenuRevealTiming — order 1 lines, then order 2 lines, then both order 3; reverse leaves 3 first */
 function writeMenuRevealTiming(opening) {
   const entries = menuRevealEntries();
   if (entries.length === 0) return;
-  const maxOrder = Math.max(...entries.map((entry) => entry.parsed.order));
-  const duration = MENU_REVEAL_TOTAL - (maxOrder - 1) * MENU_REVEAL_STEP;
+  const order1 = revealStageLength(lineCountForOrder(entries, 1));
+  const order2 = revealStageLength(lineCountForOrder(entries, 2));
+  const order3 = entries.some((entry) => entry.parsed.order === 3)
+    ? MENU_REVEAL_DURATION
+    : 0;
+  const openStart = { 1: 0, 2: order1, 3: order1 + order2 };
+  const closeStart = { 3: 0, 2: order3, 1: order3 + order2 };
   entries.forEach(({ el, parsed }) => {
-    const groupDelay = opening
-      ? (parsed.order - 1) * MENU_REVEAL_STEP
-      : (maxOrder - parsed.order) * MENU_REVEAL_STEP;
-    setRevealTiming(el, groupDelay, duration);
-    if (!parsed.stagger) return;
+    const stageStart = (opening ? openStart : closeStart)[parsed.order] ?? 0;
+    if (parsed.order > 2) {
+      setRevealTiming(el, stageStart, MENU_REVEAL_DURATION);
+      return;
+    }
     const inners = [...el.querySelectorAll(".menu-reveal-line-inner")];
-    const { lineStep, lineDuration } = lineRevealTiming(
-      groupDelay,
-      duration,
-      inners.length,
-    );
     inners.forEach((inner, index) => {
       const lineIndex = opening ? index : inners.length - 1 - index;
-      setRevealTiming(inner, groupDelay + lineIndex * lineStep, lineDuration);
+      setRevealTiming(
+        inner,
+        stageStart + lineIndex * MENU_REVEAL_LINE_STEP,
+        MENU_REVEAL_DURATION,
+      );
     });
   });
 }
 
-/** splitRevealNode — wrap each measured line; no-op when width is unchanged */
+/** splitRevealNode — nowrap rows measured against clientWidth; no-op when width is unchanged */
 function splitRevealNode(el) {
   const width = el.clientWidth;
   if (!width) return;
@@ -263,28 +265,28 @@ function splitRevealNode(el) {
   ) {
     return;
   }
-  const text = el.getAttribute("data-reveal-text") ?? el.textContent;
+  const text = (el.getAttribute("data-reveal-text") ?? el.textContent)
+    .replace(/\s+/g, " ")
+    .trim();
   el.setAttribute("data-reveal-text", text);
-  const pieces = text.split(/(\s+)/).map((piece) => {
-    const span = document.createElement("span");
-    span.textContent = piece;
-    return span;
-  });
-  el.replaceChildren(...pieces);
+  const words = text.split(" ").filter(Boolean);
+  const probe = document.createElement("span");
+  probe.style.whiteSpace = "nowrap";
+  probe.style.visibility = "hidden";
+  probe.style.position = "absolute";
+  el.replaceChildren(probe);
   const lines = [];
   let current = [];
-  let top = null;
-  pieces.forEach((span) => {
-    if (!span.textContent) return;
-    const spanTop = span.offsetTop;
-    if (top !== null && spanTop - top > 1) {
-      lines.push(current.join(""));
-      current = [];
+  words.forEach((word) => {
+    probe.textContent = [...current, word].join(" ");
+    if (probe.offsetWidth > width && current.length) {
+      lines.push(current.join(" "));
+      current = [word];
+    } else {
+      current.push(word);
     }
-    top = spanTop;
-    current.push(span.textContent);
   });
-  if (current.length) lines.push(current.join(""));
+  if (current.length) lines.push(current.join(" "));
   el.replaceChildren(
     ...lines.map((lineText) => {
       const mask = document.createElement("span");
@@ -299,11 +301,11 @@ function splitRevealNode(el) {
   el.setAttribute("data-reveal-width", widthKey);
 }
 
-/** splitMenuRevealLines — mask each wrapped line of a stagger node; rebuild when width changes */
+/** splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes */
 function splitMenuRevealLines() {
   if (!menuDrawer || menuDrawer.style.display === "none") return;
   menuRevealEntries().forEach(({ el, parsed }) => {
-    if (parsed.stagger) splitRevealNode(el);
+    if (parsed.order <= 2) splitRevealNode(el);
   });
 }
 

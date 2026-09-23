@@ -1,60 +1,52 @@
 ## Purpose
 
-Moves `[menu-reveal]` copy inside `.menu-drawer` in attribute order when the menu opens, and plays that motion backward when the menu closes or a menu link leaves the page.
+Moves `[menu-reveal]` copy inside `.menu-drawer` in three stages when the menu opens, and plays that motion backward when the menu closes or a menu link leaves the page.
 
 ## ADDED Requirements
 
-### Requirement: Open plays the attribute sequence
+### Requirement: Orders 1 and 2 reveal as masked lines
 
-When `.menu-drawer` opens, each `[menu-reveal]` inside it SHALL move into its resting position. The attribute value SHALL be `{order}-up`, `{order}-down`, `{order}-stagger-up`, or `{order}-stagger-down`, where `{order}` is a positive integer. `up` SHALL travel upward from `1.25rem` below the resting position. `down` SHALL travel downward from `1.25rem` above the resting position. Nodes that share an order SHALL start together. A lower order SHALL start before a higher order. The last motion SHALL end at `0.45s`. The ease SHALL be `ease-out`. The rested position SHALL NOT be painted on the first frame of the open.
+When `.menu-drawer` opens, order `1` SHALL reveal before order `2`. Each of those nodes SHALL split into the wrapped rows of its text at the drawer width. Each row SHALL be one line that does not wrap again. Each line SHALL move from `yPercent: 100` to `0` over `1.47s`, staggered `0.07s` in reading order, with ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)`. The node itself SHALL NOT move or fade. Order `2` SHALL start when order `1`'s last line ends. The rested position SHALL NOT be painted on the first frame of the open.
 
-#### Scenario: Menu opens
+#### Scenario: Tagline then about
 
 - **WHEN** the visitor opens the menu
-- **THEN** `[menu-reveal="1-up"]` moves up with no fade
-- **AND** `[menu-reveal="2-stagger-up"]` follows it
-- **AND** `[menu-reveal="3-down"]` and `[menu-reveal="3-up"]` start together after that
-- **AND** the last of those motions ends at `0.45s`
+- **THEN** each line of `[menu-reveal="1-up"]` rises inside its own mask
+- **AND** each line of `[menu-reveal="2-stagger-up"]` starts only after the tagline's last line ends
+- **AND** neither node fades
+- **AND** neither host moves
+
+#### Scenario: A line does not rebreak
+
+- **WHEN** the about copy is split
+- **THEN** each mask holds one wrapped row
+- **AND** that row does not wrap again inside the mask
 
 #### Scenario: No rested flash
 
 - **WHEN** the menu becomes visible
-- **THEN** the attributed nodes are already at their from-position on that first frame
+- **THEN** the lines are already at their from-position on that first frame
 
-### Requirement: Only order 3 and above fades
+### Requirement: Both order 3 nodes enter together after the lines
 
-A `[menu-reveal]` whose order is `1` or `2` SHALL NOT change opacity. A `[menu-reveal]` whose order is `3` or greater SHALL fade from transparent to opaque while it moves.
-
-#### Scenario: Tagline and about
-
-- **WHEN** the menu opens
-- **THEN** `[menu-reveal="1-up"]` and `[menu-reveal="2-stagger-up"]` stay fully opaque
+Both order `3` nodes SHALL start together when order `2`'s last line ends. `down` SHALL travel from above the node. `up` SHALL travel from below the node. Each SHALL move over `1.47s` with ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)` and fade from transparent to opaque. Orders `1` and `2` SHALL NOT fade.
 
 #### Scenario: Nav and bottom links
 
-- **WHEN** the menu opens
-- **THEN** `[menu-reveal="3-down"]` and `[menu-reveal="3-up"]` fade in while they move
+- **WHEN** order `2`'s last line ends
+- **THEN** `[menu-reveal="3-down"]` moves down from above and fades in
+- **AND** `[menu-reveal="3-up"]` moves up from below and fades in
+- **AND** those two start together
 
-### Requirement: Stagger splits wrapped lines
+### Requirement: Close and backdrop play the stages backward
 
-A `[menu-reveal]` value that contains `stagger` SHALL reveal each wrapped line of that node's text on its own, in reading order, through a mask. The node itself SHALL NOT move. Each line SHALL use that attribute's direction. The line motions SHALL end by `0.45s` with the rest of the sequence. Orders `1` and `2` SHALL still not fade when the value contains `stagger`.
-
-#### Scenario: About copy
-
-- **WHEN** the menu opens
-- **THEN** each wrapped line of `[menu-reveal="2-stagger-up"]` moves up inside its own mask
-- **AND** the heading node itself does not move
-- **AND** those lines do not fade
-
-### Requirement: Close and backdrop play the sequence backward
-
-`#menu-close` and a click on the drawer backdrop SHALL play the open sequence backward over `0.45s` and fade `.drawer-wrapper` out over `0.45s`. Higher orders SHALL leave before lower orders. The drawer SHALL be hidden after that fade.
+`#menu-close` and a click on the drawer backdrop SHALL play the open stages backward and fade `.drawer-wrapper` out over `0.45s`. Order `3` SHALL leave first. Order `1` SHALL leave last. Within a line node, the last line SHALL leave first. The drawer SHALL be hidden after the overlay fade.
 
 #### Scenario: Close button
 
 - **WHEN** the visitor clicks `#menu-close` while the menu is open
 - **THEN** `[menu-reveal="3-down"]` and `[menu-reveal="3-up"]` leave first
-- **AND** `[menu-reveal="1-up"]` leaves last
+- **AND** the about lines leave before the tagline lines
 - **AND** `.drawer-wrapper` finishes fading out at `0.45s`
 
 #### Scenario: Backdrop
@@ -64,18 +56,18 @@ A `[menu-reveal]` value that contains `stagger` SHALL reveal each wrapped line o
 
 ### Requirement: A menu link reverses without hiding the drawer
 
-When a click inside `.menu-drawer` starts a same-origin page leave, the open sequence SHALL play backward over `0.45s` in parallel with the page sink. `.drawer-wrapper` SHALL stay visible for the whole leave. A click that does not start a page leave SHALL NOT reverse the sequence.
+When a click inside `.menu-drawer` starts a same-origin page leave, the open stages SHALL play backward in parallel with the page sink. `.drawer-wrapper` SHALL stay visible for the whole leave. The reverse SHALL be longer than the `0.45s` page sink. A click that does not start a page leave SHALL NOT reverse the sequence.
 
 #### Scenario: Shop link
 
 - **WHEN** the menu is open and the visitor clicks the shop link
-- **THEN** the attributed nodes play backward
+- **THEN** the stages play backward
 - **AND** the drawer stays on screen while the page content sinks behind it
 
 #### Scenario: External menu link
 
 - **WHEN** the visitor clicks a menu link that opens another tab or a mail client
-- **THEN** the attributed nodes do not reverse
+- **THEN** the stages do not reverse
 - **AND** the drawer stays open
 
 ### Requirement: Drawer shell fade is 0.45s
@@ -90,7 +82,7 @@ When a click inside `.menu-drawer` starts a same-origin page leave, the open seq
 #### Scenario: Menu open
 
 - **WHEN** the visitor opens the menu
-- **THEN** the overlay fades in over `0.45s` while the attribute sequence runs
+- **THEN** the overlay fades in over `0.45s` while the line stages run
 
 ### Requirement: Reduced motion snaps
 

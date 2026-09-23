@@ -1,22 +1,22 @@
 ## 1. Shell and from-state
 
 - [x] 1.1 In `css/global.css`, change `.drawer-wrapper` opacity transition from `0.3s ease` to `0.45s ease`
-- [x] 1.2 Set `[menu-reveal$="-up"]` to `translateY(1.25rem)` and `[menu-reveal$="-down"]` to `translateY(-1.25rem)`, excluding values that contain `-stagger-`
+- [x] 1.2 Order `3` `down` starts at `translateY(-100%)` and `up` at `translateY(100%)`. Line inners start at `translateY(100%)`. Hosts of orders `1` and `2` do not translate
 - [x] 1.3 `.menu-drawer.is-revealed [menu-reveal]` sets `transform: none`. `[menu-reveal].is-fade` sets `opacity: 0` until `.menu-drawer.is-revealed`
-- [x] 1.4 Transition `transform`, `opacity`, `background-color`, `color`, and `border-color` on `[menu-reveal]` with `ease-out`
+- [x] 1.4 Move and fade `[menu-reveal]` and `.menu-reveal-line-inner` over `1.47s` with ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)`. Keep theme `background-color`, `color`, and `border-color` at `0.45s ease-out`
 
 ## 2. Sequence
 
 - [x] 2.1 In `js/global.js`, parse `[menu-reveal]` as an integer order plus optional `stagger` plus `up` or `down`. Add `.is-fade` when the order is greater than 2
-- [x] 2.2 On open, group delay is `(order - 1) * 0.06s` and duration is `0.45s - (maxOrder - 1) * 0.06s`. On reverse, delay is `(maxOrder - order) * 0.06s` with the same duration. Write both on the nodes
+- [x] 2.2 Order `1` lines stagger `0.07s`. Order `2` starts when order `1`'s last line ends, then staggers `0.07s`. Both order `3` nodes start together when order `2`'s last line ends. Reverse leaves order `3` first, then order `2` lines last-to-first, then order `1` lines last-to-first
 - [x] 2.3 `openDrawer("menu")` applies the from-state, then `display: flex`, then a reflow, then `.is-revealed`
 - [x] 2.4 `closeDrawer` removes `.is-revealed` in the same turn as `.is-visible` when the menu is the active drawer
 
 ## 3. Line split
 
-- [x] 3.1 After the menu panel has width, wrap each line of a `stagger` node in an `overflow: hidden` mask and an inner. Do not translate the host
-- [x] 3.2 Move each inner from `100%` to `0` for `up`, and from `-100%` to `0` for `down`. Line delay is the group delay plus `index * 0.03s`, shrunk so the last line still ends at `0.45s`. Reverse leaves the last line first
-- [x] 3.3 Split once per drawer width. Rebuild when that width changes. Do not split while the panel is `display: none`
+- [x] 3.1 Split orders `1` and `2` after the panel has width. Measure rows against `clientWidth` with `white-space: nowrap`, and set that on each inner so the row does not wrap again. Do not translate the host
+- [x] 3.2 Each inner moves from `translateY(100%)` to `0` over `1.47s`, staggered `0.07s` inside its stage
+- [x] 3.3 Split once per width. Rebuild when that width changes. Do not split while the panel is `display: none`
 
 ## 4. Menu link
 
