@@ -20,14 +20,21 @@
  * buildPeriod(srcs) -> tiles for one wrapping poster
  * urlForIndex(i) -> current-mode src
  * getTexture(url) -> cached THREE.Texture
- * applyModeTextures() -> swap maps from body.dark-mode
+ * setModeMix(value) -> write the shared texture mix
+ * textureReady(texture) -> image has decoded
+ * assignMaps(fit) -> set current-mode maps; fit scale only when asked
+ * targetsReady() -> every current-mode image has decoded
+ * startCrossfade() -> aim incoming maps and restart the mix
+ * themeEaseOut(t) -> css ease-out cubic-bezier(0, 0, 0.58, 1)
+ * advanceModeFade(now) -> drive the shared texture mix
+ * applyModeTextures(fit) -> crossfade maps from body.dark-mode
  * hitPlane(clientX, clientY) -> mesh or null
  * setCursorLabel(hit) -> custom-cursor + pointer on canvas
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1; true if inside
  * canHoverDim() -> 768+ fine hover (same gate as shop)
  * applyHoverDim(dt) -> mix plane rgb toward theme bg; planes stay opaque
- * patchHoverMaterial(material) -> uDim / uBg in the basic fragment shader
+ * patchHoverMaterial(material) -> uDim / uBg / incoming map in the fragment shader
  * parallaxFactor(w) -> class p (S 0.55 .. XL 1)
  * placeCopies() -> mesh positions from pan * p; camera stays home
  * ============================================================================
@@ -54,6 +61,7 @@ const SHOP_HREF = "/shop";
 const SHOP_CURSOR = "[SHOP COLLECTION]";
 const HOVER_DIM = 0.5;
 const HOVER_FADE_MS = 300;
+const THEME_FADE_MS = 450;
 
 const SIZE_CLASSES = [
   { frac: 0.11, weight: 2, p: 0.55 },
@@ -81,6 +89,24 @@ function clamp(v, min, max) {
 /** lerp(a, b, t) -> mix */
 function lerp(a, b, t) {
   return a + (b - a) * t;
+}
+
+/** themeEaseOut(t) -> css ease-out cubic-bezier(0, 0, 0.58, 1) */
+function themeEaseOut(t) {
+  const x2 = 0.58;
+  const y2 = 1;
+  const bx = 3 * x2;
+  const ax = 1 - bx;
+  const by = 3 * y2;
+  const ay = 1 - by;
+  let u = t;
+  for (let i = 0; i < 5; i++) {
+    const x = ((ax * u + bx) * u) * u - t;
+    const dx = (3 * ax * u + 2 * bx) * u;
+    if (Math.abs(dx) < 1e-6) break;
+    u -= x / dx;
+  }
+  return ((ay * u + by) * u) * u;
 }
 
 function wrapDelta(d, period) {
@@ -255,6 +281,10 @@ let rafId = 0;
 let hoveredMesh = null;
 let lastTick = 0;
 const themeBg = new THREE.Color(1, 1, 1);
+const modeMix = { value: 0 };
+let awaitingFade = false;
+let modeFade = null;
+let modeToggle = false;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -296,7 +326,8 @@ function getTexture(url) {
     tex.anisotropy = 4;
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.needsUpdate = true;
-    applyModeTextures();
+    if (awaitingFade || modeFade || modeToggle) applyModeTextures(false);
+    else applyModeTextures(true);
   });
   textureCache.set(url, texture);
   return texture;
@@ -322,19 +353,121 @@ function fitPlaneScale(mesh, texture) {
   mesh.scale.set(maxW, maxH, 1);
 }
 
-/** applyModeTextures() -> swap maps from body.dark-mode */
-function applyModeTextures() {
+/** setModeMix(value) -> write the shared texture mix */
+function setModeMix(value) {
+  modeMix.value = value;
+  if (!planeMeshes) return;
+  for (let i = 0; i < planeMeshes.length; i++) {
+    const uniform = planeMeshes[i].material.userData.uMix;
+    if (uniform && uniform !== modeMix) uniform.value = value;
+  }
+}
+
+/** textureReady(texture) -> image has decoded */
+function textureReady(texture) {
+  const img = texture && texture.image;
+  return Boolean(img && (img.naturalWidth || img.width));
+}
+
+/** assignMaps(fit) -> set current-mode maps; fit scale only when asked */
+function assignMaps(fit) {
+  modeFade = null;
+  awaitingFade = false;
+  setModeMix(0);
   if (!planeMeshes) return;
   planeMeshes.forEach((mesh) => {
-    const url = urlForIndex(mesh.userData.mediaIndex);
-    const texture = getTexture(url);
+    const texture = getTexture(urlForIndex(mesh.userData.mediaIndex));
     const material = mesh.material;
     if (material.map !== texture) {
       material.map = texture;
       material.needsUpdate = true;
     }
-    if (texture) fitPlaneScale(mesh, texture);
+    material.userData.mapIn = texture;
+    if (material.userData.uMapIn) material.userData.uMapIn.value = texture;
+    if (fit && texture) fitPlaneScale(mesh, texture);
   });
+}
+
+/** targetsReady() -> every current-mode image has decoded */
+function targetsReady() {
+  if (!planeMeshes) return false;
+  for (let i = 0; i < planeMeshes.length; i++) {
+    const texture = getTexture(
+      urlForIndex(planeMeshes[i].userData.mediaIndex),
+    );
+    if (!textureReady(texture)) return false;
+  }
+  return true;
+}
+
+/** startCrossfade() -> aim incoming maps and restart the mix */
+function startCrossfade() {
+  if (!planeMeshes) return;
+  const k = modeMix.value;
+  let from = k;
+  let changed = false;
+  planeMeshes.forEach((mesh) => {
+    const material = mesh.material;
+    const target = getTexture(urlForIndex(mesh.userData.mediaIndex));
+    const map = material.map;
+    const mapIn = material.userData.mapIn || map;
+    if (target === map && (k <= 0 || mapIn === map)) {
+      material.userData.mapIn = map;
+      if (material.userData.uMapIn) material.userData.uMapIn.value = map;
+      return;
+    }
+    if (target === mapIn && k > 0) {
+      changed = true;
+      return;
+    }
+    if (target === map && k > 0 && mapIn !== map) {
+      material.map = mapIn;
+      material.userData.mapIn = map;
+      if (material.userData.uMapIn) material.userData.uMapIn.value = map;
+      from = 1 - k;
+      changed = true;
+      return;
+    }
+    material.userData.mapIn = target;
+    if (material.userData.uMapIn) material.userData.uMapIn.value = target;
+    from = 0;
+    changed = true;
+  });
+  if (!changed) {
+    modeFade = null;
+    awaitingFade = false;
+    return;
+  }
+  setModeMix(from);
+  modeFade = { start: performance.now(), from };
+  awaitingFade = false;
+}
+
+/** advanceModeFade(now) -> drive the shared texture mix */
+function advanceModeFade(now) {
+  if (!modeFade) return;
+  if (reduceMotion) {
+    assignMaps(false);
+    return;
+  }
+  const t = clamp((now - modeFade.start) / THEME_FADE_MS, 0, 1);
+  const eased = t >= 1 ? 1 : themeEaseOut(t);
+  setModeMix(modeFade.from + (1 - modeFade.from) * eased);
+  if (t >= 1) assignMaps(false);
+}
+
+/** applyModeTextures(fit) -> crossfade maps from body.dark-mode */
+function applyModeTextures(fit) {
+  if (!planeMeshes) return;
+  if (fit || reduceMotion) {
+    assignMaps(Boolean(fit));
+    return;
+  }
+  if (!targetsReady()) {
+    awaitingFade = true;
+    return;
+  }
+  startCrossfade();
 }
 
 /** preloadTextures() -> fetch urlForIndex for each light index */
@@ -344,19 +477,26 @@ function preloadTextures() {
   }
 }
 
-/** patchHoverMaterial(material) -> uDim / uBg in the basic fragment shader */
+/** patchHoverMaterial(material) -> uDim / uBg / incoming map in the fragment shader */
 function patchHoverMaterial(material) {
   material.userData.dim = 0;
-  material.customProgramCacheKey = () => "hover-dim";
+  material.userData.mapIn = null;
+  material.customProgramCacheKey = () => "hover-dim-mix";
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uDim = { value: material.userData.dim };
     shader.uniforms.uBg = { value: themeBg };
+    shader.uniforms.uMapIn = { value: material.userData.mapIn || material.map };
+    shader.uniforms.uMix = modeMix;
     material.userData.uDim = shader.uniforms.uDim;
+    material.userData.uMapIn = shader.uniforms.uMapIn;
+    material.userData.uMix = shader.uniforms.uMix;
     shader.fragmentShader =
-      "uniform float uDim;\nuniform vec3 uBg;\n" +
+      "uniform float uDim;\nuniform vec3 uBg;\nuniform sampler2D uMapIn;\nuniform float uMix;\n" +
       shader.fragmentShader.replace(
         "#include <map_fragment>",
         `#include <map_fragment>
+         vec4 radIn = texture2D(uMapIn, vMapUv);
+         diffuseColor.rgb = mix(diffuseColor.rgb, radIn.rgb, uMix);
          diffuseColor.rgb = mix(diffuseColor.rgb, uBg, uDim);`,
       );
   };
@@ -394,7 +534,7 @@ function mountPeriod() {
       scene.add(makePlaneMesh(tile, o.ox, o.oy));
     });
   });
-  applyModeTextures();
+  applyModeTextures(true);
 }
 
 function resizeRenderer() {
@@ -651,12 +791,16 @@ function tick(now) {
   camera.position.set(PERIOD_W / 2 + s.drift.x, PERIOD_H / 2 + s.drift.y, 10);
   placeCopies();
   applyHoverDim(dt);
+  advanceModeFade(now);
 
   renderer.render(scene, camera);
 }
 
 function bindLightsObserver() {
-  const onClass = () => applyModeTextures();
+  const onClass = () => {
+    modeToggle = true;
+    applyModeTextures(false);
+  };
   const obs = new MutationObserver(onClass);
   obs.observe(document.documentElement, {
     attributes: true,

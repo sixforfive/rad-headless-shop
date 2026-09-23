@@ -193,12 +193,13 @@ body:has(.product-list:not(.is-gallery):not(.is-merch))
 }
 
 /* Theme swap: Webflow paints color on descendants, so body * is required. */
+html,
 body,
 body * {
   transition:
-    background-color 0.3s ease-out,
-    color 0.45s ease,
-    border-color 0.45s ease;
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
 }
 
 /* X mark from two 1px diagonals; no extra DOM. */
@@ -259,7 +260,11 @@ body * {
    On / only the logo's siblings move. Drawer and logo are not in this set. */
 .gallery-full-screen {
   opacity: 1;
-  transition: opacity 0.45s ease-out;
+  transition:
+    opacity 0.45s ease-out,
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
 }
 
 .main-wrapper:not(:has(.collection-hero-logo)),
@@ -274,7 +279,10 @@ body * {
 .products-collection {
   transition:
     opacity 0.6s ease,
-    transform 0.6s ease;
+    transform 0.6s ease,
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
 }
 
 html.is-ready .main-wrapper:not(:has(.collection-hero-logo)),
@@ -291,7 +299,11 @@ html.is-leaving :has(> .collection-hero-logo) > :not(.collection-hero-logo) {
 
 html.is-ready .main-wrapper.is-dimmed {
   opacity: 0.2;
-  transition: opacity 0.45s ease-out;
+  transition:
+    opacity 0.45s ease-out,
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
 }
 
 .gallery-full-screen.is-dimmed {
@@ -454,6 +466,7 @@ body.is-scroll-locked {
   }
 
   .drawer-wrapper,
+  html,
   .main-wrapper,
   :has(> .collection-hero-logo) > :not(.collection-hero-logo),
   .products-collection,
