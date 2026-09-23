@@ -9,6 +9,11 @@
  * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
  * openDrawer — fade overlay in, or swap panel if the other is already open; is-hidden on notification
  * closeDrawer — fade overlay out, then hideDrawerOverlay; remove is-hidden on notification
+ * parseMenuReveal — menu-reveal value → { order, stagger, dir } or null
+ * markMenuRevealFade — is-fade on [menu-reveal] when order is greater than 2
+ * writeMenuRevealTiming — delay and duration custom props; reverse flips order and line index
+ * splitMenuRevealLines — mask each wrapped line of a stagger node; rebuild when width changes
+ * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
@@ -160,6 +165,167 @@ function showDrawerPanel(kind) {
   if (show) show.style.display = "flex";
 }
 
+const MENU_REVEAL_TOTAL = 0.45;
+const MENU_REVEAL_STEP = 0.06;
+const MENU_REVEAL_LINE_STEP = 0.03;
+
+/** prefersReducedMotion — true when the visitor asks for less motion */
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** parseMenuReveal — menu-reveal value → { order, stagger, dir } or null */
+function parseMenuReveal(value) {
+  const match = /^(\d+)(-stagger)?-(up|down)$/.exec(value || "");
+  if (!match) return null;
+  return {
+    order: Number(match[1]),
+    stagger: match[2] === "-stagger",
+    dir: match[3],
+  };
+}
+
+/** menuRevealEntries — parsed [menu-reveal] nodes inside .menu-drawer */
+function menuRevealEntries() {
+  if (!menuDrawer) return [];
+  return [...menuDrawer.querySelectorAll("[menu-reveal]")]
+    .map((el) => ({
+      el,
+      parsed: parseMenuReveal(el.getAttribute("menu-reveal")),
+    }))
+    .filter((entry) => entry.parsed);
+}
+
+/** markMenuRevealFade — is-fade on [menu-reveal] when order is greater than 2 */
+function markMenuRevealFade() {
+  menuRevealEntries().forEach(({ el, parsed }) => {
+    el.classList.toggle("is-fade", parsed.order > 2);
+  });
+}
+
+/** setRevealTiming — write the delay and duration used by the reveal transition */
+function setRevealTiming(el, delay, duration) {
+  el.style.setProperty("--menu-reveal-delay", `${delay}s`);
+  el.style.setProperty("--menu-reveal-duration", `${duration}s`);
+}
+
+/** lineRevealTiming — step and duration so the last line ends at 0.45s */
+function lineRevealTiming(groupDelay, duration, count) {
+  let lineStep = MENU_REVEAL_LINE_STEP;
+  let lineDuration = duration;
+  if (count > 1) {
+    const end = groupDelay + (count - 1) * lineStep + lineDuration;
+    if (end > MENU_REVEAL_TOTAL) {
+      const room = MENU_REVEAL_TOTAL - groupDelay - lineDuration;
+      if (room > 0) lineStep = room / (count - 1);
+      else {
+        lineStep = 0;
+        lineDuration = Math.max(0, MENU_REVEAL_TOTAL - groupDelay);
+      }
+    }
+  }
+  return { lineStep, lineDuration };
+}
+
+/** writeMenuRevealTiming — delay and duration custom props; reverse flips order and line index */
+function writeMenuRevealTiming(opening) {
+  const entries = menuRevealEntries();
+  if (entries.length === 0) return;
+  const maxOrder = Math.max(...entries.map((entry) => entry.parsed.order));
+  const duration = MENU_REVEAL_TOTAL - (maxOrder - 1) * MENU_REVEAL_STEP;
+  entries.forEach(({ el, parsed }) => {
+    const groupDelay = opening
+      ? (parsed.order - 1) * MENU_REVEAL_STEP
+      : (maxOrder - parsed.order) * MENU_REVEAL_STEP;
+    setRevealTiming(el, groupDelay, duration);
+    if (!parsed.stagger) return;
+    const inners = [...el.querySelectorAll(".menu-reveal-line-inner")];
+    const { lineStep, lineDuration } = lineRevealTiming(
+      groupDelay,
+      duration,
+      inners.length,
+    );
+    inners.forEach((inner, index) => {
+      const lineIndex = opening ? index : inners.length - 1 - index;
+      setRevealTiming(inner, groupDelay + lineIndex * lineStep, lineDuration);
+    });
+  });
+}
+
+/** splitRevealNode — wrap each measured line; no-op when width is unchanged */
+function splitRevealNode(el) {
+  const width = el.clientWidth;
+  if (!width) return;
+  const widthKey = String(width);
+  if (
+    el.getAttribute("data-reveal-width") === widthKey &&
+    el.querySelector(".menu-reveal-line")
+  ) {
+    return;
+  }
+  const text = el.getAttribute("data-reveal-text") ?? el.textContent;
+  el.setAttribute("data-reveal-text", text);
+  const pieces = text.split(/(\s+)/).map((piece) => {
+    const span = document.createElement("span");
+    span.textContent = piece;
+    return span;
+  });
+  el.replaceChildren(...pieces);
+  const lines = [];
+  let current = [];
+  let top = null;
+  pieces.forEach((span) => {
+    if (!span.textContent) return;
+    const spanTop = span.offsetTop;
+    if (top !== null && spanTop - top > 1) {
+      lines.push(current.join(""));
+      current = [];
+    }
+    top = spanTop;
+    current.push(span.textContent);
+  });
+  if (current.length) lines.push(current.join(""));
+  el.replaceChildren(
+    ...lines.map((lineText) => {
+      const mask = document.createElement("span");
+      mask.className = "menu-reveal-line";
+      const inner = document.createElement("span");
+      inner.className = "menu-reveal-line-inner";
+      inner.textContent = lineText;
+      mask.appendChild(inner);
+      return mask;
+    }),
+  );
+  el.setAttribute("data-reveal-width", widthKey);
+}
+
+/** splitMenuRevealLines — mask each wrapped line of a stagger node; rebuild when width changes */
+function splitMenuRevealLines() {
+  if (!menuDrawer || menuDrawer.style.display === "none") return;
+  menuRevealEntries().forEach(({ el, parsed }) => {
+    if (parsed.stagger) splitRevealNode(el);
+  });
+}
+
+/** playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it */
+function playMenuReveal(opening) {
+  if (!menuDrawer) return;
+  if (opening) {
+    if (!prefersReducedMotion()) splitMenuRevealLines();
+    if (!prefersReducedMotion()) writeMenuRevealTiming(true);
+    void menuDrawer.offsetWidth;
+    menuDrawer.classList.add("is-revealed");
+    return;
+  }
+  if (!prefersReducedMotion()) writeMenuRevealTiming(false);
+  menuDrawer.classList.remove("is-revealed");
+}
+
+window.addEventListener("resize", () => {
+  if (activeDrawer !== "menu" || prefersReducedMotion()) return;
+  splitMenuRevealLines();
+});
+
 /** hideDrawerOverlay — display none after fade-out; no-op if a drawer reopened mid-fade */
 function hideDrawerOverlay() {
   if (activeDrawer !== null) return;
@@ -178,6 +344,11 @@ function openDrawer(kind, event) {
   if (!drawerWrapper) return;
 
   const overlayOpen = activeDrawer !== null;
+  const openingMenu = kind === "menu" && menuDrawer;
+  if (openingMenu) {
+    menuDrawer.classList.remove("is-revealed");
+    markMenuRevealFade();
+  }
   activeDrawer = kind;
   setDrawerButtons(kind);
   showDrawerPanel(kind);
@@ -189,9 +360,10 @@ function openDrawer(kind, event) {
   document.body.classList.add("is-scroll-locked");
   if (typeof radLenisStop === "function") radLenisStop();
 
+  if (!overlayOpen) drawerWrapper.style.display = "grid";
+  if (openingMenu) playMenuReveal(true);
   if (overlayOpen) return;
 
-  drawerWrapper.style.display = "grid";
   void drawerWrapper.offsetHeight;
   drawerWrapper.classList.add("is-visible");
   mainWrapper?.classList.add("is-dimmed");
@@ -203,6 +375,7 @@ function closeDrawer(event) {
   event.preventDefault();
   if (activeDrawer === null) return;
 
+  if (activeDrawer === "menu") playMenuReveal(false);
   activeDrawer = null;
   setDrawerButtons(null);
   drawerWrapper?.classList.remove("is-visible");
@@ -457,6 +630,9 @@ function interceptPageClicks(event) {
   const href = navHref(anchor);
   if (!href) return;
   event.preventDefault();
+  if (anchor.closest(".menu-drawer") && activeDrawer === "menu") {
+    playMenuReveal(false);
+  }
   radLeaveTo(href);
 }
 

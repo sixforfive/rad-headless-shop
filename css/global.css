@@ -235,11 +235,63 @@ body * {
 /* Overlay fades in; page behind dims. JS toggles the is-* classes. */
 .drawer-wrapper {
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.45s ease;
 }
 
 .drawer-wrapper.is-visible {
   opacity: 1;
+}
+
+/* menu-reveal: from-state until .menu-drawer.is-revealed. Stagger hosts stay put. */
+[menu-reveal$="-up"]:not([menu-reveal*="-stagger-"]) {
+  transform: translateY(1.25rem);
+}
+
+[menu-reveal$="-down"]:not([menu-reveal*="-stagger-"]) {
+  transform: translateY(-1.25rem);
+}
+
+[menu-reveal].is-fade {
+  opacity: 0;
+}
+
+.menu-drawer.is-revealed [menu-reveal] {
+  transform: none;
+}
+
+.menu-drawer.is-revealed [menu-reveal].is-fade {
+  opacity: 1;
+}
+
+[menu-reveal],
+.menu-reveal-line-inner {
+  transition:
+    transform var(--menu-reveal-duration, 0.45s) ease-out var(--menu-reveal-delay, 0s),
+    opacity var(--menu-reveal-duration, 0.45s) ease-out var(--menu-reveal-delay, 0s),
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
+}
+
+.menu-reveal-line {
+  display: block;
+  overflow: hidden;
+}
+
+.menu-reveal-line-inner {
+  display: block;
+}
+
+[menu-reveal$="-up"] .menu-reveal-line-inner {
+  transform: translateY(100%);
+}
+
+[menu-reveal$="-down"] .menu-reveal-line-inner {
+  transform: translateY(-100%);
+}
+
+.menu-drawer.is-revealed .menu-reveal-line-inner {
+  transform: translateY(0);
 }
 
 .error-wrapper [id^="error-"] {
@@ -468,7 +520,11 @@ body.is-scroll-locked {
   .main-wrapper:not(:has(.collection-hero-logo)),
   .collection-hero-logo,
   :has(> .collection-hero-logo) > :not(.collection-hero-logo),
-  .products-collection.is-leaving {
+  .products-collection.is-leaving,
+  [menu-reveal$="-up"]:not([menu-reveal*="-stagger-"]),
+  [menu-reveal$="-down"]:not([menu-reveal*="-stagger-"]),
+  [menu-reveal$="-up"] .menu-reveal-line-inner,
+  [menu-reveal$="-down"] .menu-reveal-line-inner {
     transform: none;
   }
 
@@ -485,7 +541,9 @@ body.is-scroll-locked {
   .hero-photo-dark,
   .custom-cursor-label,
   .product-list .product-link,
-  .menu-link {
+  .menu-link,
+  [menu-reveal],
+  .menu-reveal-line-inner {
     transition-duration: 0s;
   }
 
