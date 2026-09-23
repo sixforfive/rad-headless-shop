@@ -123,16 +123,24 @@ function destroyNested() {
 function createNested(col) {
   if (radNestedLenis || typeof Lenis !== "function" || reduceMotion()) return;
   col.setAttribute("data-lenis-prevent", "");
+  const list = col.querySelector(".product-gallery-list");
   let nested;
   nested = new Lenis({
     wrapper: col,
-    content: col.querySelector(".product-gallery-list"),
+    content: list,
     autoRaf: true,
     syncTouch: false,
     overscroll: false,
     virtualScroll: (data) => dampVirtualScroll(nested, data, false),
   });
   radNestedLenis = nested;
+  list?.querySelectorAll("img").forEach((img) => {
+    const decoded = img.decode?.();
+    if (!decoded) return;
+    decoded.then(() => {
+      if (radNestedLenis === nested) nested.resize();
+    }).catch(() => {});
+  });
   if (document.body.classList.contains("is-scroll-locked")) nested.stop();
 }
 
