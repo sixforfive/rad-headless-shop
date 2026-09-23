@@ -64,7 +64,8 @@ const SHOP_CURSOR = "[SHOP COLLECTION]";
 const HOVER_DIM = 0.5;
 const HOVER_FADE_MS = 300;
 const THEME_FADE_MS = 450;
-const REVEAL_DELAY_MS = 800;
+const REVEAL_MIN_MS = 250;
+const REVEAL_DELAY_MS = 1200;
 const REVEAL_FADE_MS = 600;
 
 const SIZE_CLASSES = [
@@ -783,22 +784,26 @@ function advanceReveal(now) {
   if (!planeMeshes) return;
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
+    const url = urlForIndex(mesh.userData.mediaIndex);
+    const texture = getTexture(url);
+    if (!textureReady(texture)) continue;
+    fitPlaneScale(mesh, texture);
+    if (reduceMotion) continue;
     if (mesh.userData.reveal >= 1) {
       mesh.material.opacity = 1;
       continue;
     }
-    const url = urlForIndex(mesh.userData.mediaIndex);
-    if (!textureReady(getTexture(url))) continue;
-    if (reduceMotion) continue;
     if (!revealAt.has(url)) {
-      revealAt.set(url, now + Math.random() * REVEAL_DELAY_MS);
+      revealAt.set(
+        url,
+        now + REVEAL_MIN_MS + Math.random() * REVEAL_DELAY_MS,
+      );
       continue;
     }
     const start = revealAt.get(url);
     if (now < start) continue;
     const t = clamp((now - start) / REVEAL_FADE_MS, 0, 1);
-    const next = t >= 1 ? 1 : t * t * (3 - 2 * t);
-    if (next > mesh.userData.reveal) mesh.userData.reveal = next;
+    if (t > mesh.userData.reveal) mesh.userData.reveal = t;
     mesh.material.opacity = mesh.userData.reveal;
   }
 }
