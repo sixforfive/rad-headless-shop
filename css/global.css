@@ -280,8 +280,8 @@ body * {
 :has(> .collection-hero-logo) > :not(.collection-hero-logo),
 .products-collection {
   transition:
-    opacity 0.45s ease,
-    transform 0.45s ease,
+    opacity 0.45s ease-out,
+    transform 0.45s ease-out,
     background-color 0.45s ease-out,
     color 0.45s ease-out,
     border-color 0.45s ease-out;
