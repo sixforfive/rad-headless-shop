@@ -168,8 +168,8 @@ function showDrawerPanel(kind) {
   if (show) show.style.display = "flex";
 }
 
-const MENU_REVEAL_DURATION = 0.45;
-const MENU_REVEAL_LINE_STEP = 0.04;
+const MENU_REVEAL_DURATION = 1.47;
+const MENU_REVEAL_LINE_STEP = 0.07;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
 function prefersReducedMotion() {
@@ -214,7 +214,7 @@ function setRevealTiming(el, delay, duration) {
   el.style.setProperty("--menu-reveal-duration", `${duration}s`);
 }
 
-/** revealStageLength — one move, plus 0.04s for each line after the first */
+/** revealStageLength — one move, plus 0.07s for each line after the first */
 function revealStageLength(count) {
   if (count <= 0) return 0;
   return (count - 1) * MENU_REVEAL_LINE_STEP + MENU_REVEAL_DURATION;
