@@ -64,7 +64,7 @@ const SHOP_CURSOR = "[SHOP COLLECTION]";
 const HOVER_DIM = 0.5;
 const HOVER_FADE_MS = 300;
 const THEME_FADE_MS = 450;
-const REVEAL_DELAY_MS = 300;
+const REVEAL_DELAY_MS = 800;
 const REVEAL_FADE_MS = 600;
 
 const SIZE_CLASSES = [
@@ -325,9 +325,6 @@ function getTexture(url) {
   const existing = textureCache.get(url);
   if (existing) return existing;
   const texture = textureLoader.load(url, (tex) => {
-    if (!revealAt.has(url)) {
-      revealAt.set(url, performance.now() + Math.random() * REVEAL_DELAY_MS);
-    }
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
@@ -793,10 +790,14 @@ function advanceReveal(now) {
     const url = urlForIndex(mesh.userData.mediaIndex);
     if (!textureReady(getTexture(url))) continue;
     if (reduceMotion) continue;
+    if (!revealAt.has(url)) {
+      revealAt.set(url, now + Math.random() * REVEAL_DELAY_MS);
+      continue;
+    }
     const start = revealAt.get(url);
-    if (start == null || now < start) continue;
+    if (now < start) continue;
     const t = clamp((now - start) / REVEAL_FADE_MS, 0, 1);
-    const next = t >= 1 ? 1 : themeEaseOut(t);
+    const next = t >= 1 ? 1 : t * t * (3 - 2 * t);
     if (next > mesh.userData.reveal) mesh.userData.reveal = next;
     mesh.material.opacity = mesh.userData.reveal;
   }
