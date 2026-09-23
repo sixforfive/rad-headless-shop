@@ -64,8 +64,8 @@ const SHOP_CURSOR = "[SHOP COLLECTION]";
 const HOVER_DIM = 0.5;
 const HOVER_FADE_MS = 300;
 const THEME_FADE_MS = 450;
-const REVEAL_DELAY_MS = 500;
-const REVEAL_FADE_MS = 450;
+const REVEAL_DELAY_MS = 300;
+const REVEAL_FADE_MS = 600;
 
 const SIZE_CLASSES = [
   { frac: 0.11, weight: 2, p: 0.55 },
@@ -105,12 +105,12 @@ function themeEaseOut(t) {
   const ay = 1 - by;
   let u = t;
   for (let i = 0; i < 5; i++) {
-    const x = ((ax * u + bx) * u) * u - t;
+    const x = (ax * u + bx) * u * u - t;
     const dx = (3 * ax * u + 2 * bx) * u;
     if (Math.abs(dx) < 1e-6) break;
     u -= x / dx;
   }
-  return ((ay * u + by) * u) * u;
+  return (ay * u + by) * u * u;
 }
 
 function wrapDelta(d, period) {
@@ -407,9 +407,7 @@ function assignMaps(fit) {
 function targetsReady() {
   if (!planeMeshes) return false;
   for (let i = 0; i < planeMeshes.length; i++) {
-    const texture = getTexture(
-      urlForIndex(planeMeshes[i].userData.mediaIndex),
-    );
+    const texture = getTexture(urlForIndex(planeMeshes[i].userData.mediaIndex));
     if (!textureReady(texture)) return false;
   }
   return true;
@@ -662,7 +660,9 @@ function applyHoverDim(dt) {
     const current = material.userData.dim || 0;
     const delta = target - current;
     const next =
-      Math.abs(delta) <= maxStep ? target : current + Math.sign(delta) * maxStep;
+      Math.abs(delta) <= maxStep
+        ? target
+        : current + Math.sign(delta) * maxStep;
     material.userData.dim = next;
     if (material.userData.uDim) material.userData.uDim.value = next;
   }
