@@ -7,6 +7,7 @@
  * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
  * preloadTextures() -> fetch light and dark srcs
  * bootInfiniteGallery() -> mount canvas or no-op
+ * advanceReveal(now) -> fade a decoded image in after its random delay
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
  * wrapDelta(d, period) -> shortest torus delta
@@ -34,7 +35,7 @@
  * grabGain(s, now) -> 0..1 ease-in-out on grab
  * setMouseNdc(event) -> cursor in host as -1..1; true if inside
  * canHoverDim() -> 768+ fine hover (same gate as shop)
- * applyHoverDim(dt) -> mix plane rgb toward theme bg; planes stay opaque
+ * applyHoverDim(dt) -> mix plane rgb toward theme bg; opacity follows reveal
  * patchHoverMaterial(material) -> uDim / uBg / incoming map in the fragment shader
  * parallaxFactor(w) -> class p (S 0.55 .. XL 1)
  * placeCopies() -> mesh positions from pan * p; camera stays home
@@ -63,6 +64,8 @@ const SHOP_CURSOR = "[SHOP COLLECTION]";
 const HOVER_DIM = 0.5;
 const HOVER_FADE_MS = 300;
 const THEME_FADE_MS = 450;
+const REVEAL_DELAY_MS = 500;
+const REVEAL_FADE_MS = 450;
 
 const SIZE_CLASSES = [
   { frac: 0.11, weight: 2, p: 0.55 },
@@ -273,6 +276,7 @@ let pointerNdc = null;
 let planeGeometry = null;
 let textureLoader = null;
 let textureCache = null;
+const revealAt = new Map();
 let planeMeshes = null;
 let controller = null;
 let reduceMotion = false;
@@ -321,6 +325,9 @@ function getTexture(url) {
   const existing = textureCache.get(url);
   if (existing) return existing;
   const texture = textureLoader.load(url, (tex) => {
+    if (!revealAt.has(url)) {
+      revealAt.set(url, performance.now() + Math.random() * REVEAL_DELAY_MS);
+    }
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
@@ -523,7 +530,7 @@ function patchHoverMaterial(material) {
 function makePlaneMesh(tile, ox, oy) {
   const material = new THREE.MeshBasicMaterial({
     transparent: true,
-    opacity: 1,
+    opacity: 0,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
@@ -539,6 +546,7 @@ function makePlaneMesh(tile, ox, oy) {
   mesh.userData.w = tile.w;
   mesh.userData.h = tile.h;
   mesh.userData.mediaIndex = tile.mediaIndex;
+  mesh.userData.reveal = 0;
   fitPlaneScale(mesh, null);
   planeMeshes.push(mesh);
   return mesh;
@@ -634,7 +642,7 @@ function setMouseNdc(event) {
   return true;
 }
 
-/** applyHoverDim(dt) -> mix plane rgb toward theme bg; planes stay opaque */
+/** applyHoverDim(dt) -> mix plane rgb toward theme bg; opacity follows reveal */
 function applyHoverDim(dt) {
   if (!planeMeshes) return;
   themeBg.setStyle(
@@ -647,7 +655,9 @@ function applyHoverDim(dt) {
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
     const material = mesh.material;
-    material.opacity = 1;
+    const url = urlForIndex(mesh.userData.mediaIndex);
+    if (reduceMotion && textureReady(getTexture(url))) mesh.userData.reveal = 1;
+    material.opacity = mesh.userData.reveal || 0;
     const target = dimming && mesh !== hoveredMesh ? HOVER_DIM : 0;
     const current = material.userData.dim || 0;
     const delta = target - current;
@@ -771,6 +781,27 @@ function onTouchMove(event) {
   event.preventDefault();
 }
 
+/** advanceReveal(now) -> fade a decoded image in after its random delay */
+function advanceReveal(now) {
+  if (!planeMeshes) return;
+  for (let i = 0; i < planeMeshes.length; i++) {
+    const mesh = planeMeshes[i];
+    if (mesh.userData.reveal >= 1) {
+      mesh.material.opacity = 1;
+      continue;
+    }
+    const url = urlForIndex(mesh.userData.mediaIndex);
+    if (!textureReady(getTexture(url))) continue;
+    if (reduceMotion) continue;
+    const start = revealAt.get(url);
+    if (start == null || now < start) continue;
+    const t = clamp((now - start) / REVEAL_FADE_MS, 0, 1);
+    const next = t >= 1 ? 1 : themeEaseOut(t);
+    if (next > mesh.userData.reveal) mesh.userData.reveal = next;
+    mesh.material.opacity = mesh.userData.reveal;
+  }
+}
+
 function tick(now) {
   rafId = requestAnimationFrame(tick);
   const dt = lastTick ? Math.min(now - lastTick, 50) : 16;
@@ -808,6 +839,7 @@ function tick(now) {
 
   camera.position.set(PERIOD_W / 2 + s.drift.x, PERIOD_H / 2 + s.drift.y, 10);
   placeCopies();
+  advanceReveal(now);
   applyHoverDim(dt);
   advanceModeFade(now);
 
@@ -898,10 +930,9 @@ function bootInfiniteGallery() {
   if (!host) return;
   lightSrcs = readGallerySrcs(host.querySelector(".hero-gallery-light"));
   darkSrcs = readGallerySrcs(host.querySelector(".hero-gallery-dark"));
-  if (!lightSrcs.length) return;
-  mountScene(host);
+  if (lightSrcs.length) mountScene(host);
+  window.radPageReadyFired = true;
+  if (typeof window.radPageReady === "function") window.radPageReady();
 }
 
 bootInfiniteGallery();
-window.radPageReadyFired = true;
-if (typeof window.radPageReady === "function") window.radPageReady();

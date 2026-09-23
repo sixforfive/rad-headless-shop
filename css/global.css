@@ -257,7 +257,8 @@ body * {
 }
 
 /* Page content stays hidden until html.is-ready, sinks on html.is-leaving.
-   On / only the logo's siblings move. Drawer and logo are not in this set. */
+   On / each hero tile fades on the canvas. Leave still fades the gallery.
+   Other pages rise and sink. Logo stays out. */
 .gallery-full-screen {
   opacity: 1;
   transition:
@@ -268,7 +269,6 @@ body * {
 }
 
 .main-wrapper:not(:has(.collection-hero-logo)),
-:has(> .collection-hero-logo) > :not(.collection-hero-logo),
 .products-collection.is-leaving {
   opacity: 0;
   transform: translateY(1.25rem);
@@ -285,16 +285,18 @@ body * {
     border-color 0.45s ease-out;
 }
 
-html.is-ready .main-wrapper:not(:has(.collection-hero-logo)),
-html.is-ready :has(> .collection-hero-logo) > :not(.collection-hero-logo) {
+html.is-ready .main-wrapper:not(:has(.collection-hero-logo)) {
   opacity: 1;
   transform: none;
 }
 
-html.is-leaving .main-wrapper:not(:has(.collection-hero-logo)),
-html.is-leaving :has(> .collection-hero-logo) > :not(.collection-hero-logo) {
+html.is-leaving .main-wrapper:not(:has(.collection-hero-logo)) {
   opacity: 0;
   transform: translateY(1.25rem);
+}
+
+html.is-leaving :has(> .collection-hero-logo) > :not(.collection-hero-logo) {
+  opacity: 0;
 }
 
 html.is-ready .main-wrapper.is-dimmed {
