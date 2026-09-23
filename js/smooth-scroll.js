@@ -7,7 +7,7 @@
  * radScrollShift — move the window position by a delta, keeping Lenis momentum
  * radOnScroll — run a callback on the Lenis frame, or on a passive window scroll
  * radLenisStop / radLenisStart — drawer lock; both instances
- * radNestedGallerySync — nested on desktop default gallery only; off in fullscreen and ≤767
+ * radNestedGallerySync — nested on desktop default gallery only; off in fullscreen, ≤767, and until the page-rise transform ends
  * dampVirtualScroll — scale wheel delta in the last 160px of a real bound
  */
 
@@ -144,6 +144,42 @@ function createNested(col) {
   if (document.body.classList.contains("is-scroll-locked")) nested.stop();
 }
 
+let riseWait = null;
+
+/** riseTransforming — page-rise transform still on .main-wrapper */
+function riseTransforming() {
+  if (reduceMotion()) return false;
+  const rising = document.querySelector(".main-wrapper");
+  if (!rising) return false;
+  return getComputedStyle(rising).transform !== "none";
+}
+
+/** whenRiseEnds — run fn now, or once the rise transform transitionend fires */
+function whenRiseEnds(fn) {
+  const rising = document.querySelector(".main-wrapper");
+  if (!rising || !riseTransforming()) {
+    fn();
+    return;
+  }
+  if (riseWait) return;
+  const finish = () => {
+    if (!riseWait) return;
+    riseWait = null;
+    rising.removeEventListener("transitionend", onEnd);
+    clearTimeout(timer);
+    fn();
+  };
+  function onEnd(event) {
+    if (event.target !== rising || event.propertyName !== "transform") return;
+    finish();
+  }
+  rising.addEventListener("transitionend", onEnd);
+  const timer = setTimeout(() => {
+    if (getComputedStyle(rising).transform === "none") finish();
+  }, 500);
+  riseWait = finish;
+}
+
 /** radNestedGallerySync — nested only for desktop default gallery, not fullscreen, not ≤767 */
 function radNestedGallerySync() {
   const col = document.querySelector(".product-gallery-col");
@@ -151,6 +187,10 @@ function radNestedGallerySync() {
   const mobile = window.matchMedia("(max-width: 767px)").matches;
   if (!col || fullScreen || mobile) {
     destroyNested();
+    return;
+  }
+  if (riseTransforming()) {
+    whenRiseEnds(radNestedGallerySync);
     return;
   }
   createNested(col);

@@ -339,7 +339,7 @@ function initCursorLabel() {
 
 initCursorLabel();
 
-const PAGE_LEAVE_MS = 600;
+const PAGE_LEAVE_MS = 450;
 const PAGE_HOLD_MS = 350;
 const SKIP_LEAVE_IDS = new Set([
   "menu-open",
