@@ -5,7 +5,7 @@
  * ----------------------------------------------------------------------------
  * displayUrl(img) -> srcset candidate nearest 800w, else src
  * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
- * preloadTextures() -> fetch urlForIndex for each light index
+ * preloadTextures() -> fetch light and dark srcs
  * bootInfiniteGallery() -> mount canvas or no-op
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
@@ -20,6 +20,7 @@
  * buildPeriod(srcs) -> tiles for one wrapping poster
  * urlForIndex(i) -> current-mode src
  * getTexture(url) -> cached THREE.Texture
+ * uploadTexture(texture) -> decoded image onto the GPU
  * setModeMix(value) -> write the shared texture mix
  * textureReady(texture) -> image has decoded
  * assignMaps(fit) -> set current-mode maps; fit scale only when asked
@@ -326,6 +327,7 @@ function getTexture(url) {
     tex.anisotropy = 4;
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.needsUpdate = true;
+    uploadTexture(tex);
     if (awaitingFade || modeFade || modeToggle) applyModeTextures(false);
     else applyModeTextures(true);
   });
@@ -351,6 +353,12 @@ function fitPlaneScale(mesh, texture) {
     return;
   }
   mesh.scale.set(maxW, maxH, 1);
+}
+
+/** uploadTexture(texture) -> decoded image onto the GPU */
+function uploadTexture(texture) {
+  if (!renderer || !textureReady(texture)) return;
+  renderer.initTexture(texture);
 }
 
 /** setModeMix(value) -> write the shared texture mix */
@@ -438,6 +446,9 @@ function startCrossfade() {
     awaitingFade = false;
     return;
   }
+  for (let i = 0; i < planeMeshes.length; i++) {
+    uploadTexture(planeMeshes[i].material.userData.mapIn);
+  }
   setModeMix(from);
   modeFade = { start: performance.now(), from };
   awaitingFade = false;
@@ -470,10 +481,17 @@ function applyModeTextures(fit) {
   startCrossfade();
 }
 
-/** preloadTextures() -> fetch urlForIndex for each light index */
+/** preloadTextures() -> fetch light and dark srcs */
 function preloadTextures() {
+  const seen = new Set();
   for (let i = 0; i < lightSrcs.length; i++) {
-    getTexture(urlForIndex(i));
+    const urls = [lightSrcs[i], darkSrcs[i]];
+    for (let j = 0; j < urls.length; j++) {
+      const url = urls[j];
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      getTexture(url);
+    }
   }
 }
 
