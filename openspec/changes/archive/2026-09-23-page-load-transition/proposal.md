@@ -27,6 +27,6 @@ On `/` the logo is the one thing that should not move, but it sits above the onl
 ## Impact
 
 - `css/global.css` — initial hide, `html.is-ready` rise, view transition names and animations, logo and drawer holds, view-switch motion, reduced motion.
-- `js/global.js` — `revealPage`, `schedulePageReveal`. Site-wide. No pathname filter.
+- `js/global.js` — `revealPage`, `radLeaveTo`. Site-wide. No pathname filter.
 - `js/shop.js` — `setView` sequences sink, swap, rise.
 - No new dependencies. Webflow markup unchanged. Navbar, second menu, and footer stay put.
