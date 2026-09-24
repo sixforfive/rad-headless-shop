@@ -12,6 +12,7 @@
  * shiftScrollY — momentum-preserving radScrollShift (Lenis) or window.scrollTo
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
  * applyView — swap is-gallery from data-view, sync buttons, jump to top, re-measure
+ * syncScrollCounter — is-none on #gallery-scroll-counter when the shop list is not gallery
  * setView — sink .products-collection, applyView while hidden, then rise it
  * syncActive — is-active on the switch button that matches the current view
  */
@@ -153,12 +154,20 @@ function onGalleryScroll() {
   }
 }
 
+/** syncScrollCounter — is-none on #gallery-scroll-counter when the shop list is not gallery */
+function syncScrollCounter() {
+  const counter = document.getElementById("gallery-scroll-counter");
+  const gallery = shopList()?.classList.contains("is-gallery");
+  counter?.classList.toggle("is-none", !gallery);
+}
+
 /** applyView — swap is-gallery, sync buttons, jump to top, re-measure the loop */
 function applyView(view) {
   document.documentElement.style.overflowAnchor = "none";
   shopLists().forEach((el) => {
     el.classList.toggle("is-gallery", view === "gallery");
   });
+  syncScrollCounter();
   document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
     btn.classList.toggle("is-active", btn.getAttribute("data-view") === view);
   });
@@ -218,6 +227,7 @@ hydrateThumbs();
 eagerThumbImages();
 cloneGalleryList();
 syncActive();
+syncScrollCounter();
 measureLoopHeight();
 onGalleryScroll();
 window.radPageReadyFired = true;

@@ -73,11 +73,6 @@ html.lenis:not(.lenis-stopped) body {
   display: none;
 }
 
-body:has(.product-list:not(.is-gallery):not(.is-merch))
-  #gallery-scroll-counter {
-  display: none;
-}
-
 @media screen and (max-width: 991px) {
   .product-list.is-merch .product-thumb {
     grid-column: auto;
@@ -375,7 +370,8 @@ html.is-ready .main-wrapper.is-dimmed {
 .dark-mode .meta-link.is-plus,
 .layer.is-none,
 .product-gallery-collection.is-none,
-.pagination-bar.is-none {
+.pagination-bar.is-none,
+#gallery-scroll-counter.is-none {
   display: none;
 }
 

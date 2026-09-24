@@ -8,7 +8,7 @@
  * radOnScroll — run a callback on the Lenis frame, or on a passive window scroll
  * radLenisStop / radLenisStart — drawer lock; both instances
  * radNestedGallerySync — nested on desktop default gallery only; off in fullscreen and ≤767
- * dampVirtualScroll — scale wheel delta in the last 160px of a real bound
+ * dampVirtualScroll — scale wheel delta in the edge zone; top-only on shop
  */
 
 const EDGE_ZONE = 160;
@@ -23,12 +23,12 @@ function reduceMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** isShopGallery — shop grid is in looping gallery view */
+/** isShopGallery — shop list is on the page (gallery or list); bottom damp stays off */
 function isShopGallery() {
-  return !!document.querySelector(".product-list.is-gallery:not(.is-merch)");
+  return !!document.querySelector(".product-list:not(.is-merch)");
 }
 
-/** dampVirtualScroll — shrink deltaY in the edge zone; top-only on shop gallery */
+/** dampVirtualScroll — shrink deltaY in the edge zone; top-only on shop */
 function dampVirtualScroll(lenis, data, topOnly) {
   if (!lenis || reduceMotion() || !data.deltaY) return true;
   const y = lenis.animatedScroll;
