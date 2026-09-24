@@ -371,7 +371,7 @@ html.is-ready .main-wrapper.is-dimmed {
 .layer.is-none,
 .product-gallery-collection.is-none,
 .pagination-bar.is-none,
-#gallery-scroll-counter.is-none {
+.gallery-scroll-counter.is-none {
   display: none;
 }
 

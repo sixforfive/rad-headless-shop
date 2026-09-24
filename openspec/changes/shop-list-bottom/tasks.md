@@ -4,8 +4,9 @@
 
 ## 2. Counter
 
-- [x] 2.1 In `js/shop.js`, add `syncScrollCounter`: `is-none` on `#gallery-scroll-counter` when the shop list lacks `is-gallery`; call it from `applyView` and on boot next to `syncActive`; update the header explainer
-- [x] 2.2 In `css/global.css`, add `#gallery-scroll-counter.is-none` to the `display: none` combo list and delete the `body:has(...) #gallery-scroll-counter` rule
+- [x] 2.1 In `js/shop.js`, add `syncScrollCounter`: `is-none` on `.gallery-scroll-counter` when the shop list lacks `is-gallery`; call it from `applyView` and on boot next to `syncActive`
+- [x] 2.2 In `css/global.css`, add `.gallery-scroll-counter.is-none` to the `display: none` combo list
+- [x] 2.3 In `js/shop.js`, `padShopEnd` sets `.section_content` `padding-bottom` to `space-400` plus the taller of `.second-menu` and `.footer`; run on boot, resize, and bar resize
 
 ## 3. Check
 

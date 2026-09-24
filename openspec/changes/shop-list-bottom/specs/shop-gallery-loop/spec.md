@@ -4,7 +4,7 @@
 
 `#gallery-scroll-counter` SHALL show a zero-padded integer from 00 through 99 for how far the visitor has scrolled through the original gallery set (not including clones). At the first original row the value SHALL be 00. Immediately before the wrap the value SHALL be 99. After the wrap the value SHALL return to 00. The value SHALL NOT be 100.
 
-When the shop list is not gallery, `#gallery-scroll-counter` SHALL have class `is-none` and SHALL NOT be visible. When the shop list is gallery, `#gallery-scroll-counter` SHALL NOT have class `is-none`.
+When the shop list is not gallery, `.gallery-scroll-counter` SHALL have class `is-none` and SHALL NOT be visible. When the shop list is gallery, `.gallery-scroll-counter` SHALL NOT have class `is-none`.
 
 #### Scenario: Start of the set
 
@@ -24,15 +24,29 @@ When the shop list is not gallery, `#gallery-scroll-counter` SHALL have class `i
 #### Scenario: Hidden in list view
 
 - **WHEN** the shop list is not gallery
-- **THEN** `#gallery-scroll-counter` has class `is-none`
-- **AND** `#gallery-scroll-counter` is not visible
+- **THEN** `.gallery-scroll-counter` has class `is-none`
+- **AND** `.gallery-scroll-counter` is not visible
 
 #### Scenario: Shown in gallery
 
 - **WHEN** the shop list has class `is-gallery`
-- **THEN** `#gallery-scroll-counter` does not have class `is-none`
+- **THEN** `.gallery-scroll-counter` does not have class `is-none`
 
 ## ADDED Requirements
+
+### Requirement: Shop end clears the fixed bottom bars
+
+On `/shop`, scrolling to the end of the page SHALL place the last row above `.second-menu` and `.footer`. Those bars are fixed to the viewport bottom. `.section_content` bottom padding SHALL include the height of the taller bar, on top of the section's own bottom padding.
+
+#### Scenario: List view end
+
+- **WHEN** the visitor scrolls to the end of Shop list view
+- **THEN** the last row is not covered by `.second-menu` or `.footer`
+
+#### Scenario: Gallery keeps the clearance
+
+- **WHEN** the shop gallery is showing
+- **THEN** `.section_content` bottom padding still includes the fixed bar height
 
 ### Requirement: Shop list view does not damp the bottom edge
 

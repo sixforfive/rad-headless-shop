@@ -12,7 +12,8 @@
  * shiftScrollY — momentum-preserving radScrollShift (Lenis) or window.scrollTo
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
  * applyView — swap is-gallery from data-view, sync buttons, jump to top, re-measure
- * syncScrollCounter — is-none on #gallery-scroll-counter when the shop list is not gallery
+ * syncScrollCounter — is-none on .gallery-scroll-counter when the shop list is not gallery
+ * padShopEnd — section bottom padding clears the fixed shop bars
  * setView — sink .products-collection, applyView while hidden, then rise it
  * syncActive — is-active on the switch button that matches the current view
  */
@@ -154,11 +155,24 @@ function onGalleryScroll() {
   }
 }
 
-/** syncScrollCounter — is-none on #gallery-scroll-counter when the shop list is not gallery */
+/** syncScrollCounter — is-none on .gallery-scroll-counter when the shop list is not gallery */
 function syncScrollCounter() {
-  const counter = document.getElementById("gallery-scroll-counter");
-  const gallery = shopList()?.classList.contains("is-gallery");
-  counter?.classList.toggle("is-none", !gallery);
+  const gallery = !!shopList()?.classList.contains("is-gallery");
+  document.querySelectorAll(".gallery-scroll-counter").forEach((el) => {
+    el.classList.toggle("is-none", !gallery);
+  });
+}
+
+/** padShopEnd — bottom padding so the last row clears the fixed shop bars */
+function padShopEnd() {
+  const section = document.querySelector(".section_content");
+  if (!section || !shopList()) return;
+  const menu = document.querySelector(".second-menu");
+  const footer = document.querySelector(".footer");
+  const h = Math.max(menu?.offsetHeight || 0, footer?.offsetHeight || 0);
+  section.style.paddingBottom = h
+    ? `calc(var(--_layout---spacing--space-400) + ${h}px)`
+    : "";
 }
 
 /** applyView — swap is-gallery, sync buttons, jump to top, re-measure the loop */
@@ -228,6 +242,7 @@ eagerThumbImages();
 cloneGalleryList();
 syncActive();
 syncScrollCounter();
+padShopEnd();
 measureLoopHeight();
 onGalleryScroll();
 window.radPageReadyFired = true;
@@ -239,6 +254,7 @@ if (typeof radOnScroll === "function") {
   window.addEventListener("scroll", onGalleryScroll, { passive: true });
 }
 window.addEventListener("resize", () => {
+  padShopEnd();
   measureLoopHeight();
   onGalleryScroll();
 });
@@ -250,6 +266,10 @@ if (galleryList) {
     onGalleryScroll();
   }).observe(galleryList);
 }
+
+document.querySelectorAll(".second-menu, .footer").forEach((el) => {
+  new ResizeObserver(padShopEnd).observe(el);
+});
 
 document.querySelectorAll(".switch-btn[data-view]").forEach((btn) => {
   btn.addEventListener("click", () => {

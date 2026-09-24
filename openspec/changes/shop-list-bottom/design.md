@@ -28,9 +28,13 @@ Alternative considered: a second predicate only for list view. Rejected — gall
 
 ### Toggle `.is-none` from the view, not `:has()`
 
-`syncScrollCounter` sets `is-none` when the shop list lacks `is-gallery`. Call it from `applyView` after the class swap, and on boot next to `syncActive`. Add `#gallery-scroll-counter.is-none` to the existing `display: none` combo list and delete the `:has()` rule.
+`syncScrollCounter` sets `is-none` on `.gallery-scroll-counter` when the shop list lacks `is-gallery`. The node is that class; `#gallery-scroll-counter` is only the number inside it. Call it from `applyView` after the class swap, and on boot next to `syncActive`. Add `.gallery-scroll-counter.is-none` to the existing `display: none` combo list and delete the `:has()` rule.
 
 Alternative considered: keep the `:has()` rule and also add the class. Rejected — two hides for one state.
+
+### Pad the section by the fixed bars
+
+`.second-menu` and `.footer` are `position: fixed; bottom: 0` on `/shop`, so the scroll stops while the last row is still under them. `padShopEnd` sets `.section_content` `padding-bottom` to `space-400` plus the taller bar's `offsetHeight`. Run on boot, resize, and when either bar changes size.
 
 ## Risks / Trade-offs
 
