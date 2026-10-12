@@ -167,6 +167,7 @@ function showDrawerPanel(kind) {
 }
 
 const MENU_REVEAL_DURATION = 1.47;
+const MENU_REVEAL_ORDER3_DURATION = 0.45;
 const MENU_REVEAL_LINE_STEP = 0.07;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
@@ -239,7 +240,7 @@ function writeMenuRevealTiming(opening) {
   entries.forEach(({ el, parsed }) => {
     const stageStart = (opening ? openStart : closeStart)[parsed.order] ?? 0;
     if (parsed.order > 2) {
-      setRevealTiming(el, stageStart, MENU_REVEAL_DURATION);
+      setRevealTiming(el, stageStart, MENU_REVEAL_ORDER3_DURATION);
       return;
     }
     const inners = [...el.querySelectorAll(".menu-reveal-line-inner")];
