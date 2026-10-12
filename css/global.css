@@ -108,7 +108,7 @@ html.lenis:not(.lenis-stopped) body {
   }
 
   .product-list.is-merch:has(.product-link:hover) .product-link:not(:hover) {
-    opacity: 0.5;
+    opacity: 0.3;
   }
 
   /* Shop spans the original list and its loop clone; merch stays out of it. */
