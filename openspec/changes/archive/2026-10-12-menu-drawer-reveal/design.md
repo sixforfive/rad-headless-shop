@@ -30,17 +30,17 @@ The first pass moves every node `1.25rem` inside `0.45s` and splits only a `stag
 
 ### Stages
 
-`1.47s` per move, `0.07s` between lines, ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)`.
+Orders `1` and `2` move `1.47s`, staggered `0.07s`, ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)`.
 
-Order `1` line `i` starts at `i * 0.07s`. Order `2` starts when order `1`'s last line ends, then uses the same stagger. Both order `3` nodes start when order `2`'s last line ends, with no stagger between them. An order with no lines has length `0`. On reverse, order `3` leaves first, then order `2`'s lines last-to-first, then order `1`'s lines last-to-first. Alternative considered: keep the `0.45s` budget and shrink the stagger. Rejected — the line reveal is the `1.47s` move.
+Order `1` line `i` starts at `i * 0.07s`. Order `2` starts when order `1`'s last line ends, then uses the same stagger. Both order `3` nodes start `0.9s` after order `2`'s last line starts, with no stagger between them. Their move is `0.45s` with ease `ease-out`. An order with no lines has length `0`. On reverse, order `3` and order `2` start together, then order `1`. Alternative considered: keep one `1.47s` ease for every order. Rejected — order `3` is the short `ease-out`.
 
 ### Lines by width
 
 Orders `1` and `2` both split, including `1-up`. Probe words against the node's `clientWidth` with `white-space: nowrap`, then set that on each inner so the row cannot wrap again. The host does not translate. Inners travel `translateY(100%)` to `0`. Split once per width. Rebuild when that width changes. Do not split while the panel is `display: none`. Alternative considered: `offsetTop` of inline word spans. Rejected — that is the broken break.
 
-### Order 3 travels its own height
+### Order 3 travels 8px
 
-`down` starts at `translateY(-100%)`. `up` starts at `translateY(100%)`. `.is-fade` stays on order greater than `2`. Theme `background-color`, `color`, and `border-color` stay `0.45s ease-out` and do not take the `1.47s` ease.
+`down` starts at `translateY(-8px)`. `up` starts at `translateY(8px)`. Both read `--menu-reveal-distance`. `.is-fade` stays on order greater than `2` and sets that node's ease to `ease-out`. Theme `background-color`, `color`, and `border-color` stay `0.45s ease-out`.
 
 ### Close still hides at 0.45s
 

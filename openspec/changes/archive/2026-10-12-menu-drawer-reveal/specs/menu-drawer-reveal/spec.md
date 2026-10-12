@@ -29,14 +29,15 @@ When `.menu-drawer` opens, order `1` SHALL reveal before order `2`. Each of thos
 
 ### Requirement: Both order 3 nodes enter together after the lines
 
-Both order `3` nodes SHALL start together when order `2`'s last line ends. `down` SHALL travel from above the node. `up` SHALL travel from below the node. Each SHALL move over `1.47s` with ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)` and fade from transparent to opaque. Orders `1` and `2` SHALL NOT fade.
+Both order `3` nodes SHALL start together `0.9s` after order `2`'s last line starts. Each SHALL travel `8px`. `down` SHALL travel from above the node. `up` SHALL travel from below the node. Each SHALL move over `0.45s` with ease `ease-out` and fade from transparent to opaque. Orders `1` and `2` SHALL NOT fade.
 
 #### Scenario: Nav and bottom links
 
-- **WHEN** order `2`'s last line ends
-- **THEN** `[menu-reveal="3-down"]` moves down from above and fades in
-- **AND** `[menu-reveal="3-up"]` moves up from below and fades in
+- **WHEN** order `2`'s last line has been moving for `0.9s`
+- **THEN** `[menu-reveal="3-down"]` moves down `8px` from above and fades in
+- **AND** `[menu-reveal="3-up"]` moves up `8px` from below and fades in
 - **AND** those two start together
+- **AND** each move takes `0.45s` with ease `ease-out`
 
 ### Requirement: Close and backdrop play the stages backward
 
