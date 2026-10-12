@@ -386,6 +386,44 @@ html.is-ready .main-wrapper.is-dimmed {
   display: none;
 }
 
+/* Open/close pair shares one cell. Both hidden drops out so cart title and currency hard-cut. */
+:has(> #menu-open):has(> #menu-close),
+:has(> #cart-open):has(> #cart-close) {
+  display: grid;
+  align-items: center;
+  justify-content: start;
+  column-gap: var(--_layout---spacing--space-150);
+}
+
+#menu-open,
+#menu-close,
+#cart-open,
+#cart-close {
+  grid-area: 1 / 1;
+  justify-self: start;
+  transition: opacity 0.45s ease;
+}
+
+:has(> #currency-btn:not(.is-none)) > :is(#cart-open, #cart-close) {
+  grid-column: 2;
+}
+
+#menu-open.is-none,
+#menu-close.is-none,
+#cart-open.is-none,
+#cart-close.is-none {
+  display: inline-flex;
+  opacity: 0;
+  pointer-events: none;
+}
+
+:has(> #menu-open.is-none):has(> #menu-close.is-none)
+  > :is(#menu-open, #menu-close),
+:has(> #cart-open.is-none):has(> #cart-close.is-none)
+  > :is(#cart-open, #cart-close) {
+  display: none;
+}
+
 /* Blend layer is a click-through overlay; listed chrome stays clickable. */
 .layer.is-blend {
   mix-blend-mode: difference;
@@ -569,6 +607,10 @@ html.is-dot-cursor * {
   .custom-cursor-label,
   .product-list .product-link,
   .menu-link,
+  #menu-open,
+  #menu-close,
+  #cart-open,
+  #cart-close,
   [menu-reveal],
   .menu-reveal-line-inner {
     transition-duration: 0s;
