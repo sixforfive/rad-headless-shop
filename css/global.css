@@ -401,7 +401,7 @@ html.is-ready .main-wrapper.is-dimmed {
 #cart-close {
   grid-area: 1 / 1;
   justify-self: start;
-  transition: opacity 0.3s ease 0.3s;
+  transition: opacity 0.3s ease 0.2s;
 }
 
 :has(> #currency-btn:not(.is-none)) > :is(#cart-open, #cart-close) {
