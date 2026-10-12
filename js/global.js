@@ -95,9 +95,7 @@ function scrollToTop(event) {
     "(prefers-reduced-motion: reduce)",
   ).matches;
   if (typeof radScrollToTop === "function") {
-    radScrollToTop(
-      reduceMotion ? { immediate: true } : { duration: 1.4 },
-    );
+    radScrollToTop(reduceMotion ? { immediate: true } : { duration: 1.4 });
     return;
   }
   window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
@@ -224,7 +222,9 @@ function revealStageLength(count) {
 function lineCountForOrder(entries, order) {
   const counts = entries
     .filter((entry) => entry.parsed.order === order)
-    .map((entry) => entry.el.querySelectorAll(".menu-reveal-line-inner").length);
+    .map(
+      (entry) => entry.el.querySelectorAll(".menu-reveal-line-inner").length,
+    );
   return counts.length ? Math.max(...counts) : 0;
 }
 
@@ -234,7 +234,7 @@ function writeMenuRevealTiming(opening) {
   if (entries.length === 0) return;
   const order1 = revealStageLength(lineCountForOrder(entries, 1));
   const order2 = revealStageLength(lineCountForOrder(entries, 2));
-  const openStart = { 1: 0, 2: order1, 3: order1 + order2 };
+  const openStart = { 1: 0, 2: order1, 3: order1 + order2 + 0.3 };
   const closeStart = { 3: 0, 2: 0, 1: order2 };
   entries.forEach(({ el, parsed }) => {
     const stageStart = (opening ? openStart : closeStart)[parsed.order] ?? 0;
@@ -500,8 +500,7 @@ function initCursorLabel() {
   function applyLabel() {
     if (!hasPointer) return;
     const el = document.elementFromPoint(pointerX, pointerY);
-    const node =
-      el instanceof Element ? el.closest("[custom-cursor]") : null;
+    const node = el instanceof Element ? el.closest("[custom-cursor]") : null;
     const text = node?.getAttribute("custom-cursor")?.trim() ?? "";
     const show = text.length > 0;
     const wasVisible = label.classList.contains("is-visible");
@@ -618,10 +617,7 @@ function navHref(anchor) {
     const url = new URL(anchor.href, location.href);
     if (url.protocol !== "http:" && url.protocol !== "https:") return "";
     if (url.origin !== location.origin) return "";
-    if (
-      url.pathname === location.pathname &&
-      url.search === location.search
-    ) {
+    if (url.pathname === location.pathname && url.search === location.search) {
       return "";
     }
     return url.href;
@@ -667,9 +663,13 @@ function interceptPageClicks(event) {
 }
 
 document.addEventListener("click", interceptPageClicks);
-document.addEventListener("pointerenter", (event) => {
-  const anchor = event.target.closest?.("a[href]");
-  if (!anchor || SKIP_LEAVE_IDS.has(anchor.id)) return;
-  const href = navHref(anchor);
-  if (href) prefetchHref(href);
-}, true);
+document.addEventListener(
+  "pointerenter",
+  (event) => {
+    const anchor = event.target.closest?.("a[href]");
+    if (!anchor || SKIP_LEAVE_IDS.has(anchor.id)) return;
+    const href = navHref(anchor);
+    if (href) prefetchHref(href);
+  },
+  true,
+);
