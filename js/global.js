@@ -22,7 +22,7 @@
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
  * pagePointerId — pathname first segment → #pointer-* id (domain ignored)
  * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
- * initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers
+ * initCursorLabel — label rubber-follows [custom-cursor]; 12px difference dot replaces pointer
  * revealPage — add html.is-ready on the next frame so the rise can paint
  * radPageReady — page scripts call this after layout; first paint stays hidden until then
  * radLeaveTo — sink content, keep the drawer, prefetch, then go
@@ -479,7 +479,7 @@ const CURSOR_LABEL_OFFSET_X = 16;
 const CURSOR_LABEL_OFFSET_Y = 20;
 const CURSOR_LABEL_LERP = 0.125;
 
-/** initCursorLabel — one .text-meta label rubber-follows [custom-cursor] on fine pointers */
+/** initCursorLabel — label rubber-follows [custom-cursor]; 12px difference dot replaces pointer */
 function initCursorLabel() {
   if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
     return;
@@ -489,7 +489,12 @@ function initCursorLabel() {
   label.className = "custom-cursor-label text-meta";
   document.body.appendChild(label);
 
+  const dot = document.createElement("div");
+  dot.className = "custom-cursor-dot";
+  document.body.appendChild(dot);
+
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const root = document.documentElement;
   let hasPointer = false;
   let pointerX = 0;
   let pointerY = 0;
@@ -504,7 +509,14 @@ function initCursorLabel() {
 
   function applyLabel() {
     if (!hasPointer) return;
+    root.classList.remove("is-dot-cursor");
     const el = document.elementFromPoint(pointerX, pointerY);
+    const showDot =
+      el instanceof Element && getComputedStyle(el).cursor === "pointer";
+    root.classList.toggle("is-dot-cursor", showDot);
+    dot.classList.toggle("is-visible", showDot);
+    dot.style.transform = `translate3d(${pointerX - 6}px, ${pointerY - 6}px, 0)`;
+
     const node = el instanceof Element ? el.closest("[custom-cursor]") : null;
     const text = node?.getAttribute("custom-cursor")?.trim() ?? "";
     const show = text.length > 0;

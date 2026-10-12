@@ -520,6 +520,29 @@ body.is-scroll-locked {
   opacity: 1;
 }
 
+html.is-dot-cursor,
+html.is-dot-cursor * {
+  cursor: none !important;
+}
+
+.custom-cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  mix-blend-mode: difference;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.custom-cursor-dot.is-visible {
+  opacity: 1;
+}
+
 /* Kill the 0.3s fades; marquee is left running (infinite, not a transition). */
 @media (prefers-reduced-motion: reduce) {
   .main-wrapper:not(:has(.collection-hero-logo)),
