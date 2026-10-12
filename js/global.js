@@ -26,7 +26,7 @@
  * revealPage — add html.is-ready on the next frame so the rise can paint
  * radPageReady — page scripts call this after layout; first paint stays hidden until then
  * radLeaveTo — sink content, keep the drawer, prefetch, then go
- * interceptPageClicks — same-origin links run radLeaveTo instead of a raw navigation
+ * interceptPageClicks — same-origin links run radLeaveTo; menu links also swap the navbar labels
  */
 
 const FAVICON_LIGHT =
@@ -662,7 +662,7 @@ function radLeaveTo(href) {
 }
 window.radLeaveTo = radLeaveTo;
 
-/** interceptPageClicks — same-origin page links leave, then go */
+/** interceptPageClicks — same-origin page links leave, then go; menu links also swap the navbar labels */
 function interceptPageClicks(event) {
   if (event.defaultPrevented || event.button !== 0) return;
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -675,6 +675,8 @@ function interceptPageClicks(event) {
   event.preventDefault();
   if (anchor.closest(".menu-drawer") && activeDrawer === "menu") {
     playMenuReveal(false);
+    activeDrawer = null;
+    setDrawerButtons(null);
   }
   radLeaveTo(href);
 }
