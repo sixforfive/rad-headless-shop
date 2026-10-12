@@ -3,6 +3,7 @@
 - [x] 1.1 In `css/global.css`, remove `:has(> .collection-hero-logo) > :not(.collection-hero-logo)` from the initial `opacity: 0` rule and from the `html.is-ready` show rule
 - [x] 1.2 Keep `html.is-leaving` fading that sibling out
 - [x] 1.3 In `js/collection.js`, call `radPageReady()` at the end of `bootInfiniteGallery()` and delete the all-textures wait in `revealGallery()`
+- [x] 1.4 In `css/global.css`, remove `.collection-hero-logo` from the initial hide, the transition, `html.is-ready`, and `html.is-leaving`
 
 ## 2. Per-image fade
 

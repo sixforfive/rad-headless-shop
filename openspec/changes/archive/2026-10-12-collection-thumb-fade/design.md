@@ -14,7 +14,7 @@ See proposal.md. `revealGallery` in `js/collection.js` calls `radPageReady` only
 
 - Waiting for the full set.
 - Changing the shop, merch, or product rise and sink.
-- Fading `.collection-hero-logo`.
+- Fading or moving `.collection-hero-logo` on enter or leave.
 
 ## Decisions
 
@@ -23,6 +23,10 @@ See proposal.md. `revealGallery` in `js/collection.js` calls `radPageReady` only
 Drop the collection sibling from the initial `opacity: 0` rule and from the `html.is-ready` show rule. Keep `html.is-leaving` fading that sibling out.
 
 `bootInfiniteGallery` calls `radPageReady()` as soon as the canvas is mounted, including when there are no images. Delete the wait inside `revealGallery`.
+
+### Logo stays still
+
+`.collection-hero-logo` is visible on first paint. It is not in the page rise or sink rules, so it does not fade or move on enter or leave. Leave still fades the gallery sibling out.
 
 ### Opacity lives on the plane
 

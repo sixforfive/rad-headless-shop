@@ -2,7 +2,7 @@
 
 ### Requirement: Each hero image fades in when decoded
 
-On `/`, each unique hero image SHALL start invisible. When that image's file has decoded, it SHALL fade to opaque after a random delay of at most 0.5s. The fade SHALL take 0.45s. The three period copies of that image SHALL fade together. An image that has not decoded SHALL stay invisible and SHALL NOT block images that have. `.collection-hero-logo` SHALL stay visible and SHALL NOT fade with the tiles. The canvas SHALL be visible while tiles are still arriving.
+On `/`, each unique hero image SHALL start invisible. When that image's file has decoded, it SHALL fade to opaque after a random delay of at most 0.5s. The fade SHALL take 0.45s. The three period copies of that image SHALL fade together. An image that has not decoded SHALL stay invisible and SHALL NOT block images that have. `.collection-hero-logo` SHALL be visible on first paint and SHALL NOT fade or move on enter or leave. The canvas SHALL be visible while tiles are still arriving.
 
 #### Scenario: One image arrives
 
@@ -23,7 +23,7 @@ On `/`, each unique hero image SHALL start invisible. When that image's file has
 #### Scenario: Logo stays put
 
 - **WHEN** hero images fade in
-- **THEN** `.collection-hero-logo` stays visible and does not fade
+- **THEN** `.collection-hero-logo` stays visible and does not fade or move
 
 #### Scenario: Reduced motion
 
