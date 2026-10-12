@@ -235,7 +235,7 @@ function writeMenuRevealTiming(opening) {
   if (entries.length === 0) return;
   const order1 = revealStageLength(lineCountForOrder(entries, 1));
   const order2 = revealStageLength(lineCountForOrder(entries, 2));
-  const openStart = { 1: 0, 2: order1, 3: order1 + order2 + 0.9 };
+  const openStart = { 1: 0, 2: order1, 3: order1 + order2 + 0.45 };
   const closeStart = { 3: 0, 2: 0, 1: order2 };
   entries.forEach(({ el, parsed }) => {
     const stageStart = (opening ? openStart : closeStart)[parsed.order] ?? 0;
