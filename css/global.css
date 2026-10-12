@@ -401,7 +401,7 @@ html.is-ready .main-wrapper.is-dimmed {
 #cart-close {
   grid-area: 1 / 1;
   justify-self: start;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.45s ease 0.45s;
 }
 
 :has(> #currency-btn:not(.is-none)) > :is(#cart-open, #cart-close) {
@@ -415,6 +415,7 @@ html.is-ready .main-wrapper.is-dimmed {
   display: inline-flex;
   opacity: 0;
   pointer-events: none;
+  transition: opacity 0.45s ease;
 }
 
 :has(> #menu-open.is-none):has(> #menu-close.is-none)
@@ -611,9 +612,20 @@ html.is-dot-cursor * {
   #menu-close,
   #cart-open,
   #cart-close,
+  #menu-open.is-none,
+  #menu-close.is-none,
+  #cart-open.is-none,
+  #cart-close.is-none,
   [menu-reveal],
   .menu-reveal-line-inner {
     transition-duration: 0s;
+  }
+
+  #menu-open,
+  #menu-close,
+  #cart-open,
+  #cart-close {
+    transition-delay: 0s;
   }
 
   [data-add-to-cart][aria-busy="true"]::before,
