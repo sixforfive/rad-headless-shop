@@ -167,7 +167,7 @@ function showDrawerPanel(kind) {
 }
 
 const MENU_REVEAL_DURATION = 1.47;
-const MENU_REVEAL_ORDER3_DURATION = 0.45;
+const MENU_REVEAL_ORDER3_DURATION = 0.03;
 const MENU_REVEAL_LINE_STEP = 0.07;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
