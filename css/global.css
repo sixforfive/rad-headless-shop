@@ -356,7 +356,7 @@ html.is-leaving :has(> .collection-hero-logo) > :not(.collection-hero-logo) {
 }
 
 html.is-ready .main-wrapper.is-dimmed {
-  opacity: 0.2;
+  opacity: 0.3;
   transition:
     opacity 0.45s ease-out,
     background-color 0.45s ease-out,
