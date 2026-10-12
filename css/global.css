@@ -240,8 +240,8 @@ body * {
 
 .drawer-wrapper.is-visible {
   opacity: 1;
-  -webkit-backdrop-filter: blur(48px);
-  backdrop-filter: blur(48px);
+  -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(32px);
 }
 
 /* menu-reveal: order 3 travels --menu-reveal-distance. Line hosts stay put. */
