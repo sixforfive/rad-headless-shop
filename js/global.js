@@ -14,7 +14,7 @@
  * writeMenuRevealTiming — order 1 lines from the bottom, then order 2, then both order 3; reverse leaves 3 first
  * menuRevealReverseMs — length of the close stages, in ms
  * clearMenuRevealHide — drop a pending shell fade
- * fadeDrawerOut — drop is-visible, then hide after the opacity fade
+ * fadeDrawerOut — drop is-visible, then hide after the blur transition
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
@@ -357,7 +357,7 @@ function clearMenuRevealHide() {
   menuRevealHideTimer = 0;
 }
 
-/** fadeDrawerOut — drop is-visible, then hide after the opacity fade */
+/** fadeDrawerOut — drop is-visible, then hide after the blur transition */
 function fadeDrawerOut() {
   drawerWrapper?.classList.remove("is-visible");
   mainWrapper?.classList.remove("is-dimmed");
@@ -368,7 +368,11 @@ function fadeDrawerOut() {
     return;
   }
   drawerWrapper.addEventListener("transitionend", function onFadeOut(event) {
-    if (event.target !== drawerWrapper || event.propertyName !== "opacity") {
+    if (event.target !== drawerWrapper) return;
+    if (
+      event.propertyName !== "backdrop-filter" &&
+      event.propertyName !== "-webkit-backdrop-filter"
+    ) {
       return;
     }
     drawerWrapper.removeEventListener("transitionend", onFadeOut);

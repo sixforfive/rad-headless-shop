@@ -227,19 +227,26 @@ body * {
   display: none;
 }
 
-/* Overlay fades in; page behind dims. JS toggles the is-* classes. */
+/* Overlay fades in; backdrop blur ramps on its own. JS toggles the is-* classes. */
 .drawer-wrapper {
   opacity: 0;
-  transition: opacity 0.45s ease;
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+  transition:
+    opacity 0.45s ease,
+    backdrop-filter 0.9s ease,
+    -webkit-backdrop-filter 0.9s ease;
 }
 
 .drawer-wrapper.is-visible {
   opacity: 1;
+  -webkit-backdrop-filter: blur(48px);
+  backdrop-filter: blur(48px);
 }
 
 /* menu-reveal: order 3 travels --menu-reveal-distance. Line hosts stay put. */
 [menu-reveal] {
-  --menu-reveal-distance: 12px;
+  --menu-reveal-distance: 8px;
 }
 
 [menu-reveal].is-from-up {
@@ -252,6 +259,7 @@ body * {
 
 [menu-reveal].is-fade {
   opacity: 0;
+  --menu-reveal-ease: ease-out;
 }
 
 .menu-drawer.is-revealed [menu-reveal] {
