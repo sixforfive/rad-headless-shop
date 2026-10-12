@@ -104,18 +104,18 @@ html.lenis:not(.lenis-stopped) body {
 /* Sibling dim: other product links recede while one is hovered. Gaps do not dim. 768+ only. */
 @media screen and (min-width: 768px) and (hover: hover) and (pointer: fine) {
   .product-list .product-link {
-    transition: opacity 0.45s ease;
+    transition: opacity 0.3s ease;
   }
 
   .product-list.is-merch:has(.product-link:hover) .product-link:not(:hover) {
-    opacity: 0.15;
+    opacity: 0.3;
   }
 
   /* Shop spans the original list and its loop clone; merch stays out of it. */
   body:has(.product-list:not(.is-merch) .product-link:hover)
     .product-list:not(.is-merch)
     .product-link:not(:hover) {
-    opacity: 0.5;
+    opacity: 0.45s;
   }
 
   .menu-link {
