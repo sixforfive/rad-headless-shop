@@ -368,6 +368,27 @@ html.is-ready .main-wrapper.is-dimmed {
   opacity: 0.2;
 }
 
+/* Switch opacity only. Dim stays on the 0.45s base rule above. */
+.gallery-full-screen.is-switching,
+.product-gallery-collection.is-default.is-switching {
+  transition:
+    opacity 0.8s ease,
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
+}
+
+.gallery-full-screen.is-fade-out,
+.product-gallery-collection.is-default.is-fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gallery-full-screen.is-fade-out:not(.is-switching),
+.product-gallery-collection.is-default.is-fade-out:not(.is-switching) {
+  transition: none;
+}
+
 /* Repo hide class. Dark mode always hides the lights plus, not the minus. */
 .link-cart.is-none,
 .link-secondary.is-none,
@@ -445,13 +466,16 @@ body.is-full-screen .layer * {
   border-color: #fff !important;
 }
 
-/* Head hook: paint open gallery before product.js. */
-html.is-full-screen .gallery-full-screen {
+/* Head hook: paint open gallery before product.js.
+   is-gallery-fading keeps both galleries displayed so the opacity fade can run. */
+html.is-full-screen .gallery-full-screen,
+html.is-gallery-fading .gallery-full-screen {
   display: block !important;
 }
 
 @media (min-width: 768px) {
-  html.is-full-screen .product-gallery-collection.is-default {
+  html.is-full-screen:not(.is-gallery-fading)
+    .product-gallery-collection.is-default {
     display: none;
   }
 
@@ -472,6 +496,10 @@ html.is-full-screen .gallery-full-screen .gallery-full-screen_close,
 .gallery-full-screen:not(.is-none) .gallery-full-screen_close {
   z-index: 6;
   pointer-events: auto;
+}
+
+.gallery-full-screen.is-fade-out .gallery-full-screen_close {
+  pointer-events: none;
 }
 
 /* Three copies of the notice; shift by one third so the loop has no jump. */
@@ -555,6 +583,16 @@ body.is-scroll-locked {
   opacity: 1;
 }
 
+.custom-cursor-label.is-out {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.custom-cursor-label.is-in {
+  opacity: 1;
+  transition: opacity 0.3s ease 0.3s;
+}
+
 html.is-dot-cursor,
 html.is-dot-cursor * {
   cursor: none !important;
@@ -595,12 +633,16 @@ html.is-dot-cursor * {
   :has(> .collection-hero-logo) > :not(.collection-hero-logo),
   .products-collection,
   .gallery-full-screen,
+  .gallery-full-screen.is-switching,
+  .product-gallery-collection.is-default.is-switching,
   .error-wrapper [id^="error-"],
   body,
   body *,
   .thumb-dark,
   .hero-photo-dark,
   .custom-cursor-label,
+  .custom-cursor-label.is-out,
+  .custom-cursor-label.is-in,
   .product-list .product-link,
   .menu-link,
   #menu-open,
@@ -619,7 +661,8 @@ html.is-dot-cursor * {
   #menu-open,
   #menu-close,
   #cart-open,
-  #cart-close {
+  #cart-close,
+  .custom-cursor-label.is-in {
     transition-delay: 0s;
   }
 

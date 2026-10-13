@@ -22,7 +22,7 @@
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
  * pagePointerId — pathname first segment → #pointer-* id (domain ignored)
  * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
- * initCursorLabel — label rubber-follows [custom-cursor]; 12px difference dot replaces pointer
+ * initCursorLabel — two labels rubber-follow [custom-cursor]; copy fades out then in; 12px difference dot replaces pointer
  * revealPage — add html.is-ready on the next frame so the rise can paint
  * radPageReady — page scripts call this after layout; first paint stays hidden until then
  * radLeaveTo — sink content, keep the drawer, prefetch, then go
@@ -479,15 +479,18 @@ const CURSOR_LABEL_OFFSET_X = 16;
 const CURSOR_LABEL_OFFSET_Y = 20;
 const CURSOR_LABEL_LERP = 0.125;
 
-/** initCursorLabel — label rubber-follows [custom-cursor]; 12px difference dot replaces pointer */
+/** initCursorLabel — two labels rubber-follow [custom-cursor]; copy fades out then in; 12px difference dot replaces pointer */
 function initCursorLabel() {
   if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
     return;
   }
 
-  const label = document.createElement("div");
-  label.className = "custom-cursor-label text-meta";
-  document.body.appendChild(label);
+  const labels = [0, 1].map(() => {
+    const label = document.createElement("div");
+    label.className = "custom-cursor-label text-meta";
+    document.body.appendChild(label);
+    return label;
+  });
 
   const dot = document.createElement("div");
   dot.className = "custom-cursor-dot";
@@ -504,7 +507,58 @@ function initCursorLabel() {
   let currentY = 0;
 
   function applyTransform() {
-    label.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+    const transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+    labels[0].style.transform = transform;
+    labels[1].style.transform = transform;
+  }
+
+  function clearLabelModes(label) {
+    label.classList.remove("is-visible", "is-in", "is-out");
+  }
+
+  /** applyCopy — enter/leave on .is-visible; string change hands off .is-out then .is-in */
+  function applyCopy(text, show) {
+    const incoming = labels.find((label) => label.classList.contains("is-in"));
+    const active =
+      incoming || labels.find((label) => label.classList.contains("is-visible"));
+
+    if (!show) {
+      labels.forEach(clearLabelModes);
+      return false;
+    }
+
+    if (reduceMotion.matches) {
+      const label = active || labels[0];
+      label.textContent = text;
+      labels.forEach((node) => {
+        if (node === label) {
+          node.classList.remove("is-in", "is-out");
+          node.classList.add("is-visible");
+        } else {
+          clearLabelModes(node);
+        }
+      });
+      return !active;
+    }
+
+    if (incoming?.textContent === text) return false;
+    if (!incoming && active?.textContent === text) return false;
+
+    if (!active) {
+      labels[0].textContent = text;
+      labels[0].classList.remove("is-in", "is-out");
+      labels[0].classList.add("is-visible");
+      return true;
+    }
+
+    const nodeOut = incoming || active;
+    const nodeIn = labels.find((label) => label !== nodeOut);
+    nodeOut.classList.remove("is-visible", "is-in");
+    nodeOut.classList.add("is-out");
+    nodeIn.textContent = text;
+    nodeIn.classList.remove("is-visible", "is-out");
+    nodeIn.classList.add("is-in");
+    return false;
   }
 
   function applyLabel() {
@@ -519,18 +573,12 @@ function initCursorLabel() {
 
     const node = el instanceof Element ? el.closest("[custom-cursor]") : null;
     const text = node?.getAttribute("custom-cursor")?.trim() ?? "";
-    const show = text.length > 0;
-    const wasVisible = label.classList.contains("is-visible");
-
-    if (show) {
-      label.textContent = text;
-      if (!wasVisible) {
-        currentX = targetX;
-        currentY = targetY;
-        applyTransform();
-      }
+    const entered = applyCopy(text, text.length > 0);
+    if (entered) {
+      currentX = targetX;
+      currentY = targetY;
+      applyTransform();
     }
-    label.classList.toggle("is-visible", show);
   }
 
   function onPointerMove(event) {
