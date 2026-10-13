@@ -25,8 +25,10 @@
  * initCursorLabel — two labels rubber-follow [custom-cursor]; copy fades out then in; 12px difference dot replaces pointer
  * revealPage — add html.is-ready on the next frame so the rise can paint
  * radPageReady — page scripts call this after layout; first paint stays hidden until then
+ * resetDrawerState — bfcache restore: no drawer, no dim, scroll unlocked
  * radLeaveTo — sink content, keep the drawer, prefetch, then go
- * interceptPageClicks — same-origin links run radLeaveTo; menu links also swap the navbar labels
+ * radMenuLeaveTo — menu reverses, then drawer and dimmed page fade together, then go
+ * interceptPageClicks — same-origin links run radLeaveTo; open-menu links run radMenuLeaveTo
  */
 
 const FAVICON_LIGHT =
@@ -169,6 +171,7 @@ function showDrawerPanel(kind) {
 const MENU_REVEAL_DURATION = 1.47;
 const MENU_REVEAL_ORDER3_DURATION = 0.3;
 const MENU_REVEAL_LINE_STEP = 0.07;
+const MENU_LEAVE_TAIL_MS = 450;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
 function prefersReducedMotion() {
@@ -429,7 +432,7 @@ function closeDrawer(event) {
       menuRevealHideTimer = 0;
       if (activeDrawer !== null) return;
       fadeDrawerOut();
-    }, menuRevealReverseMs());
+    }, menuRevealReverseMs() - MENU_LEAVE_TAIL_MS);
     return;
   }
   fadeDrawerOut();
@@ -653,8 +656,23 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 setTimeout(revealPage, 2000);
+
+/** resetDrawerState — bfcache restore: no drawer, no dim, scroll unlocked */
+function resetDrawerState() {
+  clearMenuRevealHide();
+  activeDrawer = null;
+  setDrawerButtons(null);
+  drawerWrapper?.classList.remove("is-visible");
+  mainWrapper?.classList.remove("is-dimmed");
+  dimGallery?.classList.remove("is-dimmed");
+  notificationBarBox?.classList.remove("is-hidden");
+  menuDrawer?.classList.remove("is-revealed");
+  hideDrawerOverlay();
+}
+
 window.addEventListener("pageshow", (event) => {
   if (!event.persisted) return;
+  resetDrawerState();
   pageLeaving = false;
   document.documentElement.classList.remove("is-leaving");
   document.documentElement.classList.add("is-ready");
@@ -710,7 +728,30 @@ function radLeaveTo(href) {
 }
 window.radLeaveTo = radLeaveTo;
 
-/** interceptPageClicks — same-origin page links leave, then go; menu links also swap the navbar labels */
+/** radMenuLeaveTo — menu reverses, then drawer and dimmed page fade together, then assign */
+function radMenuLeaveTo(href) {
+  if (!href || pageLeaving) return;
+  pageLeaving = true;
+  prefetchHref(href);
+  activeDrawer = null;
+  setDrawerButtons(null);
+  if (prefersReducedMotion()) {
+    location.href = href;
+    return;
+  }
+  clearMenuRevealHide();
+  playMenuReveal(false);
+  setTimeout(() => {
+    drawerWrapper?.classList.remove("is-visible");
+    document.documentElement.classList.add("is-leaving");
+    setTimeout(() => {
+      hideDrawerOverlay();
+      location.href = href;
+    }, PAGE_LEAVE_MS);
+  }, menuRevealReverseMs() - MENU_LEAVE_TAIL_MS);
+}
+
+/** interceptPageClicks — same-origin page links leave, then go; open-menu links run radMenuLeaveTo */
 function interceptPageClicks(event) {
   if (event.defaultPrevented || event.button !== 0) return;
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -722,9 +763,8 @@ function interceptPageClicks(event) {
   if (!href) return;
   event.preventDefault();
   if (anchor.closest(".menu-drawer") && activeDrawer === "menu") {
-    playMenuReveal(false);
-    activeDrawer = null;
-    setDrawerButtons(null);
+    radMenuLeaveTo(href);
+    return;
   }
   radLeaveTo(href);
 }

@@ -1,6 +1,6 @@
 ## Purpose
 
-Holds the outgoing page, sinks it, and rises the next one, so content is never seen mid-layout. The collection logo and an open drawer stay still through it.
+Holds the outgoing page, sinks it, and rises the next one, so content is never seen mid-layout. The collection logo fades on leave and does not move. An open drawer stays still through it.
 
 ## Requirements
 
@@ -45,7 +45,7 @@ On a same-origin navigation, the outgoing content SHALL stay visible while the n
 
 ### Requirement: Collection logo is excluded
 
-On `/`, the motion SHALL apply to the siblings of `.collection-hero-logo`, not to its ancestors. `.collection-hero-logo` SHALL be visible on first paint and SHALL NOT fade or move on enter or on leave, and it SHALL stay on screen for the whole visit.
+On `/`, the rise SHALL apply to the siblings of `.collection-hero-logo`, not to its ancestors. `.collection-hero-logo` SHALL be visible on first paint and SHALL NOT fade or move on enter. On leave it SHALL fade out with the hero gallery and SHALL NOT move. It SHALL stay on screen for the whole visit.
 
 #### Scenario: Collection load
 
@@ -57,7 +57,7 @@ On `/`, the motion SHALL apply to the siblings of `.collection-hero-logo`, not t
 
 - **WHEN** the visitor follows a link from `/` to another page
 - **THEN** the hero gallery fades out
-- **AND** `.collection-hero-logo` stays in place until the leave ends
+- **AND** `.collection-hero-logo` fades out with it and does not move
 
 #### Scenario: Collection content is not frozen
 

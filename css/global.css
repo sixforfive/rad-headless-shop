@@ -374,6 +374,13 @@ html.is-ready .main-wrapper.is-dimmed {
   opacity: 0.2;
 }
 
+/* Dimmed under a drawer: fade out in place, never drop. */
+html.is-leaving .main-wrapper.is-dimmed,
+html.is-leaving .gallery-full-screen.is-dimmed {
+  opacity: 0;
+  transform: none;
+}
+
 /* Out has no delay. In starts only once .is-switching is added without .is-fade-out. */
 .gallery-full-screen.is-fade-out.is-switching,
 .product-gallery-collection.is-default.is-fade-out.is-switching {
