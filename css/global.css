@@ -317,8 +317,8 @@ body * {
 }
 
 /* Page content stays hidden until html.is-ready, sinks on html.is-leaving.
-   On / the logo stays put. Hero tiles fade on the canvas.
-   Leave still fades the gallery. Other pages rise and sink. */
+   On / the logo fades out with the gallery and does not move on enter.
+   Hero tiles fade on the canvas. Other pages rise and sink. */
 .gallery-full-screen {
   opacity: 1;
   transition:
@@ -336,6 +336,7 @@ body * {
 
 .main-wrapper:not(:has(.collection-hero-logo)),
 :has(> .collection-hero-logo) > :not(.collection-hero-logo),
+.collection-hero-logo,
 .products-collection {
   transition:
     opacity 0.3s ease-out,
@@ -355,7 +356,8 @@ html.is-leaving .main-wrapper:not(:has(.collection-hero-logo)) {
   transform: translateY(0.75rem);
 }
 
-html.is-leaving :has(> .collection-hero-logo) > :not(.collection-hero-logo) {
+html.is-leaving :has(> .collection-hero-logo) > :not(.collection-hero-logo),
+html.is-leaving .collection-hero-logo {
   opacity: 0;
 }
 
@@ -649,6 +651,7 @@ html.is-dot-cursor * {
   html,
   .main-wrapper,
   :has(> .collection-hero-logo) > :not(.collection-hero-logo),
+  .collection-hero-logo,
   .products-collection,
   .gallery-full-screen,
   .gallery-full-screen.is-switching,
