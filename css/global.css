@@ -491,6 +491,12 @@ html.is-gallery-fading .gallery-full-screen {
     mix-blend-mode: difference;
     pointer-events: none;
   }
+
+  html.is-full-screen .product-nav-tab {
+    mix-blend-mode: difference;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 @media (max-width: 767px) {
