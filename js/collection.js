@@ -856,7 +856,11 @@ function tick(now) {
 }
 
 function bindLightsObserver() {
+  let lastDark = isDarkMode();
   const onClass = () => {
+    const dark = isDarkMode();
+    if (dark === lastDark) return;
+    lastDark = dark;
     modeToggle = true;
     applyModeTextures(false);
   };
