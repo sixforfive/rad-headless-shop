@@ -18,11 +18,11 @@ See proposal.md for motivation. `.product-gallery-collection.is-none` and Webflo
 
 ## Decisions
 
-### Opacity crossfade, then `is-none`
+### Fade out, then fade in, then `is-none`
 
-Desktop open and close: both surfaces use opacity `0.8s ease`, starting together. The one fading out gets `pointer-events: none` immediately. Mobile fades only `.gallery-full-screen`; `.product-gallery-collection.is-default` stays shown and never receives `is-none` for this switch.
+Desktop and mobile use the same image sequence. The shown gallery gets `.is-switching` and `.is-fade-out` and fades out over `0.8s ease` with `pointer-events: none` from the start. The other gallery stays `.is-fade-out` with no `.is-switching` (opacity 0, no transition) until that fade ends. `beginFadeIn` then adds `.is-switching` and removes `.is-fade-out`, so it fades in over `0.8s ease` with no extra delay. `commitGalleryFade` runs after the fade-in. On desktop it adds `is-none` to the gallery that faded out. On mobile `.product-gallery-collection.is-default` does not receive `is-none`.
 
-`setFullScreenGallery` adds `is-gallery-fading` on `html` for a user-driven switch. While that class is set, the first-paint `display: none` on `.product-gallery-collection.is-default` does not apply, and `.gallery-full-screen` stays `display: block` even if `is-full-screen` is already off. On `transitionend` (or reduced motion, in the same turn), remove `is-gallery-fading` and add `is-none` to the surface that faded out.
+`setFullScreenGallery` adds `is-gallery-fading` on `html` for a user-driven switch. While that class is set, the first-paint `display: none` on `.product-gallery-collection.is-default` does not apply, and `.gallery-full-screen` stays `display: block` even if `is-full-screen` is already off. Each phase settles on `transitionend` or after `800ms`. Reduced motion settles in the same turn.
 
 A persisted open has `html.is-full-screen` and no `is-gallery-fading`, so the existing first-paint rules still hide the default collection and show the full-screen gallery with no fade.
 
@@ -30,7 +30,7 @@ Alternative considered: leave both nodes displayed forever and only use opacity.
 
 ### Switch opacity is not the dim opacity
 
-`.gallery-full-screen.is-switching` and `.product-gallery-collection.is-default.is-switching` set opacity to `0.8s ease` and still list background, color, and border at `0.45s ease-out`. Outside a switch, `.gallery-full-screen` keeps opacity `0.45s ease-out` so drawer dim does not slow down. `prefers-reduced-motion` sets those durations to `0s`.
+`.is-fade-out.is-switching` sets opacity to `0.8s ease` with no delay. `.is-switching` without `.is-fade-out` sets opacity to `0.8s ease` with no delay, because `beginFadeIn` applies it only after the fade-out. Both still list background, color, and border at `0.45s ease-out`. Outside a switch, `.gallery-full-screen` keeps opacity `0.45s ease-out` so drawer dim does not slow down. `prefers-reduced-motion` sets those durations to `0s`.
 
 Alternative considered: change the base `.gallery-full-screen` opacity duration to `0.8s`. Rejected — that would slow `.is-dimmed`.
 
@@ -45,7 +45,7 @@ Alternative considered: one node, fade out, swap `textContent`, fade in. Rejecte
 ## Risks / Trade-offs
 
 - [Dim and switch in the same moment] → Opacity follows the `0.8s` switching transition until `is-switching` drops. Dim alone stays `0.45s`.
-- [Missed `transitionend`] → Reduced motion and a zero computed duration settle in the same turn. A fallback timer at `800ms` settles if the event never fires.
+- [Missed `transitionend`] → Reduced motion and a zero computed duration settle in the same turn. Each phase falls back after `800ms`.
 - [Rapid open/close] → A new `setFullScreenGallery` call cancels the in-flight settle and starts from the current opacities.
 - [Label handoff under a moving pointer] → Each apply reads the current attribute. The node still showing the old string keeps that string until it has faded out.
 

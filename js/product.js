@@ -6,8 +6,9 @@
  * cancelGalleryFade — invalidate an in-flight settle
  * opacityMs — first transition-duration, in ms
  * commitGalleryFade — settled classes after the fade
- * armGalleryFade — transitionend, or 800ms
- * setFullScreenGallery — desktop crossfade default + fullscreen; mobile fade fullscreen only; nested Lenis sync
+ * armGalleryFade — transitionend, or 800ms, then run done
+ * beginFadeIn — after the fade-out, fade the incoming gallery in
+ * setFullScreenGallery — fade the shown gallery out, then fade the other in
  * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
  * setChosenTick — is-choosen on the tick at Math.round(scrollLeft / clientWidth)
@@ -96,21 +97,42 @@ function commitGalleryFade(token) {
   if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 }
 
-/** armGalleryFade — transitionend, or 800ms if it never fires */
-function armGalleryFade(outgoing, token) {
+/** armGalleryFade — transitionend, or 800ms if it never fires, then done */
+function armGalleryFade(el, token, done) {
+  let settled = false;
   fadeListener = (event) => {
-    if (event && (event.target !== outgoing || event.propertyName !== "opacity")) {
-      return;
-    }
-    commitGalleryFade(token);
+    if (settled || token !== fadeToken) return;
+    if (event && (event.target !== el || event.propertyName !== "opacity")) return;
+    settled = true;
+    window.clearTimeout(settleTimer);
+    el.removeEventListener("transitionend", fadeListener);
+    fadeTarget = null;
+    fadeListener = null;
+    done();
   };
-  fadeTarget = outgoing;
-  outgoing.addEventListener("transitionend", fadeListener);
+  fadeTarget = el;
+  el.addEventListener("transitionend", fadeListener);
   window.clearTimeout(settleTimer);
-  settleTimer = window.setTimeout(() => commitGalleryFade(token), GALLERY_FADE_MS);
+  settleTimer = window.setTimeout(fadeListener, GALLERY_FADE_MS);
 }
 
-/** setFullScreenGallery — desktop crossfade; mobile fades fullscreen only */
+/** beginFadeIn — incoming loses .is-fade-out and fades in; settle after that fade */
+function beginFadeIn(incoming, token) {
+  if (token !== fadeToken) return;
+  if (!incoming) {
+    commitGalleryFade(token);
+    return;
+  }
+  incoming.classList.add("is-switching");
+  incoming.classList.remove("is-fade-out");
+  if (opacityMs(incoming) === 0) {
+    commitGalleryFade(token);
+    return;
+  }
+  armGalleryFade(incoming, token, () => commitGalleryFade(token));
+}
+
+/** setFullScreenGallery — fade the shown gallery out, then fade the other in */
 function setFullScreenGallery(open) {
   if (!galleryFullScreen) return;
   const root = document.documentElement;
@@ -131,8 +153,8 @@ function setFullScreenGallery(open) {
   }
 
   const mobile = isMobileViewport();
-  const incoming = open ? galleryFullScreen : mobile ? null : defaultGalleryCollection;
-  const outgoing = open ? (mobile ? null : defaultGalleryCollection) : galleryFullScreen;
+  const incoming = open ? galleryFullScreen : defaultGalleryCollection;
+  const outgoing = open ? defaultGalleryCollection : galleryFullScreen;
 
   root.classList.add("is-gallery-fading");
   root.classList.toggle("is-full-screen", open);
@@ -140,13 +162,12 @@ function setFullScreenGallery(open) {
   if (mobile) {
     layer?.classList.toggle("is-none", open);
     layer?.classList.remove("is-blend");
-    defaultGalleryCollection?.classList.remove("is-none", "is-fade-out", "is-switching");
   } else {
     layer?.classList.remove("is-none");
     layer?.classList.toggle("is-blend", open);
   }
 
-  if (incoming) {
+  if (incoming && incoming !== outgoing) {
     incoming.classList.add("is-fade-out");
     incoming.classList.remove("is-none", "is-switching");
   }
@@ -155,16 +176,15 @@ function setFullScreenGallery(open) {
   }
 
   const token = fadeToken;
-  (incoming || outgoing).offsetWidth;
-  incoming?.classList.add("is-switching");
-  incoming?.classList.remove("is-fade-out");
-  if (outgoing) outgoing.classList.add("is-switching", "is-fade-out");
-  const watch = outgoing || incoming;
-  if (!watch || opacityMs(watch) === 0) {
-    commitGalleryFade(token);
-    return;
+  (outgoing || incoming).offsetWidth;
+  if (outgoing && outgoing !== incoming) {
+    outgoing.classList.add("is-switching", "is-fade-out");
   }
-  armGalleryFade(watch, token);
+  if (!outgoing || outgoing === incoming || opacityMs(outgoing) === 0) {
+    beginFadeIn(incoming, token);
+  } else {
+    armGalleryFade(outgoing, token, () => beginFadeIn(incoming, token));
+  }
   if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 }
 

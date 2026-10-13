@@ -368,9 +368,18 @@ html.is-ready .main-wrapper.is-dimmed {
   opacity: 0.2;
 }
 
-/* Switch opacity only. Dim stays on the 0.45s base rule above. */
-.gallery-full-screen.is-switching,
-.product-gallery-collection.is-default.is-switching {
+/* Out has no delay. In starts only once .is-switching is added without .is-fade-out. */
+.gallery-full-screen.is-fade-out.is-switching,
+.product-gallery-collection.is-default.is-fade-out.is-switching {
+  transition:
+    opacity 0.8s ease,
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
+}
+
+.gallery-full-screen.is-switching:not(.is-fade-out),
+.product-gallery-collection.is-default.is-switching:not(.is-fade-out) {
   transition:
     opacity 0.8s ease,
     background-color 0.45s ease-out,
@@ -634,7 +643,11 @@ html.is-dot-cursor * {
   .products-collection,
   .gallery-full-screen,
   .gallery-full-screen.is-switching,
+  .gallery-full-screen.is-fade-out.is-switching,
+  .gallery-full-screen.is-switching:not(.is-fade-out),
   .product-gallery-collection.is-default.is-switching,
+  .product-gallery-collection.is-default.is-fade-out.is-switching,
+  .product-gallery-collection.is-default.is-switching:not(.is-fade-out),
   .error-wrapper [id^="error-"],
   body,
   body *,
