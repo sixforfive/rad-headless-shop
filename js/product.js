@@ -32,7 +32,7 @@ const paginationBar = document.querySelector(".pagination-bar");
 
 let galleryOpen = false;
 const GALLERY_FLAG = "rad-fs-gallery";
-const GALLERY_FADE_MS = 800;
+const GALLERY_FADE_MS = 300;
 const galleryMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 let fadeToken = 0;
 let settleTimer = 0;
@@ -102,7 +102,8 @@ function armGalleryFade(el, token, done) {
   let settled = false;
   fadeListener = (event) => {
     if (settled || token !== fadeToken) return;
-    if (event && (event.target !== el || event.propertyName !== "opacity")) return;
+    if (event && (event.target !== el || event.propertyName !== "opacity"))
+      return;
     settled = true;
     window.clearTimeout(settleTimer);
     el.removeEventListener("transitionend", fadeListener);
@@ -209,16 +210,20 @@ galleryFullScreen
     setFullScreenGallery(false);
   });
 
-document.getElementById("full-screen-open")?.addEventListener("click", (event) => {
-  if (!isMobileViewport()) return;
-  event.preventDefault();
-  setFullScreenGallery(true);
-});
+document
+  .getElementById("full-screen-open")
+  ?.addEventListener("click", (event) => {
+    if (!isMobileViewport()) return;
+    event.preventDefault();
+    setFullScreenGallery(true);
+  });
 
-document.getElementById("full-screen-close")?.addEventListener("click", (event) => {
-  event.preventDefault();
-  setFullScreenGallery(false);
-});
+document
+  .getElementById("full-screen-close")
+  ?.addEventListener("click", (event) => {
+    event.preventDefault();
+    setFullScreenGallery(false);
+  });
 
 /** persistGalleryFlag — write on .next-product; restore once on boot */
 document.querySelectorAll(".next-product").forEach((el) => {
@@ -243,9 +248,7 @@ function setChosenTick() {
   const ticks = paginationBar.querySelectorAll(".pagination-item");
   if (ticks.length === 0) return;
   const width = defaultGalleryList?.clientWidth || 0;
-  const index = width
-    ? Math.round(defaultGalleryList.scrollLeft / width)
-    : 0;
+  const index = width ? Math.round(defaultGalleryList.scrollLeft / width) : 0;
   const chosen = Math.min(Math.max(index, 0), ticks.length - 1);
   ticks.forEach((tick, i) => {
     tick.classList.toggle("is-choosen", i === chosen);

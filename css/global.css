@@ -372,7 +372,7 @@ html.is-ready .main-wrapper.is-dimmed {
 .gallery-full-screen.is-fade-out.is-switching,
 .product-gallery-collection.is-default.is-fade-out.is-switching {
   transition:
-    opacity 0.8s ease,
+    opacity 0.3s ease,
     background-color 0.45s ease-out,
     color 0.45s ease-out,
     border-color 0.45s ease-out;
@@ -381,7 +381,7 @@ html.is-ready .main-wrapper.is-dimmed {
 .gallery-full-screen.is-switching:not(.is-fade-out),
 .product-gallery-collection.is-default.is-switching:not(.is-fade-out) {
   transition:
-    opacity 0.8s ease,
+    opacity 0.3s ease,
     background-color 0.45s ease-out,
     color 0.45s ease-out,
     border-color 0.45s ease-out;
