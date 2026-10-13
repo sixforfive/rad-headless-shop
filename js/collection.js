@@ -66,7 +66,7 @@ const HOVER_FADE_MS = 300;
 const THEME_FADE_MS = 450;
 const REVEAL_MIN_MS = 250;
 const REVEAL_DELAY_MS = 1200;
-const REVEAL_FADE_MS = 600;
+const REVEAL_FADE_MS = 300;
 
 const SIZE_CLASSES = [
   { frac: 0.11, weight: 2, p: 0.55 },
@@ -797,7 +797,7 @@ function advanceReveal(now) {
       } else {
         const start = revealAt.get(url);
         if (now >= start) {
-          const t = clamp((now - start) / REVEAL_FADE_MS, 0, 1);
+          const t = themeEaseOut(clamp((now - start) / REVEAL_FADE_MS, 0, 1));
           if (t > mesh.userData.reveal) mesh.userData.reveal = t;
           mesh.material.opacity = mesh.userData.reveal;
         }

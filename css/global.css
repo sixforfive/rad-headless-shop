@@ -185,20 +185,6 @@ html.lenis:not(.lenis-stopped) body {
 
 .collection-hero-logo {
   pointer-events: none;
-  filter: blur(8px);
-  transition:
-    filter 0.45s ease-out,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
-}
-
-html.is-ready .collection-hero-logo {
-  filter: blur(0px);
-}
-
-html.is-leaving .collection-hero-logo {
-  filter: blur(8px);
 }
 
 /* Theme swap: Webflow paints color on descendants, so body * is required. */
@@ -690,17 +676,8 @@ html.is-dot-cursor * {
   #cart-open.is-none,
   #cart-close.is-none,
   [menu-reveal],
-  .menu-reveal-line-inner,
-  .collection-hero-logo,
-  html.is-ready .collection-hero-logo,
-  html.is-leaving .collection-hero-logo {
+  .menu-reveal-line-inner {
     transition-duration: 0s;
-  }
-
-  .collection-hero-logo,
-  html.is-ready .collection-hero-logo,
-  html.is-leaving .collection-hero-logo {
-    filter: none;
   }
 
   #menu-open,
