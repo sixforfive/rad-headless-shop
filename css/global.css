@@ -397,36 +397,6 @@ html.is-leaving .gallery-full-screen.is-dimmed {
   transform: none;
 }
 
-/* Out has no delay. In starts only once .is-switching is added without .is-fade-out. */
-.gallery-full-screen.is-fade-out.is-switching,
-.product-gallery-collection.is-default.is-fade-out.is-switching {
-  transition:
-    opacity 0.3s ease,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
-}
-
-.gallery-full-screen.is-switching:not(.is-fade-out),
-.product-gallery-collection.is-default.is-switching:not(.is-fade-out) {
-  transition:
-    opacity 0.3s ease,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
-}
-
-.gallery-full-screen.is-fade-out,
-.product-gallery-collection.is-default.is-fade-out {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.gallery-full-screen.is-fade-out:not(.is-switching),
-.product-gallery-collection.is-default.is-fade-out:not(.is-switching) {
-  transition: none;
-}
-
 /* Repo hide class. Dark mode always hides the lights plus, not the minus. */
 .link-cart.is-none,
 .link-secondary.is-none,
@@ -503,20 +473,18 @@ body.is-full-screen .layer * {
   border-color: #fff !important;
 }
 
-/* Head hook: paint open gallery before product.js.
-   is-gallery-fading keeps both galleries displayed so the opacity fade can run. */
-html.is-full-screen .gallery-full-screen,
-html.is-gallery-fading .gallery-full-screen {
+/* Head hook: paint open gallery before product.js. */
+html.is-full-screen .gallery-full-screen {
   display: block !important;
 }
 
 @media (min-width: 768px) {
-  html.is-full-screen:not(.is-gallery-fading)
-    .product-gallery-collection.is-default {
+  html.is-full-screen .product-gallery-collection.is-default {
     display: none;
   }
 
   html.is-full-screen .layer {
+    mix-blend-mode: difference;
     pointer-events: none;
   }
 
@@ -539,10 +507,6 @@ html.is-full-screen .gallery-full-screen .gallery-full-screen_close,
 .gallery-full-screen:not(.is-none) .gallery-full-screen_close {
   z-index: 6;
   pointer-events: auto;
-}
-
-.gallery-full-screen.is-fade-out .gallery-full-screen_close {
-  pointer-events: none;
 }
 
 /* Three copies of the notice; shift by one third so the loop has no jump. */
@@ -677,12 +641,6 @@ html.is-dot-cursor * {
   .collection-hero-logo,
   .products-collection,
   .gallery-full-screen,
-  .gallery-full-screen.is-switching,
-  .gallery-full-screen.is-fade-out.is-switching,
-  .gallery-full-screen.is-switching:not(.is-fade-out),
-  .product-gallery-collection.is-default.is-switching,
-  .product-gallery-collection.is-default.is-fade-out.is-switching,
-  .product-gallery-collection.is-default.is-switching:not(.is-fade-out),
   .error-wrapper [id^="error-"],
   body,
   body *,
