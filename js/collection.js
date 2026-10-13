@@ -7,7 +7,7 @@
  * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
  * preloadTextures() -> fetch light and dark srcs
  * bootInfiniteGallery() -> mount canvas or no-op
- * advanceReveal(now) -> fade a decoded image in after its random delay
+ * advanceReveal(now) -> fade a decoded image in after its random delay; scale 0.98 to 1 with reveal
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
  * wrapDelta(d, period) -> shortest torus delta
@@ -779,7 +779,7 @@ function onTouchMove(event) {
   event.preventDefault();
 }
 
-/** advanceReveal(now) -> fade a decoded image in after its random delay */
+/** advanceReveal(now) -> fade a decoded image in after its random delay; scale 0.98 to 1 with reveal */
 function advanceReveal(now) {
   if (!planeMeshes) return;
   for (let i = 0; i < planeMeshes.length; i++) {
@@ -788,23 +788,26 @@ function advanceReveal(now) {
     const texture = getTexture(url);
     if (!textureReady(texture)) continue;
     fitPlaneScale(mesh, texture);
-    if (reduceMotion) continue;
-    if (mesh.userData.reveal >= 1) {
+    if (!reduceMotion && mesh.userData.reveal < 1) {
+      if (!revealAt.has(url)) {
+        revealAt.set(
+          url,
+          now + REVEAL_MIN_MS + Math.random() * REVEAL_DELAY_MS,
+        );
+      } else {
+        const start = revealAt.get(url);
+        if (now >= start) {
+          const t = clamp((now - start) / REVEAL_FADE_MS, 0, 1);
+          if (t > mesh.userData.reveal) mesh.userData.reveal = t;
+          mesh.material.opacity = mesh.userData.reveal;
+        }
+      }
+    } else if (!reduceMotion) {
       mesh.material.opacity = 1;
-      continue;
     }
-    if (!revealAt.has(url)) {
-      revealAt.set(
-        url,
-        now + REVEAL_MIN_MS + Math.random() * REVEAL_DELAY_MS,
-      );
-      continue;
-    }
-    const start = revealAt.get(url);
-    if (now < start) continue;
-    const t = clamp((now - start) / REVEAL_FADE_MS, 0, 1);
-    if (t > mesh.userData.reveal) mesh.userData.reveal = t;
-    mesh.material.opacity = mesh.userData.reveal;
+    const pop = reduceMotion ? 1 : 0.98 + 0.02 * (mesh.userData.reveal || 0);
+    mesh.scale.x *= pop;
+    mesh.scale.y *= pop;
   }
 }
 
