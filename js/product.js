@@ -6,10 +6,11 @@
  * cancelGalleryFade — invalidate an in-flight settle
  * opacityMs — first transition-duration, in ms
  * commitGalleryFade — settled classes after the fade
- * armGalleryFade — transitionend, or 800ms, then run done
+ * armGalleryFade — transitionend, or 300ms, then run done
  * beginFadeIn — after the fade-out, fade the incoming gallery in
  * setFullScreenGallery — fade the shown gallery out, then fade the other in
- * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
+ * fadeInPersistedGallery — next page fades the already-open gallery in
+ * persistGalleryFlag — .next-product fades the gallery out, then loads; boot fades it in
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
  * setChosenTick — is-choosen on the tick at Math.round(scrollLeft / clientWidth)
  */
@@ -97,7 +98,7 @@ function commitGalleryFade(token) {
   if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 }
 
-/** armGalleryFade — transitionend, or 800ms if it never fires, then done */
+/** armGalleryFade — transitionend, or 300ms if it never fires, then done */
 function armGalleryFade(el, token, done) {
   let settled = false;
   fadeListener = (event) => {
@@ -189,6 +190,18 @@ function setFullScreenGallery(open) {
   if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 }
 
+/** fadeInPersistedGallery — gallery is already open at opacity 0; fade it in */
+function fadeInPersistedGallery() {
+  galleryOpen = true;
+  syncGalleryChrome(true);
+  if (!galleryFullScreen) return;
+  galleryFullScreen.classList.add("is-fade-out");
+  galleryFullScreen.classList.remove("is-switching");
+  document.documentElement.classList.remove("is-gallery-enter");
+  galleryFullScreen.offsetWidth;
+  beginFadeIn(galleryFullScreen, fadeToken);
+}
+
 mobileQuery.addEventListener("change", () => {
   if (galleryOpen) setFullScreenGallery(true);
   else if (typeof radNestedGallerySync === "function") radNestedGallerySync();
@@ -225,19 +238,47 @@ document
     setFullScreenGallery(false);
   });
 
-/** persistGalleryFlag — write on .next-product; restore once on boot */
+/** persistGalleryFlag — fade out, then load; the next page fades the gallery in */
 document.querySelectorAll(".next-product").forEach((el) => {
-  el.addEventListener("click", () => {
+  el.addEventListener("click", (event) => {
     try {
       if (galleryOpen) sessionStorage.setItem(GALLERY_FLAG, "1");
       else sessionStorage.removeItem(GALLERY_FLAG);
     } catch (e) {}
+    if (!galleryOpen || galleryMotion.matches) return;
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    const href = el.href;
+    if (!href || !galleryFullScreen) return;
+    event.preventDefault();
+    cancelGalleryFade();
+    const token = fadeToken;
+    galleryFullScreen.classList.add("is-switching", "is-fade-out");
+    if (opacityMs(galleryFullScreen) === 0) {
+      location.href = href;
+      return;
+    }
+    armGalleryFade(galleryFullScreen, token, () => {
+      location.href = href;
+    });
   });
 });
 
 try {
   if (sessionStorage.getItem(GALLERY_FLAG) === "1") {
-    setFullScreenGallery(true);
+    const root = document.documentElement;
+    if (root.classList.contains("is-gallery-enter") && !galleryMotion.matches) {
+      fadeInPersistedGallery();
+    } else {
+      root.classList.remove("is-gallery-enter");
+      setFullScreenGallery(true);
+    }
   }
   sessionStorage.removeItem(GALLERY_FLAG);
 } catch (e) {}

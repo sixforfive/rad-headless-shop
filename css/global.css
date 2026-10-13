@@ -481,6 +481,12 @@ html.is-gallery-fading .gallery-full-screen {
   display: block !important;
 }
 
+/* Next-product load: Head sets this so the new gallery paints open at opacity 0. */
+html.is-gallery-enter .gallery-full-screen {
+  opacity: 0;
+  transition: none;
+}
+
 @media (min-width: 768px) {
   html.is-full-screen:not(.is-gallery-fading)
     .product-gallery-collection.is-default {

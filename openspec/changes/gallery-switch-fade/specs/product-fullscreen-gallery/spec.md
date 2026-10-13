@@ -2,7 +2,7 @@
 
 ### Requirement: Gallery switch fades
 
-On a viewport wider than 767px, opening the gallery SHALL fade `.product-gallery-collection.is-default` out, then fade `.gallery-full-screen` in. Closing SHALL fade `.gallery-full-screen` out, then fade `.product-gallery-collection.is-default` in. The two fades SHALL NOT overlap. Each fade SHALL be opacity `0.8s ease`. The surface fading out SHALL ignore pointer events from the start of that fade.
+On a viewport wider than 767px, opening the gallery SHALL fade `.product-gallery-collection.is-default` out, then fade `.gallery-full-screen` in. Closing SHALL fade `.gallery-full-screen` out, then fade `.product-gallery-collection.is-default` in. The two fades SHALL NOT overlap. Each fade SHALL be opacity `0.3s ease`. The surface fading out SHALL ignore pointer events from the start of that fade.
 
 On a viewport 767px wide or narrower, opening and closing SHALL use that same out-then-in sequence. After it settles, `.product-gallery-collection.is-default` SHALL NOT have `is-none`.
 
@@ -17,17 +17,17 @@ When `prefers-reduced-motion: reduce` is set, the fade SHALL NOT run. Open and c
 #### Scenario: Desktop open fades out then in
 
 - **WHEN** the viewport is wider than 767px and the user opens the gallery
-- **THEN** `.product-gallery-collection.is-default` fades out over `0.8s ease` and ignores pointer events from the start, and `.gallery-full-screen` stays hidden until that fade ends, then fades in over `0.8s ease`
+- **THEN** `.product-gallery-collection.is-default` fades out over `0.3s ease` and ignores pointer events from the start, and `.gallery-full-screen` stays hidden until that fade ends, then fades in over `0.3s ease`
 
 #### Scenario: Desktop close fades out then in
 
 - **WHEN** the gallery is open, the viewport is wider than 767px, and the user closes the gallery
-- **THEN** `.gallery-full-screen` fades out over `0.8s ease` and ignores pointer events from the start, and `.product-gallery-collection.is-default` stays hidden until that fade ends, then fades in over `0.8s ease`
+- **THEN** `.gallery-full-screen` fades out over `0.3s ease` and ignores pointer events from the start, and `.product-gallery-collection.is-default` stays hidden until that fade ends, then fades in over `0.3s ease`
 
 #### Scenario: Mobile fades out then in
 
 - **WHEN** the viewport is 767px wide or narrower and the user opens or closes the gallery
-- **THEN** the shown gallery fades out over `0.8s ease`, then the other fades in over `0.8s ease`, and after it settles `.product-gallery-collection.is-default` does not have `is-none`
+- **THEN** the shown gallery fades out over `0.3s ease`, then the other fades in over `0.3s ease`, and after it settles `.product-gallery-collection.is-default` does not have `is-none`
 
 #### Scenario: Settled hide after the fade-in
 
