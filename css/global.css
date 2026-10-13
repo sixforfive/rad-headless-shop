@@ -361,16 +361,19 @@ html.is-leaving .collection-hero-logo {
   opacity: 0;
 }
 
-.second-menu {
+.second-menu,
+.footer {
   opacity: 0;
   transition: opacity 0.3s ease-out;
 }
 
-html.is-ready .second-menu {
+html.is-ready .second-menu,
+html.is-ready .footer {
   opacity: 1;
 }
 
-html.is-leaving .second-menu {
+html.is-leaving .second-menu,
+html.is-leaving .footer {
   opacity: 0;
 }
 

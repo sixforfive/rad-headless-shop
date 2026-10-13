@@ -6,7 +6,7 @@ Holds the outgoing page, sinks it, and rises the next one, so content is never s
 
 ### Requirement: Content rises in on every page
 
-On every page, the content of `.main-wrapper` SHALL start invisible and lowered by `1.25rem`. After the page's layout scripts have run, it SHALL move up and fade in. The rise SHALL run on the first visit and on each navigation. `.second-menu` SHALL fade in with the page and SHALL NOT move. Navbar and footer SHALL stay in place.
+On every page, the content of `.main-wrapper` SHALL start invisible and lowered by `1.25rem`. After the page's layout scripts have run, it SHALL move up and fade in. The rise SHALL run on the first visit and on each navigation. `.second-menu` and `.footer` SHALL fade in with the page and SHALL NOT move. The navbar SHALL stay in place.
 
 #### Scenario: First visit
 
@@ -26,8 +26,8 @@ On every page, the content of `.main-wrapper` SHALL start invisible and lowered 
 #### Scenario: Chrome stays
 
 - **WHEN** the page content rises
-- **THEN** `.second-menu` fades in with it and does not move
-- **AND** the navbar and footer do not move with it
+- **THEN** `.second-menu` and `.footer` fade in with it and do not move
+- **AND** the navbar does not move with it
 
 ### Requirement: Content sinks on leave
 
@@ -44,11 +44,11 @@ On a same-origin navigation, the outgoing content SHALL stay visible while the n
 - **WHEN** the visitor navigates between `/faq` and `/privacy`
 - **THEN** the same leave and rise run
 
-#### Scenario: Second menu fades out
+#### Scenario: Second menu and footer fade out
 
 - **WHEN** the page content sinks on leave
-- **THEN** `.second-menu` fades out with it
-- **AND** `.second-menu` does not move
+- **THEN** `.second-menu` and `.footer` fade out with it
+- **AND** neither moves
 
 ### Requirement: Collection logo is excluded
 
