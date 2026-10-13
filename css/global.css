@@ -517,11 +517,11 @@ html.is-gallery-fading .gallery-full-screen {
   }
 
   html.is-full-screen .layer {
-    mix-blend-mode: difference;
     pointer-events: none;
   }
 
   html.is-full-screen .product-nav-tab {
+    color: #fff;
     mix-blend-mode: difference;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

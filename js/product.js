@@ -7,7 +7,7 @@
  * opacityMs — first transition-duration, in ms
  * commitGalleryFade — settled classes after the fade
  * armGalleryFade — transitionend, or 800ms, then run done
- * beginFadeIn — after the fade-out, fade the incoming gallery in
+ * beginFadeIn — after the fade-out, fade the incoming gallery in; desktop open adds is-blend
  * setFullScreenGallery — fade the shown gallery out, then fade the other in
  * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
@@ -117,9 +117,10 @@ function armGalleryFade(el, token, done) {
   settleTimer = window.setTimeout(fadeListener, GALLERY_FADE_MS);
 }
 
-/** beginFadeIn — incoming loses .is-fade-out and fades in; settle after that fade */
+/** beginFadeIn — incoming loses .is-fade-out and fades in; desktop open adds is-blend */
 function beginFadeIn(incoming, token) {
   if (token !== fadeToken) return;
+  if (galleryOpen && !isMobileViewport()) layer?.classList.add("is-blend");
   if (!incoming) {
     commitGalleryFade(token);
     return;
@@ -165,7 +166,7 @@ function setFullScreenGallery(open) {
     layer?.classList.remove("is-blend");
   } else {
     layer?.classList.remove("is-none");
-    layer?.classList.toggle("is-blend", open);
+    if (!open) layer?.classList.remove("is-blend");
   }
 
   if (incoming && incoming !== outgoing) {
