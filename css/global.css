@@ -217,8 +217,12 @@ body * {
     );
 }
 
-/* Availability comes from Shopify, so hide both branches until shopify.js answers. */
-[data-variant-id]:not([data-available]) [data-when] {
+/* Availability comes from Shopify. Until it answers, available holds its space unseen; sold-out stays out. */
+[data-variant-id]:not([data-available]) [data-when="available"] {
+  visibility: hidden;
+}
+
+[data-variant-id]:not([data-available]) [data-when="sold-out"] {
   display: none;
 }
 
