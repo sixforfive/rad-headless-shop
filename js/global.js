@@ -27,7 +27,7 @@
  * radPageReady — page scripts call this after layout; first paint stays hidden until then
  * resetDrawerState — bfcache restore: no drawer, no dim, scroll unlocked
  * radLeaveTo — sink content, keep the drawer, prefetch, then go
- * radMenuLeaveTo — menu reverses, then drawer and dimmed page fade together, then go
+ * radMenuLeaveTo — menu reverses, page fades under the drawer, then the drawer fades, then go
  * interceptPageClicks — same-origin links run radLeaveTo; open-menu links run radMenuLeaveTo
  */
 
@@ -171,7 +171,7 @@ function showDrawerPanel(kind) {
 const MENU_REVEAL_DURATION = 1.47;
 const MENU_REVEAL_ORDER3_DURATION = 0.3;
 const MENU_REVEAL_LINE_STEP = 0.07;
-const MENU_LEAVE_TAIL_MS = 450;
+const MENU_LEAVE_TAIL_MS = 600;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
 function prefersReducedMotion() {
@@ -728,7 +728,7 @@ function radLeaveTo(href) {
 }
 window.radLeaveTo = radLeaveTo;
 
-/** radMenuLeaveTo — menu reverses, then drawer and dimmed page fade together, then assign */
+/** radMenuLeaveTo — menu reverses, page fades under the drawer, then the drawer fades, then assign */
 function radMenuLeaveTo(href) {
   if (!href || pageLeaving) return;
   pageLeaving = true;
@@ -741,14 +741,20 @@ function radMenuLeaveTo(href) {
   }
   clearMenuRevealHide();
   playMenuReveal(false);
+  const lineGone = menuRevealReverseMs() - MENU_LEAVE_TAIL_MS;
+  setTimeout(
+    () => {
+      document.documentElement.classList.add("is-leaving");
+    },
+    Math.max(0, lineGone - PAGE_LEAVE_MS),
+  );
   setTimeout(() => {
     drawerWrapper?.classList.remove("is-visible");
-    document.documentElement.classList.add("is-leaving");
     setTimeout(() => {
       hideDrawerOverlay();
       location.href = href;
     }, PAGE_LEAVE_MS);
-  }, menuRevealReverseMs() - MENU_LEAVE_TAIL_MS);
+  }, lineGone);
 }
 
 /** interceptPageClicks — same-origin page links leave, then go; open-menu links run radMenuLeaveTo */

@@ -25,7 +25,7 @@ When the cart drawer is open and the visitor follows a same-origin link, the dra
 
 - **WHEN** the menu drawer is open and the visitor clicks a menu link
 - **THEN** the menu copy leaves first
-- **AND** then the drawer and the dimmed page content fade out together
+- **AND** then the dimmed page content fades out, then the drawer fades out
 - **AND** the next page is requested only after that fade ends
 
 #### Scenario: Navigating from the open cart

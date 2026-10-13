@@ -7,7 +7,7 @@
 
 ### Requirement: Close and backdrop play the stages backward
 
-`#menu-close` and a click on the drawer backdrop SHALL play the open stages backward and fade `.drawer-wrapper` out over `0.45s`. Order `3` SHALL leave first. Order `1` SHALL leave last. Within a line node, the last line SHALL leave first. The shell fade SHALL start when the last line is visually out, `0.45s` before its transition ends. The drawer SHALL NOT sit still with no motion between the reverse and the fade. The drawer SHALL be hidden after the overlay fade.
+`#menu-close` and a click on the drawer backdrop SHALL play the open stages backward and fade `.drawer-wrapper` out over `0.45s`. Order `3` SHALL leave first. Order `1` SHALL leave last. Within a line node, the last line SHALL leave first. The shell fade SHALL start when the last line is out of sight, `0.6s` before its transition ends. The drawer SHALL NOT sit still with no motion between the reverse and the fade. The drawer SHALL be hidden after the overlay fade.
 
 #### Scenario: Close button
 
@@ -18,7 +18,7 @@
 
 #### Scenario: No dead time on close
 
-- **WHEN** the last menu line is visually out after `#menu-close` or a backdrop click
+- **WHEN** the last menu line is out of sight after `#menu-close` or a backdrop click
 - **THEN** the drawer fade has already started
 
 #### Scenario: Backdrop
@@ -28,18 +28,19 @@
 
 ### Requirement: A menu link reverses, then fades out, then leaves
 
-When a click inside `.menu-drawer` starts a same-origin page leave, the open stages SHALL play backward first while the dimmed page content stays still. When the last line is visually out, `0.45s` before its transition ends, `.drawer-wrapper` and the dimmed page content SHALL fade out together over `0.45s`. The next document SHALL be requested only after that fade ends. The drawer SHALL NOT sit still with no motion between the reverse and the fade. A click that does not start a page leave SHALL NOT reverse the sequence.
+When a click inside `.menu-drawer` starts a same-origin page leave, the open stages SHALL play backward first. The dimmed page content SHALL fade to transparent over `0.45s` under the still-opaque drawer, and it SHALL be transparent by the time the last line is out of sight, `0.6s` before that line's transition ends. At that moment `.drawer-wrapper` SHALL fade out over `0.45s`. The fading page SHALL NOT be seen through the fading drawer. The next document SHALL be requested only after the drawer fade ends. The drawer SHALL NOT sit still with no motion between the reverse and the fade. A click that does not start a page leave SHALL NOT reverse the sequence.
 
 #### Scenario: Shop link
 
 - **WHEN** the menu is open and the visitor clicks the shop link
-- **THEN** the stages play backward while the page content stays dimmed and still
-- **AND** the drawer and the page content start fading as the last line visually finishes
-- **AND** the shop page is requested after the fade ends
+- **THEN** the stages play backward
+- **AND** the dimmed page content fades out under the drawer without moving
+- **AND** the drawer starts fading as the last line goes out of sight, with no page content behind it
+- **AND** the shop page is requested after the drawer fade ends
 
 #### Scenario: No dead time
 
-- **WHEN** the last menu line is visually out
+- **WHEN** the last menu line is out of sight
 - **THEN** the drawer fade has already started
 
 #### Scenario: External menu link

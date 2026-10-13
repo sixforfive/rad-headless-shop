@@ -5,7 +5,7 @@
 
 ## 2. Menu close timing
 
-- [x] 2.1 In `js/global.js`, add `MENU_LEAVE_TAIL_MS = 450` and set the `closeDrawer` timeout to `menuRevealReverseMs() - MENU_LEAVE_TAIL_MS`
+- [x] 2.1 In `js/global.js`, add `MENU_LEAVE_TAIL_MS = 600` and set the `closeDrawer` timeout to `menuRevealReverseMs() - MENU_LEAVE_TAIL_MS`
 - [ ] 2.2 Verify `#menu-close` and backdrop: the drawer fade starts as the last line settles, with no still drawer
 
 ## 3. Menu leave sequence

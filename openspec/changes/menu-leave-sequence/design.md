@@ -10,7 +10,7 @@ For the motivation, see proposal.md (Why). Current menu-link path in `js/global.
 ## Goals / Non-Goals
 
 **Goals:**
-- Strict order: menu reverse, then drawer and page fade together, then `location.href`.
+- Strict order: menu reverse, page fade under the drawer, drawer fade, then `location.href`.
 - No transform on dimmed content during any leave.
 - No still drawer after the reverse on `#menu-close` and backdrop close.
 
@@ -21,11 +21,11 @@ For the motivation, see proposal.md (Why). Current menu-link path in `js/global.
 ## Decisions
 
 **0. One early cut for both menu exits.**
-`MENU_LEAVE_TAIL_MS = 450` is subtracted from `menuRevealReverseMs()` in `closeDrawer`'s `menuRevealHideTimer` and in the menu-leave sequencer. 450ms matches the shell fade, and it is where the ease reaches ~97%.
+`MENU_LEAVE_TAIL_MS = 600` is subtracted from `menuRevealReverseMs()` in `closeDrawer`'s `menuRevealHideTimer` and in the menu-leave sequencer. At 600ms before the end (0.87s into the 1.47s move) the ease is at ~91%, which is where the last line reads as gone. 450ms (~96%) still showed a visible pause.
 Alternative: shorten `MENU_REVEAL_DURATION`. Rejected because that changes the open motion too.
 
 **1. Separate menu-leave sequencer instead of overloading `radLeaveTo`.**
-A new `radMenuLeaveTo(href)` in `global.js` sets `pageLeaving`, prefetches, and runs the reverse. After `menuRevealReverseMs() - MENU_LEAVE_TAIL_MS` (450ms) it removes `.drawer-wrapper.is-visible` and adds `html.is-leaving`, keeping `is-dimmed` on so the CSS in decision 2 fades the page from 0.3 to 0. After a further 450ms it calls `hideDrawerOverlay()` and sets `location.href`. `interceptPageClicks` routes menu clicks there. Other clicks keep `radLeaveTo`.
+A new `radMenuLeaveTo(href)` in `global.js` sets `pageLeaving`, prefetches, and runs the reverse. With `lineGone = menuRevealReverseMs() - MENU_LEAVE_TAIL_MS`, it adds `html.is-leaving` at `lineGone - PAGE_LEAVE_MS` (clamped at 0), keeping `is-dimmed` on so the CSS in decision 2 fades the page from 0.3 to 0 under the opaque drawer. At `lineGone` it removes `.drawer-wrapper.is-visible`. After a further 450ms it calls `hideDrawerOverlay()` and sets `location.href`. Fading both at once let the half-faded page show through the drawer as the drawer cleared. `interceptPageClicks` routes menu clicks there. Other clicks keep `radLeaveTo`.
 Alternative: chain `fadeDrawerOut` with its `transitionend` on `backdrop-filter`. Rejected because that waits for the 0.9s blur, which brings back dead time, and because it removes `is-dimmed`, which makes the page flash back to opacity 1.
 
 **2. CSS leave rule for dimmed content, placed after the dim rules.**
@@ -50,6 +50,6 @@ Alternative: rely only on the new sequence calling `hideDrawerOverlay()` before 
 
 ## Risks / Trade-offs
 
-- [The 450ms tail cut looks early if the line count grows] → It is tied to the last line's end, not to a fixed time, so it scales.
+- [The 600ms tail cut looks early if the line count grows] → It is tied to the last line's end, not to a fixed time, so it scales.
 - [The visitor clicks again during the sequence] → The `pageLeaving` guard ignores it.
 - [The cart leave now fades dimmed content in place instead of dropping] → This is intended and matches the spec scenario.
