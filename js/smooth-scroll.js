@@ -105,7 +105,7 @@ const enterEase = buildEnterEase();
 function radScrollToTop(options) {
   const motion = options?.immediate
     ? { immediate: true }
-    : { duration: 3, easing: enterEase };
+    : { duration: 2.4, easing: enterEase };
   if (radNestedLenis) {
     radNestedLenis.scrollTo(0, motion);
     return;
