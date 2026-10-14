@@ -36,7 +36,7 @@ When the shop list is not gallery, `.gallery-scroll-counter` SHALL have class `i
 
 ### Requirement: Shop end clears the fixed bottom bars
 
-On `/shop`, scrolling to the end of the page SHALL place the last row above `.second-menu` and `.footer`. Those bars are fixed to the viewport bottom. `.section_content` bottom padding SHALL include the height of the taller bar, on top of the section's own bottom padding.
+On `/shop`, scrolling to the end of the page SHALL place the last row above `.second-menu` and `.footer`. Those bars are fixed to the viewport bottom. The page SHALL end with space after the last row equal to the height of the taller bar plus the section's own bottom spacing.
 
 #### Scenario: List view end
 
@@ -46,7 +46,7 @@ On `/shop`, scrolling to the end of the page SHALL place the last row above `.se
 #### Scenario: Gallery keeps the clearance
 
 - **WHEN** the shop gallery is showing
-- **THEN** `.section_content` bottom padding still includes the fixed bar height
+- **THEN** the space after the last row still includes the fixed bar height
 
 ### Requirement: Shop list view does not damp the bottom edge
 
