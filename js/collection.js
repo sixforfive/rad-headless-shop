@@ -7,7 +7,7 @@
  * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
  * preloadTextures() -> fetch light and dark srcs
  * bootInfiniteGallery() -> mount canvas or no-op
- * advanceReveal(now) -> fade a decoded image in after its random delay; scale 0.98 to 1 with reveal
+ * advanceReveal(now, dt) -> fade a decoded image in after its random delay; scale 0.98 to 1 with reveal
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
  * wrapDelta(d, period) -> shortest torus delta
@@ -22,6 +22,7 @@
  * urlForIndex(i) -> current-mode src
  * getTexture(url) -> cached THREE.Texture
  * uploadTexture(texture) -> decoded image onto the GPU
+ * flushGpuQueue() -> upload one decoded image to the GPU; current mode first
  * setModeMix(value) -> write the shared texture mix
  * textureReady(texture) -> image has decoded
  * assignMaps(fit) -> set current-mode maps; fit scale only when asked
@@ -67,6 +68,7 @@ const THEME_FADE_MS = 450;
 const REVEAL_MIN_MS = 0;
 const REVEAL_DELAY_MS = 1200;
 const REVEAL_FADE_MS = 300;
+const REVEAL_STEP_MS = 16;
 
 const SIZE_CLASSES = [
   { frac: 0.11, weight: 2, p: 0.55 },
@@ -278,6 +280,9 @@ let planeGeometry = null;
 let textureLoader = null;
 let textureCache = null;
 const revealAt = new Map();
+const revealElapsed = new Map();
+const revealStepped = new Set();
+const gpuQueue = [];
 let planeMeshes = null;
 let controller = null;
 let reduceMotion = false;
@@ -331,8 +336,10 @@ function getTexture(url) {
     tex.generateMipmaps = true;
     tex.anisotropy = 4;
     tex.colorSpace = THREE.SRGBColorSpace;
-    tex.needsUpdate = true;
-    uploadTexture(tex);
+    const image = tex.image;
+    tex.image = null;
+    tex.version = 0;
+    gpuQueue.push({ tex, image, url });
     if (awaitingFade || modeFade || modeToggle) applyModeTextures(false);
     else applyModeTextures(true);
   });
@@ -362,8 +369,48 @@ function fitPlaneScale(mesh, texture) {
 
 /** uploadTexture(texture) -> decoded image onto the GPU */
 function uploadTexture(texture) {
-  if (!renderer || !textureReady(texture)) return;
+  if (!renderer || !texture) return;
+  const idx = gpuQueue.findIndex((item) => item.tex === texture);
+  if (texture.userData.onGpu) {
+    if (idx >= 0) gpuQueue.splice(idx, 1);
+    return;
+  }
+  if (idx >= 0) {
+    const image = gpuQueue[idx].image;
+    const width = image && (image.naturalWidth || image.width);
+    if (!width) return;
+    texture.image = image;
+    gpuQueue.splice(idx, 1);
+  }
+  if (!textureReady(texture)) return;
+  texture.needsUpdate = true;
   renderer.initTexture(texture);
+  texture.userData.onGpu = true;
+}
+
+/** flushGpuQueue() -> upload one decoded image to the GPU; current mode first */
+function flushGpuQueue() {
+  if (!renderer || !gpuQueue.length) return;
+  let idx = 0;
+  const n = lightSrcs.length;
+  for (let i = 0; i < gpuQueue.length; i++) {
+    const url = gpuQueue[i].url;
+    let shown = false;
+    for (let j = 0; j < n; j++) {
+      if (urlForIndex(j) === url) {
+        shown = true;
+        break;
+      }
+    }
+    if (shown) {
+      idx = i;
+      break;
+    }
+  }
+  uploadTexture(gpuQueue[idx].tex);
+  if (modeFade) return;
+  if (awaitingFade || modeToggle) applyModeTextures(false);
+  else applyModeTextures(true);
 }
 
 /** setModeMix(value) -> write the shared texture mix */
@@ -652,7 +699,10 @@ function applyHoverDim(dt) {
     const mesh = planeMeshes[i];
     const material = mesh.material;
     const url = urlForIndex(mesh.userData.mediaIndex);
-    if (reduceMotion && textureReady(getTexture(url))) mesh.userData.reveal = 1;
+    const ready = getTexture(url);
+    if (reduceMotion && textureReady(ready) && ready.userData.onGpu) {
+      mesh.userData.reveal = 1;
+    }
     material.opacity = mesh.userData.reveal || 0;
     const target = dimming && mesh !== hoveredMesh ? HOVER_DIM : 0;
     const current = material.userData.dim || 0;
@@ -779,14 +829,16 @@ function onTouchMove(event) {
   event.preventDefault();
 }
 
-/** advanceReveal(now) -> fade a decoded image in after its random delay; scale 0.98 to 1 with reveal */
-function advanceReveal(now) {
+/** advanceReveal(now, dt) -> fade a decoded image in after its random delay; scale 0.98 to 1 with reveal */
+function advanceReveal(now, dt) {
   if (!planeMeshes) return;
+  const step = Math.min(dt, REVEAL_STEP_MS);
+  revealStepped.clear();
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
     const url = urlForIndex(mesh.userData.mediaIndex);
     const texture = getTexture(url);
-    if (!textureReady(texture)) continue;
+    if (!textureReady(texture) || !texture.userData.onGpu) continue;
     fitPlaneScale(mesh, texture);
     if (!reduceMotion && mesh.userData.reveal < 1) {
       if (!revealAt.has(url)) {
@@ -797,7 +849,12 @@ function advanceReveal(now) {
       } else {
         const start = revealAt.get(url);
         if (now >= start) {
-          const t = themeEaseOut(clamp((now - start) / REVEAL_FADE_MS, 0, 1));
+          if (!revealStepped.has(url)) {
+            revealElapsed.set(url, (revealElapsed.get(url) || 0) + step);
+            revealStepped.add(url);
+          }
+          const elapsed = revealElapsed.get(url) || 0;
+          const t = themeEaseOut(clamp(elapsed / REVEAL_FADE_MS, 0, 1));
           if (t > mesh.userData.reveal) mesh.userData.reveal = t;
           mesh.material.opacity = mesh.userData.reveal;
         }
@@ -848,7 +905,8 @@ function tick(now) {
 
   camera.position.set(PERIOD_W / 2 + s.drift.x, PERIOD_H / 2 + s.drift.y, 10);
   placeCopies();
-  advanceReveal(now);
+  flushGpuQueue();
+  advanceReveal(now, dt);
   applyHoverDim(dt);
   advanceModeFade(now);
 
