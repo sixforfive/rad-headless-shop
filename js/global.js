@@ -3,7 +3,7 @@
  * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
  * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none
  * storedLightsDark — true only when rad-lights is exactly "dark"
- * scrollToTop — #back-to-top click → radScrollToTop (slower Lenis, or instant if reduced-motion)
+ * scrollToTop — #back-to-top click → radScrollToTop (700ms enter spring, or instant if reduced-motion)
  * setDrawerButtons — is-none on open/close plus lights, cart-title, currency; is-normal on .navbar
  * showDrawerPanel — display:flex on the active drawer, none on the other
  * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
@@ -90,14 +90,15 @@ lightsSwitchBtn?.addEventListener("click", (event) => {
   applyLights(!document.body.classList.contains("dark-mode"));
 });
 
-/** scrollToTop — #back-to-top click → nested gallery or window; slower Lenis duration */
+/** scrollToTop — #back-to-top click → radScrollToTop, or instant if reduced-motion */
 function scrollToTop(event) {
   event.preventDefault();
   const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)",
   ).matches;
   if (typeof radScrollToTop === "function") {
-    radScrollToTop(reduceMotion ? { immediate: true } : { duration: 1.4 });
+    if (reduceMotion) radScrollToTop({ immediate: true });
+    else radScrollToTop();
     return;
   }
   window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
