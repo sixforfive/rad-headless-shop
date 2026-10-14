@@ -106,12 +106,23 @@ When `.layer` has class `is-blend`, pointer events SHALL pass through `.layer` e
 
 ### Requirement: Open gallery forces white body text
 
-When the gallery is open at any viewport, after a user-driven desktop chrome fade has settled, `html` and `body` SHALL have class `is-full-screen` and `color` SHALL be `#fff`. When the gallery is closed, after that fade has settled, `html` and `body` SHALL NOT have `is-full-screen`, so text color SHALL return to the theme token. On mobile, on a breakpoint change, and on an already-open first paint, those classes SHALL apply in the same turn.
+When the gallery is open at any viewport, after a user-driven desktop chrome fade has settled, `html` and `body` SHALL have class `is-full-screen`. Descendants of `.layer` SHALL have `color` `#fff` and `border-color` `#fff`. Nodes that are not descendants of `.layer` SHALL keep theme `color` and `border-color`. When the gallery is closed, after that fade has settled, `html` and `body` SHALL NOT have `is-full-screen`, so layer text and borders SHALL return to the theme tokens. On mobile, on a breakpoint change, and on an already-open first paint, those classes SHALL apply in the same turn.
 
 #### Scenario: Open sets white body text
 
 - **WHEN** the gallery opens and any desktop chrome fade has settled
-- **THEN** `html` and `body` have `is-full-screen` and `color` is `#fff`
+- **THEN** `html` and `body` have `is-full-screen`
+- **AND** descendants of `.layer` have `color` `#fff`
+
+#### Scenario: Open sets white borders
+
+- **WHEN** the gallery opens and any desktop chrome fade has settled
+- **THEN** descendants of `.layer` have `border-color` `#fff`
+
+#### Scenario: Chrome outside the layer keeps theme tokens
+
+- **WHEN** the gallery opens and any desktop chrome fade has settled
+- **THEN** nodes that are not descendants of `.layer` keep their theme `color` and `border-color`
 
 #### Scenario: Close restores theme text
 

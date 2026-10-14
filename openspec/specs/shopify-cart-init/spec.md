@@ -22,7 +22,7 @@ The site SHALL persist the Shopify cart identifier in `localStorage` under the k
 
 ### Requirement: A stored id is validated on load
 
-When a page loads with a `rad-cart-id` value, the site SHALL query that cart from the Storefront API. The query SHALL request only the cart `id`. When the API returns a cart with an id, the stored value SHALL be kept.
+When a page loads with a `rad-cart-id` value, the site SHALL query that cart from the Storefront API. The query SHALL request the cart `id`, `totalQuantity`, `cost` (subtotal amount), and `lines` (merchandise, quantity, and line cost). When the API returns a cart with an id, the stored value SHALL be kept.
 
 #### Scenario: Stored cart still exists
 
@@ -33,6 +33,11 @@ When a page loads with a `rad-cart-id` value, the site SHALL query that cart fro
 
 - **WHEN** a page loads with no `rad-cart-id` value
 - **THEN** no Storefront cart request is made and no cart is created
+
+#### Scenario: Query includes lines and cost
+
+- **WHEN** a page loads with a `rad-cart-id` value
+- **THEN** the Storefront cart query requests `id`, `totalQuantity`, `cost`, and `lines`
 
 ### Requirement: An expired or completed cart is discarded
 

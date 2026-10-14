@@ -138,7 +138,9 @@ When `prefers-reduced-motion: reduce` is set, the site SHALL apply pointer delta
 
 ### Requirement: Lights swap textures without resetting the view
 
-Light-mode planes SHALL use `.hero-gallery-light .hero-gallery-img` `src` values in DOM order. Dark-mode planes SHALL use `.hero-gallery-dark .hero-gallery-img` `src` values at the same index.
+Light-mode planes SHALL use the display URL of each `.hero-gallery-light .hero-gallery-img` in DOM order. Dark-mode planes SHALL use the display URL of each `.hero-gallery-dark .hero-gallery-img` at the same index.
+
+The display URL of a hero image SHALL be the `srcset` candidate whose width descriptor is nearest 800 when that image has a `srcset`. When the image has no `srcset`, the display URL SHALL be that image's `src`.
 
 Toggling `#lights-switch-btn` SHALL crossfade those textures over 0.45s ease-out and SHALL NOT reset pan or plane layout. When `prefers-reduced-motion: reduce` is set, the swap SHALL be immediate.
 
@@ -147,12 +149,22 @@ When dark has no image at an index, that plane SHALL keep the light image.
 #### Scenario: Dark toggle keeps position
 
 - **WHEN** the visitor has panned the gallery and then clicks `#lights-switch-btn` into dark mode
-- **THEN** the same planes show the dark `src` at each index and the viewpoint has not jumped to the start
+- **THEN** the same planes show the dark display URL at each index and the viewpoint has not jumped to the start
 
 #### Scenario: Light toggle keeps position
 
 - **WHEN** the visitor is in dark mode in the gallery and clicks `#lights-switch-btn` into light mode
-- **THEN** the same planes show the light `src` at each index and the viewpoint has not jumped to the start
+- **THEN** the same planes show the light display URL at each index and the viewpoint has not jumped to the start
+
+#### Scenario: Srcset picks the nearest 800
+
+- **WHEN** a hero image has a `srcset` with width candidates
+- **THEN** its plane requests the candidate whose width descriptor is nearest 800
+
+#### Scenario: No srcset keeps the src
+
+- **WHEN** a hero image has no `srcset`
+- **THEN** its plane requests that image's `src`
 
 #### Scenario: Texture crossfade
 
@@ -221,23 +233,33 @@ On a fine pointer, while the pointer is over an image plane, the canvas SHALL ca
 
 ### Requirement: Each hero image fades in when decoded
 
-On `/`, each unique hero image SHALL start invisible and at `0.98` of its fitted size. When that image's file has decoded, it SHALL fade to opaque and scale to its fitted size after a random delay of at most `1200ms`, with no extra wait before that delay. The fade and the scale SHALL take `300ms`, SHALL use ease-out, and SHALL run together. The three period copies of that image SHALL fade and scale together. An image that has not decoded SHALL stay invisible and SHALL NOT block images that have. `.collection-hero-logo` SHALL fade in when the page becomes ready, over `0.3s` ease-out, and SHALL NOT move. That fade SHALL NOT wait for hero images to decode, and a hero image fading in SHALL NOT start another fade on the logo. The canvas SHALL be visible while tiles are still arriving.
+On `/`, each unique hero image SHALL start invisible and at `0.98` of its fitted size. Decoded images SHALL be uploaded to the GPU one per frame, current mode first. An image SHALL stay invisible until that upload has happened. After the upload, it SHALL wait in one of four waves at `0`, `0.25`, `0.5`, or `0.75` of `2400ms`, plus a random jitter of at most `0.08` of `2400ms`, then fade to opaque and scale to its fitted size. The fade and the scale SHALL take `300ms` of frame time, SHALL advance by at most `16ms` on a frame, SHALL use ease-out, and SHALL run together. A frame longer than `16ms` SHALL NOT skip the fade ahead. The period copies of that image SHALL share that wave and that fade. An image that has not been uploaded SHALL stay invisible and SHALL NOT block images that have. `.collection-hero-logo` SHALL fade in when the page becomes ready, over `0.3s` ease-out, and SHALL NOT move. That fade SHALL NOT wait for hero images to decode, and a hero image fading in SHALL NOT start another fade on the logo. The canvas SHALL be visible while tiles are still arriving.
 
 #### Scenario: One image arrives
 
-- **WHEN** one hero image's file has decoded and others have not
-- **THEN** that image fades in and scales from `0.98` to its fitted size
-- **AND** the images that have not decoded stay invisible
+- **WHEN** one hero image has been uploaded and others have not
+- **THEN** that image fades in on its wave and scales from `0.98` to its fitted size
+- **AND** the images that have not been uploaded stay invisible
+
+#### Scenario: Four waves
+
+- **WHEN** several hero images have been uploaded
+- **THEN** each starts on one of the four waves, with at most `192ms` of jitter inside that wave
 
 #### Scenario: Copies fade together
 
 - **WHEN** a hero image fades in
-- **THEN** every period copy of that same image fades and scales with it
+- **THEN** every period copy of that same image shares its wave and its fade
 
 #### Scenario: A stuck file does not block the rest
 
 - **WHEN** one hero file never decodes
-- **THEN** the images that did decode still fade in and scale to their fitted size
+- **THEN** the images that were uploaded still fade in and scale to their fitted size
+
+#### Scenario: A long frame holds the fade
+
+- **WHEN** a frame takes longer than `16ms` during a hero fade
+- **THEN** that image's opacity advances by `16ms` of the `300ms` fade
 
 #### Scenario: Logo stays put
 
@@ -253,5 +275,5 @@ On `/`, each unique hero image SHALL start invisible and at `0.98` of its fitted
 
 #### Scenario: Reduced motion
 
-- **WHEN** `prefers-reduced-motion: reduce` is set and a hero image's file has decoded
-- **THEN** that image appears immediately at its fitted size
+- **WHEN** `prefers-reduced-motion: reduce` is set and a hero image has been uploaded
+- **THEN** that image appears immediately at its fitted size, with no wave and no fade
