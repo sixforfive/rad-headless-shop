@@ -221,7 +221,7 @@ On a fine pointer, while the pointer is over an image plane, the canvas SHALL ca
 
 ### Requirement: Each hero image fades in when decoded
 
-On `/`, each unique hero image SHALL start invisible and at `0.98` of its fitted size. When that image's file has decoded, it SHALL fade to opaque and scale to its fitted size after a random delay of at most `1200ms`, with no extra wait before that delay. The fade and the scale SHALL take `300ms`, SHALL use ease-out, and SHALL run together. The three period copies of that image SHALL fade and scale together. An image that has not decoded SHALL stay invisible and SHALL NOT block images that have. `.collection-hero-logo` SHALL be visible on first paint and SHALL NOT fade or move while those images arrive. The canvas SHALL be visible while tiles are still arriving.
+On `/`, each unique hero image SHALL start invisible and at `0.98` of its fitted size. When that image's file has decoded, it SHALL fade to opaque and scale to its fitted size after a random delay of at most `1200ms`, with no extra wait before that delay. The fade and the scale SHALL take `300ms`, SHALL use ease-out, and SHALL run together. The three period copies of that image SHALL fade and scale together. An image that has not decoded SHALL stay invisible and SHALL NOT block images that have. `.collection-hero-logo` SHALL fade in when the page becomes ready, over `0.3s` ease-out, and SHALL NOT move. That fade SHALL NOT wait for hero images to decode, and a hero image fading in SHALL NOT start another fade on the logo. The canvas SHALL be visible while tiles are still arriving.
 
 #### Scenario: One image arrives
 
@@ -242,7 +242,14 @@ On `/`, each unique hero image SHALL start invisible and at `0.98` of its fitted
 #### Scenario: Logo stays put
 
 - **WHEN** hero images fade in
-- **THEN** `.collection-hero-logo` stays visible and does not fade or move
+- **THEN** `.collection-hero-logo` does not move
+- **AND** those images do not start another fade on the logo
+
+#### Scenario: Logo fade does not wait for images
+
+- **WHEN** `/` becomes ready before every hero image has decoded
+- **THEN** `.collection-hero-logo` fades in
+- **AND** images that have not decoded stay invisible
 
 #### Scenario: Reduced motion
 
