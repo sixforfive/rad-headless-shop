@@ -844,7 +844,7 @@ function advanceReveal(now, dt) {
       if (!revealAt.has(url)) {
         revealAt.set(
           url,
-          now + REVEAL_MIN_MS + Math.random() * REVEAL_DELAY_MS,
+          now + REVEAL_MIN_MS + Math.random() ** 2 * REVEAL_DELAY_MS,
         );
       } else {
         const start = revealAt.get(url);
