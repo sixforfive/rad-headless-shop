@@ -23,7 +23,7 @@
  * pagePointerId — pathname first segment → #pointer-* id (domain ignored)
  * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
  * initCursorLabel — two labels rubber-follow [custom-cursor]; copy fades out then in; 12px difference dot replaces pointer
- * revealPage — paint the hidden state, then add html.is-ready on the following frame
+ * revealPage — add html.is-ready after the hidden state is on screen
  * radPageReady — page scripts call this after layout; first paint stays hidden until then
  * resetDrawerState — bfcache restore: no drawer, no dim, scroll unlocked
  * radLeaveTo — sink content, keep the drawer, prefetch, then go
@@ -631,17 +631,51 @@ let pageRevealed = false;
 let pageLeaving = false;
 const prefetchedHrefs = new Set();
 
-/** revealPage — paint the hidden state, then add html.is-ready on the following frame */
+/** revealPage — add html.is-ready after the hidden state is on screen */
 function revealPage() {
   if (pageRevealed) return;
   pageRevealed = true;
   const root = document.documentElement;
-  void root.offsetWidth;
-  requestAnimationFrame(() => {
+  let armed = false;
+
+  const arm = () => {
+    if (armed) return;
+    armed = true;
+    void root.offsetWidth;
     requestAnimationFrame(() => {
-      root.classList.add("is-ready");
+      requestAnimationFrame(() => {
+        root.classList.add("is-ready");
+      });
     });
-  });
+  };
+
+  const fromStateOn = () => {
+    const logo = document.querySelector(".collection-hero-logo");
+    if (logo) return parseFloat(getComputedStyle(logo).opacity) === 0;
+    const wrapper = document.querySelector(".main-wrapper");
+    if (!wrapper) return true;
+    return parseFloat(getComputedStyle(wrapper).opacity) === 0;
+  };
+
+  const tryArm = () => {
+    if (armed || document.visibilityState === "hidden") return;
+    if (!fromStateOn()) return;
+    const home = !!document.querySelector(".collection-hero-logo");
+    if (!home && document.readyState !== "complete") return;
+    arm();
+  };
+
+  tryArm();
+  if (armed) return;
+  document.addEventListener("visibilitychange", tryArm);
+  window.addEventListener("load", tryArm);
+  const poll = () => {
+    if (armed) return;
+    tryArm();
+    if (!armed) requestAnimationFrame(poll);
+  };
+  requestAnimationFrame(poll);
+  setTimeout(arm, 2000);
 }
 
 /** radPageReady — layout scripts call this; global.js also exposes it on window */
