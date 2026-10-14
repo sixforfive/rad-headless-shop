@@ -10,7 +10,6 @@
  * radLenisStop / radLenisStart — drawer lock; both instances
  * radNestedGallerySync — nested on desktop default gallery only; off in fullscreen and ≤767
  * dampVirtualScroll — scale wheel delta in the edge zone; top-only on shop
- * catchListEnd — list view only; arrive at the document limit instead of easing into it
  */
 
 const EDGE_ZONE = 160;
@@ -30,12 +29,6 @@ function isShopGallery() {
   return !!document.querySelector(".product-list:not(.is-merch)");
 }
 
-/** isShopListView — shop list is showing; gallery wrap is the other path */
-function isShopListView() {
-  const list = document.querySelector(".product-list:not(.is-merch)");
-  return !!list && !list.classList.contains("is-gallery");
-}
-
 /** dampVirtualScroll — shrink deltaY in the edge zone; top-only on shop */
 function dampVirtualScroll(lenis, data, topOnly) {
   if (!lenis || reduceMotion() || !data.deltaY) return true;
@@ -49,29 +42,19 @@ function dampVirtualScroll(lenis, data, topOnly) {
   return true;
 }
 
-/** catchListEnd — list view: a wheel that would park on the limit arrives there now */
-function catchListEnd(lenis, data) {
-  if (lenis !== radLenis || !isShopListView() || !(data.deltaY > 0)) return false;
-  const y = lenis.animatedScroll;
-  const limit = lenis.limit;
-  if (y >= limit - 0.5) return false;
-  if (lenis.targetScroll + data.deltaY < limit) return false;
-  if (data.event?.cancelable) data.event.preventDefault();
-  lenis.scrollTo(limit, { immediate: true, force: true });
-  return true;
-}
-
-/** createWindowLenis — one document Lenis; skip without Lenis or when reduced-motion */
+/**
+ * createWindowLenis — one document Lenis; skip without Lenis or when reduced-motion.
+ * naiveDimensions: .layout is 100dvh with visible overflow, so the html box never
+ * resizes when the list grows or shrinks and the cached limit goes stale.
+ */
 function createWindowLenis() {
   if (typeof Lenis !== "function" || reduceMotion()) return null;
   return new Lenis({
     autoRaf: true,
     syncTouch: false,
     overscroll: false,
-    virtualScroll: (data) => {
-      dampVirtualScroll(radLenis, data, isShopGallery());
-      return !catchListEnd(radLenis, data);
-    },
+    naiveDimensions: true,
+    virtualScroll: (data) => dampVirtualScroll(radLenis, data, isShopGallery()),
   });
 }
 
