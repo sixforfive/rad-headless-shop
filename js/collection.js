@@ -45,7 +45,7 @@
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.min.js";
 
-const VIEW_H = 90;
+const VIEW_H = 100;
 const PERIOD_W = 320;
 const PERIOD_H = 180;
 const SIZE_BASE = 180;
