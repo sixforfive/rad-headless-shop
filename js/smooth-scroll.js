@@ -14,7 +14,7 @@
 
 const EDGE_ZONE = 160;
 const EDGE_MIN = 0.15;
-const ENTER_SETTLE = 3.2;
+const ENTER_SETTLE = 0.7;
 
 let radLenis = null;
 let radNestedLenis = null;
@@ -105,7 +105,7 @@ const enterEase = buildEnterEase();
 function radScrollToTop(options) {
   const motion = options?.immediate
     ? { immediate: true }
-    : { duration: ENTER_SETTLE, easing: enterEase };
+    : { duration: 1.5, easing: enterEase };
   if (radNestedLenis) {
     radNestedLenis.scrollTo(0, motion);
     return;
