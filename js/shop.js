@@ -13,7 +13,7 @@
  * jumpScrollY — instant radScrollTo (Lenis) or window.scrollTo
  * applyView — swap is-gallery from data-view, sync buttons, jump to top, re-measure
  * syncScrollCounter — is-none on .gallery-scroll-counter when the shop list is not gallery
- * padShopEnd — section bottom padding clears the fixed shop bars
+ * padShopEnd — spacer after the lists clears the fixed shop bars
  * setView — sink .products-collection, applyView while hidden, then rise it
  * syncActive — is-active on the switch button that matches the current view
  */
@@ -163,14 +163,26 @@ function syncScrollCounter() {
   });
 }
 
-/** padShopEnd — bottom padding so the last row clears the fixed shop bars */
+/** padShopEnd — in-flow spacer after the lists so the last row clears the fixed shop bars */
 function padShopEnd() {
+  const list = shopList();
+  if (!list) return;
   const section = document.querySelector(".section_content");
-  if (!section || !shopList()) return;
+  if (section) section.style.paddingBottom = "";
+  const anchor = cloneList() || list;
   const menu = document.querySelector(".second-menu");
   const footer = document.querySelector(".footer");
   const h = Math.max(menu?.offsetHeight || 0, footer?.offsetHeight || 0);
-  section.style.paddingBottom = h
+  let spacer = anchor.parentElement?.querySelector(":scope > .shop-end-spacer");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.className = "shop-end-spacer";
+    spacer.setAttribute("aria-hidden", "true");
+  }
+  if (anchor.nextElementSibling !== spacer) {
+    anchor.insertAdjacentElement("afterend", spacer);
+  }
+  spacer.style.height = h
     ? `calc(var(--_layout---spacing--space-400) + ${h}px)`
     : "";
 }
