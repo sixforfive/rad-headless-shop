@@ -455,6 +455,30 @@ html.is-leaving .gallery-full-screen.is-dimmed {
   display: none;
 }
 
+/* Chrome fades out before the fullscreen blend swap, then fades back in. */
+.layer,
+.layer-cta,
+.product-nav-tab {
+  transition:
+    opacity 0.3s ease-out,
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
+}
+
+.layer.is-chrome-out,
+.layer-cta.is-chrome-out,
+.product-nav-tab.is-chrome-out {
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+.layer.is-chrome-out *,
+.layer-cta.is-chrome-out *,
+.product-nav-tab.is-chrome-out * {
+  transition: none;
+}
+
 /* Blend layer is a click-through overlay; listed chrome stays clickable. */
 .layer.is-blend {
   mix-blend-mode: difference;
@@ -646,6 +670,9 @@ html.is-dot-cursor * {
   .collection-hero-logo,
   .products-collection,
   .gallery-full-screen,
+  .layer,
+  .layer-cta,
+  .product-nav-tab,
   .error-wrapper [id^="error-"],
   body,
   body *,

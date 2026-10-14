@@ -1,8 +1,13 @@
 /**
  * product.js — Product and merch detail (/product/{slug}, /merch/{slug}).
  * isMobileViewport — true at max-width 767px
+ * prefersReducedMotion — true when the visitor asks for no motion
+ * setChromeOut — is-chrome-out on .layer, .layer-cta, and .product-nav-tab
+ * settleGallery — write galleryOpen and the settled classes, then sync nested scroll
+ * clearChromeFade — drop a running fade and show the chrome with no opacity ease
+ * finishChromeFade — swap classes at opacity 0, then fade the chrome back in
  * syncGalleryChrome — settled is-none, blend, and is-full-screen for the current breakpoint
- * setFullScreenGallery — open or close the fullscreen gallery in one turn
+ * setFullScreenGallery — desktop fades chrome around the swap; immediate skips the fade
  * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
  * setChosenTick — is-choosen on the tick at Math.round(scrollLeft / clientWidth)
@@ -26,6 +31,57 @@ const paginationBar = document.querySelector(".pagination-bar");
 
 let galleryOpen = false;
 const GALLERY_FLAG = "rad-fs-gallery";
+const CHROME_FADE_MS = 300;
+const chromeNodes = [
+  layer,
+  document.querySelector(".layer-cta"),
+  document.querySelector(".product-nav-tab"),
+].filter(Boolean);
+let chromeFade = null;
+
+/** prefersReducedMotion — true when the visitor asks for no motion */
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** setChromeOut — is-chrome-out on .layer, .layer-cta, and .product-nav-tab */
+function setChromeOut(out) {
+  chromeNodes.forEach((el) => el.classList.toggle("is-chrome-out", out));
+}
+
+/** settleGallery — write galleryOpen and the settled classes, then sync nested scroll */
+function settleGallery(open) {
+  galleryOpen = open;
+  syncGalleryChrome(open);
+  if (typeof radNestedGallerySync === "function") radNestedGallerySync();
+}
+
+/** clearChromeFade — drop a running fade and show the chrome with no opacity ease */
+function clearChromeFade() {
+  if (!chromeFade) return;
+  clearTimeout(chromeFade.timer);
+  chromeFade.node.removeEventListener("transitionend", chromeFade.onEnd);
+  chromeFade = null;
+  chromeNodes.forEach((el) => {
+    el.style.transition = "none";
+    el.classList.remove("is-chrome-out");
+  });
+  chromeNodes[0]?.offsetHeight;
+  chromeNodes.forEach((el) => {
+    el.style.transition = "";
+  });
+}
+
+/** finishChromeFade — swap classes at opacity 0, then fade the chrome back in */
+function finishChromeFade() {
+  if (!chromeFade) return;
+  const open = chromeFade.pending;
+  clearTimeout(chromeFade.timer);
+  chromeFade.node.removeEventListener("transitionend", chromeFade.onEnd);
+  chromeFade = null;
+  settleGallery(open);
+  requestAnimationFrame(() => setChromeOut(false));
+}
 
 /** syncGalleryChrome — settled is-none, blend, and is-full-screen for the current breakpoint */
 function syncGalleryChrome(open) {
@@ -44,16 +100,37 @@ function syncGalleryChrome(open) {
   }
 }
 
-/** setFullScreenGallery — open or close the fullscreen gallery in one turn */
-function setFullScreenGallery(open) {
+/** setFullScreenGallery — desktop fades chrome around the swap; immediate skips the fade */
+function setFullScreenGallery(open, immediate) {
   if (!galleryFullScreen) return;
+  const fade =
+    !immediate &&
+    !isMobileViewport() &&
+    !prefersReducedMotion() &&
+    chromeNodes.length > 0;
+  if (!fade) {
+    clearChromeFade();
+    settleGallery(open);
+    return;
+  }
   galleryOpen = open;
-  syncGalleryChrome(open);
-  if (typeof radNestedGallerySync === "function") radNestedGallerySync();
+  if (chromeFade) {
+    chromeFade.pending = open;
+    return;
+  }
+  const node = chromeNodes[0];
+  const onEnd = (event) => {
+    if (event.propertyName !== "opacity") return;
+    finishChromeFade();
+  };
+  chromeFade = { pending: open, node, onEnd, timer: 0 };
+  node.addEventListener("transitionend", onEnd);
+  chromeFade.timer = setTimeout(finishChromeFade, CHROME_FADE_MS);
+  setChromeOut(true);
 }
 
 mobileQuery.addEventListener("change", () => {
-  if (galleryOpen) setFullScreenGallery(true);
+  if (galleryOpen) setFullScreenGallery(true, true);
   else if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 });
 
@@ -100,7 +177,7 @@ document.querySelectorAll(".next-product").forEach((el) => {
 
 try {
   if (sessionStorage.getItem(GALLERY_FLAG) === "1") {
-    setFullScreenGallery(true);
+    setFullScreenGallery(true, true);
   }
   sessionStorage.removeItem(GALLERY_FLAG);
 } catch (e) {}
