@@ -842,10 +842,9 @@ function advanceReveal(now, dt) {
     fitPlaneScale(mesh, texture);
     if (!reduceMotion && mesh.userData.reveal < 1) {
       if (!revealAt.has(url)) {
-        revealAt.set(
-          url,
-          now + REVEAL_MIN_MS + Math.random() ** 2 * REVEAL_DELAY_MS,
-        );
+        const wave = Math.floor(Math.random() * 4) / 4;
+        const wait = (wave + Math.random() * 0.08) * REVEAL_DELAY_MS;
+        revealAt.set(url, now + REVEAL_MIN_MS + wait);
       } else {
         const start = revealAt.get(url);
         if (now >= start) {
