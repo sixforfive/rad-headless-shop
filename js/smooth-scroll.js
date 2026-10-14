@@ -14,7 +14,7 @@
 
 const EDGE_ZONE = 160;
 const EDGE_MIN = 0.15;
-const ENTER_SETTLE = 0.7;
+const ENTER_SETTLE = 1.5;
 
 let radLenis = null;
 let radNestedLenis = null;
@@ -176,7 +176,8 @@ function createNested(col) {
 /** radNestedGallerySync — nested only for desktop default gallery, not fullscreen, not ≤767 */
 function radNestedGallerySync() {
   const col = document.querySelector(".product-gallery-col");
-  const fullScreen = document.documentElement.classList.contains("is-full-screen");
+  const fullScreen =
+    document.documentElement.classList.contains("is-full-screen");
   const mobile = window.matchMedia("(max-width: 767px)").matches;
   if (!col || fullScreen || mobile) {
     destroyNested();
