@@ -471,6 +471,29 @@ html.is-leaving .gallery-full-screen.is-dimmed {
   pointer-events: auto;
 }
 
+/* Cover the blend and color snap. Keep the theme color timing on these nodes. */
+.layer,
+.layer-cta,
+.product-nav-tab {
+  transition:
+    opacity 0.3s ease,
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
+}
+
+html.is-chrome-fading .layer,
+html.is-chrome-fading .layer-cta,
+html.is-chrome-fading .product-nav-tab {
+  opacity: 0;
+}
+
+html.is-chrome-cut .layer,
+html.is-chrome-cut .layer-cta,
+html.is-chrome-cut .product-nav-tab {
+  transition: none;
+}
+
 /* Fullscreen gallery: white text and borders on layer chrome only. */
 html.is-full-screen .layer *,
 body.is-full-screen .layer * {
@@ -665,7 +688,10 @@ html.is-dot-cursor * {
   #cart-open.is-none,
   #cart-close.is-none,
   [menu-reveal],
-  .menu-reveal-line-inner {
+  .menu-reveal-line-inner,
+  .layer,
+  .layer-cta,
+  .product-nav-tab {
     transition-duration: 0s;
   }
 
