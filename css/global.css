@@ -482,15 +482,26 @@ html.is-leaving .gallery-full-screen.is-dimmed {
     border-color 0.45s ease-out;
 }
 
+html.is-chrome-fading .gallery-full-screen,
+html.is-chrome-reveal .gallery-full-screen {
+  transition:
+    opacity 0.3s ease,
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
+}
+
 html.is-chrome-fading .layer,
 html.is-chrome-fading .layer-cta,
-html.is-chrome-fading .product-nav-tab {
+html.is-chrome-fading .product-nav-tab,
+html.is-chrome-fading .gallery-full-screen {
   opacity: 0;
 }
 
 html.is-chrome-cut .layer,
 html.is-chrome-cut .layer-cta,
-html.is-chrome-cut .product-nav-tab {
+html.is-chrome-cut .product-nav-tab,
+html.is-chrome-cut .gallery-full-screen {
   transition: none;
 }
 

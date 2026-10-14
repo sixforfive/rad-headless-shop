@@ -11,16 +11,16 @@ See proposal.md for motivation. `syncGalleryChrome` in `js/product.js` toggles `
 
 **Non-Goals:**
 
-- Fading the gallery images. They still cut with `display`.
+- Fading the in-page `.product-gallery-collection.is-default`. It still cuts with `display`.
 - Changing drawer dim, theme timing on the rest of the page, or click-through targets.
 
 ## Decisions
 
 Desktop click open and close call a fade path. Boot restore and the `matchMedia` change listener keep calling `syncGalleryChrome` in the same turn.
 
-The fade path adds `is-chrome-fading` on `html`, which sets opacity 0 on `.layer`, `.layer-cta`, and `.product-nav-tab`. On `transitionend` for `opacity` (or after 300ms), it calls `syncGalleryChrome`, then removes `is-chrome-fading` so the same nodes fade back to 1. A second click increments a token. The in-flight end ignores a stale token and runs the latest open or closed target. `prefers-reduced-motion: reduce` skips the class and calls `syncGalleryChrome` in the same turn.
+The fade path adds `is-chrome-fading` on `html`, which sets opacity 0 on `.layer`, `.layer-cta`, `.product-nav-tab`, and `.gallery-full-screen`. On `transitionend` for `opacity` (or after 300ms), it calls `syncGalleryChrome`, forces a reflow so the now-shown gallery is painted at opacity 0, then removes `is-chrome-fading`. `is-chrome-reveal` keeps the gallery opacity timing at `0.3s ease` for that fade-in, then drops. On close the gallery is `display: none` before the fade-in, so it stays hidden. A second click increments a token. The in-flight end ignores a stale token and runs the latest open or closed target. `prefers-reduced-motion: reduce` skips the class and calls `syncGalleryChrome` in the same turn.
 
-Gallery `is-none` stays inside `syncGalleryChrome`, so the image cut happens while chrome is at opacity 0. Splitting the image cut out front would leave the old blend painted over the new images.
+The base `.gallery-full-screen` opacity timing stays `0.45s ease-out` so drawer dim does not change. The fade rules override it only while `is-chrome-fading` or `is-chrome-reveal` is set.
 
 `.layer`, `.layer-cta`, and `.product-nav-tab` list opacity at `0.3s ease` and keep `background-color`, `color`, and `border-color` at `0.45s ease-out`. Those three selectors go on the reduced-motion duration list so a class rule cannot outrank `body *`.
 
@@ -30,6 +30,6 @@ Alternative considered: one opacity transition on `body *`. Rejected — that fa
 
 ## Risks / Trade-offs
 
-- [Image cut waits out the 0.3s fade-out] → The cut is hidden. Chrome then fades in over the open gallery.
+- [In-page gallery still cuts with `display`] → The cut happens while chrome is at opacity 0. `.gallery-full-screen` then fades in.
 - [A missing `.layer-cta` or `.product-nav-tab`] → Listen on the first of the three that exists. Do not block on a missing node.
 - [Opacity shorthand drops the theme color fade on those three nodes] → The rule lists the three color properties next to opacity.

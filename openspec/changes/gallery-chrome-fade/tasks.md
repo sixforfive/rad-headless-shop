@@ -9,3 +9,4 @@
 - [x] 2.1 In `js/product.js`, desktop click open and close add `is-chrome-fading` on `html`, wait for `opacity` `transitionend` on the first existing node of `.layer`, `.layer-cta`, `.product-nav-tab` or 300ms, call `syncGalleryChrome`, then remove `is-chrome-fading`
 - [x] 2.2 Boot restore, the `matchMedia` change listener, mobile open and close, and `prefers-reduced-motion: reduce` call `syncGalleryChrome` in the same turn and do not add `is-chrome-fading`
 - [x] 2.3 A second click during the fade increments a token. A stale `transitionend` does not call `syncGalleryChrome` or remove `is-chrome-fading`
+- [x] 2.4 `.gallery-full-screen` fades to opacity 0 with the chrome. On open it fades back to 1 after `syncGalleryChrome`. On close it stays hidden. Drawer dim stays `0.45s ease-out`

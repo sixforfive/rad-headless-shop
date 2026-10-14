@@ -4,7 +4,7 @@
  * prefersReducedMotion — true when the visitor prefers reduced motion
  * syncGalleryChrome — settled is-none, blend, and is-full-screen for the current breakpoint
  * setFullScreenGallery — open or close in one turn; cancels an in-flight chrome fade
- * fadeChromeThenSync — desktop click fades chrome out, then syncs, then fades in
+ * fadeChromeThenSync — desktop click fades chrome and the fullscreen gallery out, then syncs, then fades them in
  * openGalleryFromClick — fade on desktop; instant on mobile and reduced motion
  * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
@@ -59,9 +59,13 @@ function setFullScreenGallery(open) {
   chromeFadeToken += 1;
   galleryOpen = open;
   const root = document.documentElement;
-  if (root.classList.contains("is-chrome-fading")) {
+  if (
+    root.classList.contains("is-chrome-fading") ||
+    root.classList.contains("is-chrome-reveal")
+  ) {
     root.classList.add("is-chrome-cut");
     root.classList.remove("is-chrome-fading");
+    root.classList.remove("is-chrome-reveal");
     void root.offsetWidth;
     root.classList.remove("is-chrome-cut");
   }
@@ -69,7 +73,7 @@ function setFullScreenGallery(open) {
   if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 }
 
-/** fadeChromeThenSync — opacity out, then syncGalleryChrome, then opacity in */
+/** fadeChromeThenSync — fade chrome and the fullscreen gallery out, then sync, then fade in */
 function fadeChromeThenSync(open) {
   if (!galleryFullScreen) return;
   const token = ++chromeFadeToken;
@@ -93,8 +97,14 @@ function fadeChromeThenSync(open) {
     if (settled || token !== chromeFadeToken) return;
     settled = true;
     syncGalleryChrome(open);
+    root.classList.add("is-chrome-reveal");
+    void galleryFullScreen.offsetWidth;
     root.classList.remove("is-chrome-fading");
     if (typeof radNestedGallerySync === "function") radNestedGallerySync();
+    setTimeout(() => {
+      if (token !== chromeFadeToken) return;
+      root.classList.remove("is-chrome-reveal");
+    }, 300);
   };
   const onEnd = (event) => {
     if (event.target !== node || event.propertyName !== "opacity") return;
