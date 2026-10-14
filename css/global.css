@@ -251,7 +251,7 @@ body * {
 
 /* menu-reveal: order 3 travels --menu-reveal-distance. Line hosts stay put. */
 [menu-reveal] {
-  --menu-reveal-distance: 8px;
+  --menu-reveal-distance: 4px;
 }
 
 [menu-reveal].is-from-up {
