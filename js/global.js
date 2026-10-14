@@ -23,7 +23,7 @@
  * pagePointerId — pathname first segment → #pointer-* id (domain ignored)
  * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
  * initCursorLabel — two labels rubber-follow [custom-cursor]; copy fades out then in; 12px difference dot replaces pointer
- * revealPage — add html.is-ready on the next frame so the rise can paint
+ * revealPage — paint the hidden state, then add html.is-ready on the following frame
  * radPageReady — page scripts call this after layout; first paint stays hidden until then
  * resetDrawerState — bfcache restore: no drawer, no dim, scroll unlocked
  * radLeaveTo — sink content, keep the drawer, prefetch, then go
@@ -631,12 +631,16 @@ let pageRevealed = false;
 let pageLeaving = false;
 const prefetchedHrefs = new Set();
 
-/** revealPage — add html.is-ready on the next frame so the rise can paint */
+/** revealPage — paint the hidden state, then add html.is-ready on the following frame */
 function revealPage() {
   if (pageRevealed) return;
   pageRevealed = true;
+  const root = document.documentElement;
+  void root.offsetWidth;
   requestAnimationFrame(() => {
-    document.documentElement.classList.add("is-ready");
+    requestAnimationFrame(() => {
+      root.classList.add("is-ready");
+    });
   });
 }
 
