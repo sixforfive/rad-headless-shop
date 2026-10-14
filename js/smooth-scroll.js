@@ -14,7 +14,7 @@
 
 const EDGE_ZONE = 160;
 const EDGE_MIN = 0.15;
-const ENTER_SETTLE = 1.5;
+const ENTER_SETTLE = 1.8;
 
 let radLenis = null;
 let radNestedLenis = null;
