@@ -21,6 +21,7 @@
  * snapCartReveal — rested row heights while .cart-drawer is already revealed, after images load
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
+ * saveNotificationPhase — pagehide writes marquee progress to rad-notification-marquee
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
  * pagePointerId — pathname first segment → #pointer-* id (domain ignored)
  * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
@@ -149,6 +150,34 @@ notificationHolder?.addEventListener("mouseenter", () =>
   setMarqueeRate(30 / 60),
 );
 notificationHolder?.addEventListener("mouseleave", () => setMarqueeRate(1));
+
+/** saveNotificationPhase — pagehide writes marquee progress to rad-notification-marquee */
+function saveNotificationPhase() {
+  const item = notificationBarBox?.querySelector(".notification-item");
+  if (!item) return;
+  const width = item.offsetWidth;
+  if (!width) return;
+  const transform = getComputedStyle(item).transform;
+  let x = 0;
+  if (transform && transform !== "none") {
+    x = new DOMMatrix(transform).m41;
+  }
+  const p = (((-x) / (width / 3)) % 1 + 1) % 1;
+  let r = 1;
+  item.getAnimations().forEach((animation) => {
+    if (animation.animationName === "notification-marquee") {
+      r = animation.playbackRate;
+    }
+  });
+  try {
+    sessionStorage.setItem(
+      "rad-notification-marquee",
+      JSON.stringify({ p, at: Date.now(), r }),
+    );
+  } catch (e) {}
+}
+
+window.addEventListener("pagehide", saveNotificationPhase);
 
 /** setDrawerButtons — is-none on open/close plus lights, cart-title, currency; is-normal on .navbar */
 function setDrawerButtons(kind) {

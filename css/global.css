@@ -674,6 +674,7 @@ html.is-full-screen .gallery-full-screen .gallery-full-screen_close,
 
 .notification-item {
   animation: notification-marquee 30s linear infinite;
+  animation-delay: var(--rad-marquee-delay, 0s);
 }
 
 /* Drawer open: hide the bar without is-none, so empty-bar padding does not apply. */
