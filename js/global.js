@@ -8,7 +8,7 @@
  * showDrawerPanel — display:flex on the active drawer, none on the other
  * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
  * openDrawer — fade overlay in, or swap panel if the other is already open; is-hidden on notification
- * closeDrawer — fade overlay out, then hideDrawerOverlay; remove is-hidden on notification
+ * closeDrawer — menu or cart reverse, then fade the overlay; empty cart fades immediately
  * parseMenuReveal — menu-reveal value → { order, stagger, dir } or null
  * markMenuRevealFade — is-fade and is-from-up/down on order greater than 2
  * writeMenuRevealTiming — order 1 lines from the bottom, then order 2, then both order 3; reverse leaves 3 first
@@ -17,6 +17,8 @@
  * fadeDrawerOut — drop is-visible, then hide after the blur transition
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
+ * playCartReveal — cart titles, rows, subtotal, and bottom on the menu clocks; close reverses them
+ * snapCartReveal — rested image heights while .cart-drawer is already revealed
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
@@ -333,6 +335,170 @@ window.addEventListener("resize", () => {
   splitMenuRevealLines();
 });
 
+/** cartProductRows — cloned cart rows, not the template */
+function cartProductRows() {
+  if (!cartDrawer) return [];
+  return [
+    ...cartDrawer.querySelectorAll(
+      ".cart-product:not([data-cart-line-template])",
+    ),
+  ];
+}
+
+/** cartLineCount — cloned rows in .cart-drawer */
+function cartLineCount() {
+  return cartProductRows().length;
+}
+
+/** wrapRevealTextHost — one masked line around a node's current children */
+function wrapRevealTextHost(el) {
+  if (!el || el.querySelector(":scope > .menu-reveal-line")) return;
+  const line = document.createElement("span");
+  line.className = "menu-reveal-line";
+  const inner = document.createElement("span");
+  inner.className = "menu-reveal-line-inner";
+  while (el.firstChild) inner.appendChild(el.firstChild);
+  line.appendChild(inner);
+  el.appendChild(line);
+}
+
+/** wrapRevealElement — mask around the node so its own display stays intact */
+function wrapRevealElement(el) {
+  if (!el || el.parentElement?.classList.contains("menu-reveal-line-inner")) {
+    return;
+  }
+  const line = document.createElement("span");
+  line.className = "menu-reveal-line";
+  const inner = document.createElement("span");
+  inner.className = "menu-reveal-line-inner";
+  el.replaceWith(line);
+  inner.appendChild(el);
+  line.appendChild(inner);
+}
+
+/** wrapCartRevealLines — sku, price, remove, and subtotal texts, once */
+function wrapCartRevealLines() {
+  if (!cartDrawer) return;
+  cartDrawer
+    .querySelectorAll(
+      ".cart-product:not([data-cart-line-template]) [data-cart-sku], .cart-product:not([data-cart-line-template]) [data-cart-line-price], .cart-summary .text-meta, .cart-summary [data-cart-subtotal]",
+    )
+    .forEach(wrapRevealTextHost);
+  cartDrawer
+    .querySelectorAll(
+      ".cart-product:not([data-cart-line-template]) [data-cart-remove]",
+    )
+    .forEach(wrapRevealElement);
+}
+
+/** measureCartImage — --cart-img-h at the column width, ratio kept */
+function measureCartImage(img) {
+  const col = img.closest(".cart-product_img")?.clientWidth || 0;
+  let h = 0;
+  if (img.naturalWidth && col) {
+    h = Math.round((col * img.naturalHeight) / img.naturalWidth);
+  } else {
+    img.style.transition = "none";
+    img.style.width = "100%";
+    img.style.height = "auto";
+    h = img.offsetHeight;
+    img.style.width = "";
+    img.style.height = "";
+    void img.offsetWidth;
+    img.style.transition = "";
+  }
+  if (h) img.style.setProperty("--cart-img-h", `${h}px`);
+}
+
+/** writeCartRevealTiming — titles, then each row, then subtotal; bottom overlaps the subtotal by 0.75s */
+function writeCartRevealTiming(opening) {
+  const rows = cartProductRows();
+  const n = rows.length;
+  const titles = cartDrawer.querySelector(".cart-list-titles");
+  const bottom = cartDrawer.querySelector(".cart-bottom");
+  const subtotal = [
+    ...cartDrawer.querySelectorAll(".cart-summary .menu-reveal-line-inner"),
+  ];
+  const titleDur = MENU_REVEAL_ORDER3_DURATION;
+  const subtotalStart = titleDur + n * MENU_REVEAL_DURATION;
+  if (opening) {
+    if (titles) setRevealTiming(titles, 0, titleDur);
+    rows.forEach((row, i) => {
+      const start = titleDur + i * MENU_REVEAL_DURATION;
+      row
+        .querySelectorAll(".cart-prod-img_dummy, .menu-reveal-line-inner")
+        .forEach((el) => setRevealTiming(el, start, MENU_REVEAL_DURATION));
+    });
+    subtotal.forEach((el) =>
+      setRevealTiming(el, subtotalStart, MENU_REVEAL_DURATION),
+    );
+    if (bottom) setRevealTiming(bottom, subtotalStart + 0.75, titleDur);
+    return;
+  }
+  let t = 0;
+  if (bottom) setRevealTiming(bottom, t, titleDur);
+  t += titleDur;
+  subtotal.forEach((el) => setRevealTiming(el, t, MENU_REVEAL_DURATION));
+  t += MENU_REVEAL_DURATION;
+  for (let i = n - 1; i >= 0; i -= 1) {
+    rows[i]
+      .querySelectorAll(".cart-prod-img_dummy, .menu-reveal-line-inner")
+      .forEach((el) => setRevealTiming(el, t, MENU_REVEAL_DURATION));
+    t += MENU_REVEAL_DURATION;
+  }
+  if (titles) setRevealTiming(titles, t, titleDur);
+}
+
+/** cartRevealReverseMs — length of the close stages, in ms */
+function cartRevealReverseMs() {
+  const n = cartLineCount();
+  if (!n) return 0;
+  return (
+    (MENU_REVEAL_ORDER3_DURATION +
+      MENU_REVEAL_DURATION +
+      n * MENU_REVEAL_DURATION +
+      MENU_REVEAL_ORDER3_DURATION) *
+    1000
+  );
+}
+
+/** playCartReveal — opening flushes the from-state then adds is-revealed; closing removes it */
+function playCartReveal(opening) {
+  if (!cartDrawer) return;
+  if (!cartLineCount()) {
+    cartDrawer.classList.remove("is-revealed");
+    return;
+  }
+  if (opening) {
+    cartDrawer.classList.remove("is-revealed");
+    wrapCartRevealLines();
+    if (prefersReducedMotion()) {
+      cartDrawer.classList.add("is-revealed");
+      return;
+    }
+    cartProductRows().forEach((row) => {
+      const img = row.querySelector(".cart-prod-img_dummy");
+      if (img) measureCartImage(img);
+    });
+    writeCartRevealTiming(true);
+    void cartDrawer.offsetWidth;
+    cartDrawer.classList.add("is-revealed");
+    return;
+  }
+  if (!prefersReducedMotion()) writeCartRevealTiming(false);
+  cartDrawer.classList.remove("is-revealed");
+}
+
+/** snapCartReveal — pixel image heights on rows rebuilt while the cart is already open */
+function snapCartReveal() {
+  if (!cartDrawer?.classList.contains("is-revealed")) return;
+  wrapCartRevealLines();
+  cartProductRows().forEach((row) => {
+    const img = row.querySelector(".cart-prod-img_dummy");
+    if (img) measureCartImage(img);
+  });
+}
+
 /** hideDrawerOverlay — display none after fade-out; no-op if a drawer reopened mid-fade */
 function hideDrawerOverlay() {
   if (activeDrawer !== null) return;
@@ -392,10 +558,15 @@ function openDrawer(kind, event) {
 
   clearMenuRevealHide();
   const overlayOpen = activeDrawer !== null;
+  const wasCart = activeDrawer === "cart";
   const openingMenu = kind === "menu" && menuDrawer;
+  const openingCart = kind === "cart" && cartDrawer;
   if (openingMenu) {
     menuDrawer.classList.remove("is-revealed");
     markMenuRevealFade();
+  }
+  if (openingCart && activeDrawer !== "cart") {
+    cartDrawer.classList.remove("is-revealed");
   }
   activeDrawer = kind;
   setDrawerButtons(kind);
@@ -410,6 +581,7 @@ function openDrawer(kind, event) {
 
   if (!overlayOpen) drawerWrapper.style.display = "grid";
   if (openingMenu) playMenuReveal(true);
+  if (openingCart && !wasCart) playCartReveal(true);
   if (overlayOpen) return;
 
   void drawerWrapper.offsetHeight;
@@ -418,22 +590,27 @@ function openDrawer(kind, event) {
   dimGallery?.classList.add("is-dimmed");
 }
 
-/** closeDrawer — menu reverse finishes, then the overlay fades; cart fades immediately */
+/** closeDrawer — menu or cart reverse finishes, then the overlay fades */
 function closeDrawer(event) {
   event.preventDefault();
   if (activeDrawer === null) return;
 
   const closingMenu = activeDrawer === "menu";
+  const closingCart = activeDrawer === "cart" && cartLineCount() > 0;
   if (closingMenu) playMenuReveal(false);
+  if (activeDrawer === "cart") playCartReveal(false);
   activeDrawer = null;
   setDrawerButtons(null);
-  if (closingMenu && !prefersReducedMotion()) {
+  if ((closingMenu || closingCart) && !prefersReducedMotion()) {
     clearMenuRevealHide();
+    const wait =
+      (closingMenu ? menuRevealReverseMs() : cartRevealReverseMs()) -
+      MENU_LEAVE_TAIL_MS;
     menuRevealHideTimer = setTimeout(() => {
       menuRevealHideTimer = 0;
       if (activeDrawer !== null) return;
       fadeDrawerOut();
-    }, menuRevealReverseMs() - MENU_LEAVE_TAIL_MS);
+    }, Math.max(0, wait));
     return;
   }
   fadeDrawerOut();
@@ -707,6 +884,7 @@ function resetDrawerState() {
   dimGallery?.classList.remove("is-dimmed");
   notificationBarBox?.classList.remove("is-hidden");
   menuDrawer?.classList.remove("is-revealed");
+  cartDrawer?.classList.remove("is-revealed");
   hideDrawerOverlay();
 }
 

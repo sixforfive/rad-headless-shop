@@ -12,8 +12,8 @@
  * lineByMerch / lineById / lineSku — cart line for a variant gid or line id; sku from that line
  * undoStockClamp — remove a new line or set qty back after Shopify caps stock
  * addCartLines — cartLinesAdd → { cart, kind }; stock cap → undo, kind stock
- * fillLine — sku, image, line id, qty, line price into a cloned row
- * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty
+ * fillLine — sku, image, line id, qty, line price into a cloned row; sku and price keep a reveal mask
+ * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty; snap rows when the cart is already revealed
  * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer
  * showCartError — lift is-none, reflow, is-visible on #error-${kind}; stock writes .error-stock-lead + SKU; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
  * setCartBusy — cartBusy flag, aria-busy on add/qty/remove/#checkout-btn, PROCESSING on add/checkout
@@ -22,7 +22,7 @@
  * updateCartLine — cartLinesUpdate → { cart, kind }; stock cap → undo, kind stock
  * removeCartLine — cartLinesRemove → { cart, kind }
  * onCartQuantityChange — change → line id + qty → updateCartLine → renderCart
- * onCartRemove — click → line id → removeCartLine → renderCart
+ * onCartRemove — click → line id → removeCartLine → shrink the row, then renderCart
  * bindLineControls — document click on [data-cart-remove], change on [data-cart-quantity]
  * onCheckout — click → checkoutUrl or #error-no-reach in .cart-drawer
  * bindCheckout — document click on #checkout-btn
@@ -419,12 +419,22 @@ async function removeCartLine(lineId) {
   return { cart: payload.cart, kind: "" };
 }
 
+/** writeMaskedText — text into the reveal inner when the line wrap exists */
+function writeMaskedText(el, text) {
+  if (!el) return;
+  const inner = el.querySelector(
+    ":scope > .menu-reveal-line > .menu-reveal-line-inner",
+  );
+  if (inner) inner.textContent = text;
+  else el.textContent = text;
+}
+
 /** fillLine — sku, image, line id, qty, line price into a cloned row */
 function fillLine(el, line) {
   const merch = line.merchandise || {};
   const sku = merch.sku || merch.product?.title || "";
   const skuEl = el.querySelector("[data-cart-sku]");
-  if (skuEl) skuEl.textContent = sku;
+  writeMaskedText(skuEl, sku);
 
   if (line.id) el.dataset.cartLineId = line.id;
   else el.removeAttribute("data-cart-line-id");
@@ -451,15 +461,16 @@ function fillLine(el, line) {
   }
 
   const priceEl = el.querySelector("[data-cart-line-price]");
-  if (priceEl) {
-    priceEl.textContent = formatPrice(
+  writeMaskedText(
+    priceEl,
+    formatPrice(
       line.cost?.totalAmount?.amount,
       line.cost?.totalAmount?.currencyCode,
-    );
-  }
+    ),
+  );
 }
 
-/** renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty */
+/** renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty; snap when already revealed */
 function renderCart(cart) {
   if (cart?.id) restoredCart = cart;
   document.querySelectorAll("[data-cart-count]").forEach((el) => {
@@ -471,6 +482,9 @@ function renderCart(cart) {
   const template = document.querySelector("[data-cart-line-template]");
   const summary = list?.querySelector(".cart-summary");
   const checkoutBtn = document.getElementById("checkout-btn");
+  const revealed = document
+    .querySelector(".cart-drawer")
+    ?.classList.contains("is-revealed");
 
   list
     ?.querySelectorAll(".cart-product:not([data-cart-line-template])")
@@ -501,12 +515,14 @@ function renderCart(cart) {
   });
 
   const subtotalEl = document.querySelector("[data-cart-subtotal]");
-  if (subtotalEl) {
-    subtotalEl.textContent = formatPrice(
+  writeMaskedText(
+    subtotalEl,
+    formatPrice(
       cart.cost?.subtotalAmount?.amount,
       cart.cost?.subtotalAmount?.currencyCode,
-    );
-  }
+    ),
+  );
+  if (revealed && typeof snapCartReveal === "function") snapCartReveal();
 }
 
 /** hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer */
@@ -690,6 +706,28 @@ async function onCartQuantityChange(event) {
   }
 }
 
+/** waitCartImageCollapse — resolve when the row image height transition ends */
+function waitCartImageCollapse(img) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      img.removeEventListener("transitionend", onEnd);
+      resolve();
+    };
+    const onEnd = (event) => {
+      if (event.target !== img || event.propertyName !== "height") return;
+      finish();
+    };
+    img.addEventListener("transitionend", onEnd);
+    const style = getComputedStyle(img);
+    const dur = parseFloat(style.transitionDuration) || 0;
+    const delay = parseFloat(style.transitionDelay) || 0;
+    setTimeout(finish, (dur + delay) * 1000 + 50);
+  });
+}
+
 /** onCartRemove — no request when the row has no line id */
 async function onCartRemove(event) {
   const control = event.target.closest("[data-cart-remove]");
@@ -705,10 +743,26 @@ async function onCartRemove(event) {
   try {
     const result = await removeCartLine(lineId);
     if (!result.cart) {
+      row.classList.remove("is-removing");
       showCartError(root, result.kind || "no-reach", sku);
       return;
     }
     hideCartErrors(root);
+    const img = row.querySelector(".cart-prod-img_dummy");
+    const reduce =
+      typeof prefersReducedMotion === "function" && prefersReducedMotion();
+    if (reduce || !img) {
+      renderCart(result.cart);
+      return;
+    }
+    row
+      .querySelectorAll(".cart-prod-img_dummy, .menu-reveal-line-inner")
+      .forEach((el) => {
+        el.style.setProperty("--menu-reveal-delay", "0s");
+        el.style.setProperty("--menu-reveal-duration", "1.47s");
+      });
+    row.classList.add("is-removing");
+    await waitCartImageCollapse(img);
     renderCart(result.cart);
   } finally {
     setCartBusy(false);
