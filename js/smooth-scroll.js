@@ -8,7 +8,7 @@
  * radScrollShift — move the window position by a delta, keeping Lenis momentum
  * radOnScroll — run a callback on the Lenis frame, or on a passive window scroll
  * radLenisStop / radLenisStart — drawer lock; both instances
- * radNestedGallerySync — nested on desktop default gallery only; off in fullscreen and ≤767
+ * radNestedGallerySync — nested on desktop default gallery only; wheel on the window; off in fullscreen and ≤767
  * dampVirtualScroll — scale wheel delta in the edge zone; top-only on shop
  */
 
@@ -54,7 +54,10 @@ function createWindowLenis() {
     syncTouch: false,
     overscroll: false,
     naiveDimensions: true,
-    virtualScroll: (data) => dampVirtualScroll(radLenis, data, isShopGallery()),
+    virtualScroll: (data) =>
+      radNestedLenis
+        ? false
+        : dampVirtualScroll(radLenis, data, isShopGallery()),
   });
 }
 
@@ -156,7 +159,7 @@ function destroyNested() {
   }
 }
 
-/** createNested — Lenis on .product-gallery-col; prevent window steal */
+/** createNested — Lenis on .product-gallery-col; wheel on window; prevent window steal */
 function createNested(col) {
   if (radNestedLenis || typeof Lenis !== "function" || reduceMotion()) return;
   col.setAttribute("data-lenis-prevent", "");
@@ -164,6 +167,7 @@ function createNested(col) {
   nested = new Lenis({
     wrapper: col,
     content: col,
+    eventsTarget: window,
     autoRaf: true,
     syncTouch: false,
     overscroll: false,
