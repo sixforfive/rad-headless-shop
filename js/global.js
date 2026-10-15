@@ -14,7 +14,7 @@
  * writeMenuRevealTiming — order 1 lines from the bottom, then order 2, then both order 3; reverse leaves 3 first
  * menuRevealReverseMs — length of the close stages, in ms
  * clearMenuRevealHide — drop a pending shell fade
- * fadeDrawerOut — drop is-visible, then hide after the blur transition
+ * fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the blur
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
  * playCartReveal — cart titles, rows, subtotal, and bottom on the menu clocks; close reverses them
@@ -574,7 +574,6 @@ function snapCartReveal() {
 /** hideDrawerOverlay — display none after fade-out; no-op if a drawer reopened mid-fade */
 function hideDrawerOverlay() {
   if (activeDrawer !== null) return;
-  setDrawerButtons(null);
   if (drawerWrapper) drawerWrapper.style.display = "none";
   if (menuDrawer) menuDrawer.style.display = "none";
   if (cartDrawer) cartDrawer.style.display = "none";
@@ -601,9 +600,10 @@ function clearMenuRevealHide() {
   menuRevealHideTimer = 0;
 }
 
-/** fadeDrawerOut — drop is-visible, then hide after the blur transition */
+/** fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the blur */
 function fadeDrawerOut() {
   drawerWrapper?.classList.remove("is-visible");
+  setDrawerButtons(null);
   mainWrapper?.classList.remove("is-dimmed");
   dimGallery?.classList.remove("is-dimmed");
   notificationBarBox?.classList.remove("is-hidden");

@@ -1,12 +1,12 @@
 ## Context
 
-See proposal.md for motivation. `setDrawerButtons(null)` runs at the start of `closeDrawer` in `js/global.js`, before the reverse and before `fadeDrawerOut`. `hideDrawerOverlay` runs after the backdrop-filter fade (or immediately under reduced motion) and returns early when a drawer reopened. `radMenuLeaveTo` and `resetDrawerState` already call `setDrawerButtons(null)` themselves.
+See proposal.md for motivation. `closeDrawer` in `js/global.js` no longer restores chrome. `fadeDrawerOut` removes `is-visible`, which starts the `backdrop-filter` transition from `blur(32px)` to `blur(0px)` over `0.9s`. `hideDrawerOverlay` runs after that transition ends. `radMenuLeaveTo` and `resetDrawerState` already call `setDrawerButtons(null)` themselves.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- One restore point: the moment the overlay is actually hidden.
+- One restore point: the same turn `is-visible` comes off and the blur starts.
 
 **Non-Goals:**
 
@@ -16,21 +16,21 @@ See proposal.md for motivation. `setDrawerButtons(null)` runs at the start of `c
 
 ## Decisions
 
-### Restore chrome in `hideDrawerOverlay`, not at the start of close
+### Restore chrome in `fadeDrawerOut`, with the blur
 
-Remove `setDrawerButtons(null)` from `closeDrawer`. Call it in `hideDrawerOverlay` after the `activeDrawer !== null` return. The reverse timer, the empty-cart immediate fade, and reduced motion all end in that function, so the closed set lands when `.drawer-wrapper` is hidden. A reopen during the fade hits the early return, and `openDrawer` has already set the new drawer's chrome.
+`setDrawerButtons(null)` stays out of `closeDrawer`. Call it in `fadeDrawerOut` in the same turn as `classList.remove("is-visible")`. That is the frame the blur starts. The reverse timer, the empty-cart immediate fade, and reduced motion all reach that function before the overlay is removed.
 
-`radMenuLeaveTo` still restores at the start of a page leave. A second call from `hideDrawerOverlay` is the same closed set.
+`radMenuLeaveTo` still restores at the start of a page leave. It does not go through `fadeDrawerOut`.
 
-Alternative considered: restore at the start of `fadeDrawerOut`. Rejected — the overlay is still on screen for the fade, which is the moment the navbar currently snaps too early.
+Alternative considered: restore in `hideDrawerOverlay`, after `transitionend` on `backdrop-filter`. Rejected — that is after the blur has finished, which is too late.
 
 ## Risks / Trade-offs
 
-- [Backdrop-filter `transitionend` never fires] → Chrome stays in the open set and the overlay stays up. Same failure the hide path already has.
+- [Backdrop-filter `transitionend` never fires] → The overlay stays up. Chrome has already returned with the blur. Same hide failure as before.
 - [jsDelivr cache] → New SHA on the Footer `global.js` script after commit. Do not rely on `@main`.
 
 ## Migration Plan
 
-1. Move the closed-chrome call to `hideDrawerOverlay`.
+1. Move the closed-chrome call to `fadeDrawerOut`, beside the `is-visible` removal.
 2. After commit, point the site-wide Footer `<script>` for `global.js` at the new SHA and publish Webflow.
 3. Rollback: revert the SHA (or `js/global.js`). Markup is unchanged.
