@@ -1,29 +1,25 @@
 # rad-headless-shop
 
-Headless storefront for RAD. Webflow holds CMS content and design reference; this repo holds CSS, page scripts, and Shopify checkout logic wired into the published Webflow site via custom code embeds.
-
-## Why separate from Webflow
-
-Webflow runs the pages and CMS. Shopify handles cart and payment. This repo is the glue — no framework, vanilla JS and CSS only, loaded as static assets.
+This repo is the CSS and JavaScript that runs on the published Webflow site, because Webflow does not hold that code.
 
 ## Files
 
 | Path | Role |
 |---|---|
 | `css/global.css` | Site-wide styles |
-| `js/global.js` | Cross-page behavior (nav, drawer, currency); `#keep-shopping` closes the cart drawer; `[custom-cursor]` shows a rubber-following `.text-meta` label, and a string change fades the old copy out and the new copy in; current page drops `is-none` on the matching `.menu-drawer .menu-pointer` |
-| `js/shop.js` | Shop grid placement and Gallery/List switch |
-| `js/collection.js` | Collection `/` only: infinite hero canvas from `.hero-gallery-img` srcs (`type="module"`, imports `three@0.182.0`) |
-| `js/product.js` | Product and merch detail (fullscreen gallery, snap, ticks) |
-| `js/merch.js` | Merch listing grid (`merch-column`) |
-| `js/faq.js` | FAQ accordion/list |
-| `js/cart.js` | Cart identity, add to cart, and drawer render: restore `rad-cart-id`, lazy `cartCreate` via `ensureCart`, `cartLinesAdd` from `[data-add-to-cart]`, clone `[data-cart-line-template]` into `.cart-drawer`, `cartLinesUpdate` / `cartLinesRemove` from the line quantity select and `[data-cart-remove]`, write `totalQuantity` to `[data-cart-count]`, hide `#checkout-btn` when the cart has no lines, `#checkout-btn` redirects to `checkoutUrl`, show `#error-no-reach` / `#error-soldout` / `#error-stock` / `#error-no-item` in `.layer-cta` or `.cart-drawer` on a failed mutation or a missing checkout URL, lock add/qty/remove/checkout with `aria-busy` while a request is in flight, show spinner + PROCESSING on add and checkout for that wait |
-| `js/shopify.js` | Storefront API client; hydrates price and availability onto `[data-variant-id]` wrappers |
-| `scripts/purge.sh` | CSS purge after markup changes |
+| `js/global.js` | Drawers, lights, favicon, cursor label, page enter and leave |
+| `js/smooth-scroll.js` | Smooth scroll on the window and the product gallery column |
+| `js/shop.js` | Shop grid placement and the Gallery/List switch |
+| `js/collection.js` | Home page only: infinite hero canvas from the hero gallery images (`type="module"`, imports `three@0.182.0`) |
+| `js/product.js` | Product and merch detail: fullscreen gallery, snap, ticks |
+| `js/merch.js` | Merch listing grid column |
+| `js/faq.js` | Empty |
+| `js/cart.js` | Cart stored in the browser, add and edit lines, drawer contents, checkout |
+| `js/shopify.js` | Asks Shopify for price and stock and writes them onto the page |
 
-## Why the Shopify config is not in this repo
+## How the Shopify keys get onto the page
 
-`js/shopify.js` reads the store domain and Storefront token off `window.RAD_SHOPIFY`, set in the Webflow **Site Settings > Custom Code > Footer** above the `shopify.js` tag:
+`js/shopify.js` reads the store domain and Storefront token from `window.RAD_SHOPIFY`. That object is set in Webflow under Site Settings, Custom Code, Footer, above the `shopify.js` tag. The keys stay there because this repo is public, and a committed token would stay in git history after every rotation.
 
 ```html
 <script>
@@ -39,19 +35,17 @@ Webflow runs the pages and CMS. Shopify handles cart and payment. This repo is t
 |---|---|---|
 | `domain` | yes | Storefront API host |
 | `token` | yes | Public Storefront access token |
-| `apiVersion` | no | Defaults to `2026-07` in the repo |
+| `apiVersion` | no | Defaults to `2026-07` |
 
-The token is publishable, so having it in the browser is fine — that is not why it lives in Webflow. This repo is public and git history is permanent, so a committed token would outlive every rotation and follow every fork. Keeping it in the embed also means a Shopify quarterly version bump is a Webflow edit and a publish, not a commit and a new jsDelivr URL.
-
-When the object is missing, `hydrateVariants` returns without a request, so pages that never got the embed just render their static markup.
+If that object is missing, the page keeps its static markup and does not call Shopify.
 
 ## Limits
 
-- Prices and `availableForSale` come from Shopify at runtime; everything else (copy, images, grid placement) still comes from Webflow CMS.
-- The CMS `sold-out` switch is retired. State is `data-available` on the `[data-variant-id]` wrapper.
-- One currency per request — `@inContext` is scoped to the whole GraphQL operation, so dual EUR/PLN needs one request per market. Not wired yet; `formatPrice` is the swap point.
-- On a failed request no wrapper gets `data-available`, so both branches stay hidden and nothing is offered for sale against unknown stock.
+- Prices and stock come from Shopify when the page loads. Copy, images, and grid placement come from Webflow.
+- The CMS sold-out switch is retired. Availability is `data-available` on the variant wrapper.
+- EUR and PLN are not both loaded in one request. The second currency is not wired yet.
+- If the Shopify request fails, nothing is marked available, so the page does not offer a product for sale.
 
 ## Security
 
-Storefront tokens are publishable and safe client-side. Never commit Admin API tokens or private keys.
+The Storefront token is public and fine in the browser. Never commit an Admin API token or a private key.
