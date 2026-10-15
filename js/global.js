@@ -18,7 +18,7 @@
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
  * playCartReveal — cart titles, rows, subtotal, and bottom on the menu clocks; close reverses them
- * snapCartReveal — rested row heights while .cart-drawer is already revealed
+ * snapCartReveal — rested row heights while .cart-drawer is already revealed, after images load
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
@@ -179,6 +179,7 @@ const CART_REVEAL_DURATION = MENU_REVEAL_DURATION / 2;
 const CART_REVEAL_ORDER3_DURATION = MENU_REVEAL_ORDER3_DURATION / 2;
 const CART_REVEAL_GAP = 0.375;
 const CART_LEAVE_TAIL_MS = MENU_LEAVE_TAIL_MS / 2;
+let cartRevealToken = 0;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
 function prefersReducedMotion() {
@@ -395,6 +396,27 @@ function wrapCartRevealLines() {
     .forEach(wrapRevealElement);
 }
 
+/** cartRowImageReady — true when the row image already has a natural size */
+function cartRowImageReady(img) {
+  if (!img || !img.getAttribute("src")) return true;
+  return img.complete && img.naturalWidth > 0;
+}
+
+/** whenCartRowsReady — resolve once every row image can be measured */
+function whenCartRowsReady(rows) {
+  const pending = [];
+  rows.forEach((row) => {
+    const img = row.querySelector(".cart-prod-img_dummy");
+    if (cartRowImageReady(img)) return;
+    pending.push(
+      typeof img.decode === "function"
+        ? img.decode().catch(() => {})
+        : Promise.resolve(),
+    );
+  });
+  return pending.length ? Promise.all(pending) : null;
+}
+
 /** measureCartRow — --cart-row-h with the image at full size and the Webflow padding, then back to height 0 */
 function measureCartRow(row) {
   row.style.transition = "none";
@@ -464,35 +486,60 @@ function cartRevealReverseMs() {
   );
 }
 
+/** startCartReveal — measure loaded rows, then add is-revealed */
+function startCartReveal() {
+  cartProductRows().forEach((row) => measureCartRow(row));
+  writeCartRevealTiming(true);
+  void cartDrawer.offsetWidth;
+  cartDrawer.classList.add("is-revealed");
+}
+
 /** playCartReveal — opening flushes the from-state then adds is-revealed; closing removes it */
 function playCartReveal(opening) {
   if (!cartDrawer) return;
+  cartRevealToken += 1;
   if (!cartLineCount()) {
     cartDrawer.classList.remove("is-revealed");
     return;
   }
   if (opening) {
+    const token = cartRevealToken;
     cartDrawer.classList.remove("is-revealed");
     wrapCartRevealLines();
     if (prefersReducedMotion()) {
       cartDrawer.classList.add("is-revealed");
       return;
     }
-    cartProductRows().forEach((row) => measureCartRow(row));
-    writeCartRevealTiming(true);
-    void cartDrawer.offsetWidth;
-    cartDrawer.classList.add("is-revealed");
+    const wait = whenCartRowsReady(cartProductRows());
+    if (!wait) {
+      startCartReveal();
+      return;
+    }
+    wait.then(() => {
+      if (token !== cartRevealToken || activeDrawer !== "cart") return;
+      startCartReveal();
+    });
     return;
   }
   if (!prefersReducedMotion()) writeCartRevealTiming(false);
   cartDrawer.classList.remove("is-revealed");
 }
 
-/** snapCartReveal — pixel image heights on rows rebuilt while the cart is already open */
+/** snapCartReveal — pixel row heights on rows rebuilt while the cart is already open */
 function snapCartReveal() {
   if (!cartDrawer?.classList.contains("is-revealed")) return;
   wrapCartRevealLines();
-  cartProductRows().forEach((row) => measureCartRow(row));
+  const token = cartRevealToken;
+  const wait = whenCartRowsReady(cartProductRows());
+  if (!wait) {
+    cartProductRows().forEach((row) => measureCartRow(row));
+    return;
+  }
+  wait.then(() => {
+    if (token !== cartRevealToken) return;
+    if (!cartDrawer.classList.contains("is-revealed")) return;
+    cartProductRows().forEach((row) => measureCartRow(row));
+  });
 }
 
 /** hideDrawerOverlay — display none after fade-out; no-op if a drawer reopened mid-fade */
