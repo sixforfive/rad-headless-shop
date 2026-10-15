@@ -706,22 +706,22 @@ async function onCartQuantityChange(event) {
   }
 }
 
-/** waitCartImageCollapse — resolve when the row image height transition ends */
-function waitCartImageCollapse(img) {
+/** waitCartRowCollapse — resolve when the row height transition ends */
+function waitCartRowCollapse(row) {
   return new Promise((resolve) => {
     let settled = false;
     const finish = () => {
       if (settled) return;
       settled = true;
-      img.removeEventListener("transitionend", onEnd);
+      row.removeEventListener("transitionend", onEnd);
       resolve();
     };
     const onEnd = (event) => {
-      if (event.target !== img || event.propertyName !== "height") return;
+      if (event.target !== row || event.propertyName !== "height") return;
       finish();
     };
-    img.addEventListener("transitionend", onEnd);
-    const style = getComputedStyle(img);
+    row.addEventListener("transitionend", onEnd);
+    const style = getComputedStyle(row);
     const dur = parseFloat(style.transitionDuration) || 0;
     const delay = parseFloat(style.transitionDelay) || 0;
     setTimeout(finish, (dur + delay) * 1000 + 50);
@@ -748,23 +748,20 @@ async function onCartRemove(event) {
       return;
     }
     hideCartErrors(root);
-    const img = row.querySelector(".cart-prod-img_dummy");
     const reduce =
       typeof prefersReducedMotion === "function" && prefersReducedMotion();
-    if (reduce || !img) {
+    if (reduce) {
       renderCart(result.cart);
       return;
     }
     row.style.setProperty("--menu-reveal-delay", "0s");
     row.style.setProperty("--menu-reveal-duration", "0.735s");
-    row
-      .querySelectorAll(".cart-prod-img_dummy, .menu-reveal-line-inner")
-      .forEach((el) => {
-        el.style.setProperty("--menu-reveal-delay", "0s");
-        el.style.setProperty("--menu-reveal-duration", "0.735s");
-      });
+    row.querySelectorAll(".menu-reveal-line-inner").forEach((el) => {
+      el.style.setProperty("--menu-reveal-delay", "0s");
+      el.style.setProperty("--menu-reveal-duration", "0.735s");
+    });
     row.classList.add("is-removing");
-    await waitCartImageCollapse(img);
+    await waitCartRowCollapse(row);
     renderCart(result.cart);
   } finally {
     setCartBusy(false);

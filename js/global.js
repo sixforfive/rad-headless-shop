@@ -18,7 +18,7 @@
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
  * playCartReveal — cart titles, rows, subtotal, and bottom on the menu clocks; close reverses them
- * snapCartReveal — rested image heights while .cart-drawer is already revealed
+ * snapCartReveal — rested row heights while .cart-drawer is already revealed
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
  * onDrawerBackdrop — close when the click target is .drawer-wrapper itself
@@ -395,45 +395,16 @@ function wrapCartRevealLines() {
     .forEach(wrapRevealElement);
 }
 
-/** measureCartImage — --cart-img-h at the column width, ratio kept */
-function measureCartImage(img) {
-  const col = img.closest(".cart-product_img")?.clientWidth || 0;
-  let h = 0;
-  if (img.naturalWidth && col) {
-    h = Math.round((col * img.naturalHeight) / img.naturalWidth);
-  } else {
-    img.style.transition = "none";
-    img.style.width = "100%";
-    img.style.height = "auto";
-    h = img.offsetHeight;
-    img.style.width = "";
-    img.style.height = "";
-    void img.offsetWidth;
-    img.style.transition = "";
-  }
-  if (h) img.style.setProperty("--cart-img-h", `${h}px`);
-}
-
-/** measureCartRow — --cart-row-h with the image at full size, then back to height 0 */
+/** measureCartRow — --cart-row-h with the image at full size and the Webflow padding, then back to height 0 */
 function measureCartRow(row) {
-  const img = row.querySelector(".cart-prod-img_dummy");
-  if (img) measureCartImage(img);
   row.style.transition = "none";
   row.style.height = "auto";
   row.style.overflow = "visible";
-  if (img) {
-    img.style.transition = "none";
-    img.style.width = "100%";
-    img.style.height = img.style.getPropertyValue("--cart-img-h") || "auto";
-  }
+  row.style.paddingBottom = "var(--_layout---spacing--space-100)";
   const h = row.offsetHeight;
-  if (img) {
-    img.style.width = "";
-    img.style.height = "";
-    img.style.transition = "";
-  }
   row.style.height = "";
   row.style.overflow = "";
+  row.style.paddingBottom = "";
   void row.offsetWidth;
   row.style.transition = "";
   if (h) row.style.setProperty("--cart-row-h", `${h}px`);
@@ -456,7 +427,7 @@ function writeCartRevealTiming(opening) {
       const start = titleDur + i * CART_REVEAL_DURATION;
       setRevealTiming(row, start, CART_REVEAL_DURATION);
       row
-        .querySelectorAll(".cart-prod-img_dummy, .menu-reveal-line-inner")
+        .querySelectorAll(".menu-reveal-line-inner")
         .forEach((el) => setRevealTiming(el, start, CART_REVEAL_DURATION));
     });
     subtotal.forEach((el) =>
@@ -473,7 +444,7 @@ function writeCartRevealTiming(opening) {
   for (let i = n - 1; i >= 0; i -= 1) {
     setRevealTiming(rows[i], t, CART_REVEAL_DURATION);
     rows[i]
-      .querySelectorAll(".cart-prod-img_dummy, .menu-reveal-line-inner")
+      .querySelectorAll(".menu-reveal-line-inner")
       .forEach((el) => setRevealTiming(el, t, CART_REVEAL_DURATION));
     t += CART_REVEAL_DURATION;
   }
