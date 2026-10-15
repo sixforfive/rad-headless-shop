@@ -755,11 +755,13 @@ async function onCartRemove(event) {
       renderCart(result.cart);
       return;
     }
+    row.style.setProperty("--menu-reveal-delay", "0s");
+    row.style.setProperty("--menu-reveal-duration", "0.735s");
     row
       .querySelectorAll(".cart-prod-img_dummy, .menu-reveal-line-inner")
       .forEach((el) => {
         el.style.setProperty("--menu-reveal-delay", "0s");
-        el.style.setProperty("--menu-reveal-duration", "1.47s");
+        el.style.setProperty("--menu-reveal-duration", "0.735s");
       });
     row.classList.add("is-removing");
     await waitCartImageCollapse(img);

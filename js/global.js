@@ -175,6 +175,10 @@ const MENU_REVEAL_DURATION = 1.47;
 const MENU_REVEAL_ORDER3_DURATION = 0.3;
 const MENU_REVEAL_LINE_STEP = 0.07;
 const MENU_LEAVE_TAIL_MS = 600;
+const CART_REVEAL_DURATION = MENU_REVEAL_DURATION / 2;
+const CART_REVEAL_ORDER3_DURATION = MENU_REVEAL_ORDER3_DURATION / 2;
+const CART_REVEAL_GAP = 0.375;
+const CART_LEAVE_TAIL_MS = MENU_LEAVE_TAIL_MS / 2;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
 function prefersReducedMotion() {
@@ -410,7 +414,32 @@ function measureCartImage(img) {
   if (h) img.style.setProperty("--cart-img-h", `${h}px`);
 }
 
-/** writeCartRevealTiming — titles, then each row, then subtotal; bottom overlaps the subtotal by 0.75s */
+/** measureCartRow — --cart-row-h with the image at full size, then back to height 0 */
+function measureCartRow(row) {
+  const img = row.querySelector(".cart-prod-img_dummy");
+  if (img) measureCartImage(img);
+  row.style.transition = "none";
+  row.style.height = "auto";
+  row.style.overflow = "visible";
+  if (img) {
+    img.style.transition = "none";
+    img.style.width = "100%";
+    img.style.height = img.style.getPropertyValue("--cart-img-h") || "auto";
+  }
+  const h = row.offsetHeight;
+  if (img) {
+    img.style.width = "";
+    img.style.height = "";
+    img.style.transition = "";
+  }
+  row.style.height = "";
+  row.style.overflow = "";
+  void row.offsetWidth;
+  row.style.transition = "";
+  if (h) row.style.setProperty("--cart-row-h", `${h}px`);
+}
+
+/** writeCartRevealTiming — titles, then each row, then subtotal; bottom overlaps the subtotal by 0.375s */
 function writeCartRevealTiming(opening) {
   const rows = cartProductRows();
   const n = rows.length;
@@ -419,32 +448,34 @@ function writeCartRevealTiming(opening) {
   const subtotal = [
     ...cartDrawer.querySelectorAll(".cart-summary .menu-reveal-line-inner"),
   ];
-  const titleDur = MENU_REVEAL_ORDER3_DURATION;
-  const subtotalStart = titleDur + n * MENU_REVEAL_DURATION;
+  const titleDur = CART_REVEAL_ORDER3_DURATION;
+  const subtotalStart = titleDur + n * CART_REVEAL_DURATION;
   if (opening) {
     if (titles) setRevealTiming(titles, 0, titleDur);
     rows.forEach((row, i) => {
-      const start = titleDur + i * MENU_REVEAL_DURATION;
+      const start = titleDur + i * CART_REVEAL_DURATION;
+      setRevealTiming(row, start, CART_REVEAL_DURATION);
       row
         .querySelectorAll(".cart-prod-img_dummy, .menu-reveal-line-inner")
-        .forEach((el) => setRevealTiming(el, start, MENU_REVEAL_DURATION));
+        .forEach((el) => setRevealTiming(el, start, CART_REVEAL_DURATION));
     });
     subtotal.forEach((el) =>
-      setRevealTiming(el, subtotalStart, MENU_REVEAL_DURATION),
+      setRevealTiming(el, subtotalStart, CART_REVEAL_DURATION),
     );
-    if (bottom) setRevealTiming(bottom, subtotalStart + 0.75, titleDur);
+    if (bottom) setRevealTiming(bottom, subtotalStart + CART_REVEAL_GAP, titleDur);
     return;
   }
   let t = 0;
   if (bottom) setRevealTiming(bottom, t, titleDur);
   t += titleDur;
-  subtotal.forEach((el) => setRevealTiming(el, t, MENU_REVEAL_DURATION));
-  t += MENU_REVEAL_DURATION;
+  subtotal.forEach((el) => setRevealTiming(el, t, CART_REVEAL_DURATION));
+  t += CART_REVEAL_DURATION;
   for (let i = n - 1; i >= 0; i -= 1) {
+    setRevealTiming(rows[i], t, CART_REVEAL_DURATION);
     rows[i]
       .querySelectorAll(".cart-prod-img_dummy, .menu-reveal-line-inner")
-      .forEach((el) => setRevealTiming(el, t, MENU_REVEAL_DURATION));
-    t += MENU_REVEAL_DURATION;
+      .forEach((el) => setRevealTiming(el, t, CART_REVEAL_DURATION));
+    t += CART_REVEAL_DURATION;
   }
   if (titles) setRevealTiming(titles, t, titleDur);
 }
@@ -454,10 +485,10 @@ function cartRevealReverseMs() {
   const n = cartLineCount();
   if (!n) return 0;
   return (
-    (MENU_REVEAL_ORDER3_DURATION +
-      MENU_REVEAL_DURATION +
-      n * MENU_REVEAL_DURATION +
-      MENU_REVEAL_ORDER3_DURATION) *
+    (CART_REVEAL_ORDER3_DURATION +
+      CART_REVEAL_DURATION +
+      n * CART_REVEAL_DURATION +
+      CART_REVEAL_ORDER3_DURATION) *
     1000
   );
 }
@@ -476,10 +507,7 @@ function playCartReveal(opening) {
       cartDrawer.classList.add("is-revealed");
       return;
     }
-    cartProductRows().forEach((row) => {
-      const img = row.querySelector(".cart-prod-img_dummy");
-      if (img) measureCartImage(img);
-    });
+    cartProductRows().forEach((row) => measureCartRow(row));
     writeCartRevealTiming(true);
     void cartDrawer.offsetWidth;
     cartDrawer.classList.add("is-revealed");
@@ -493,10 +521,7 @@ function playCartReveal(opening) {
 function snapCartReveal() {
   if (!cartDrawer?.classList.contains("is-revealed")) return;
   wrapCartRevealLines();
-  cartProductRows().forEach((row) => {
-    const img = row.querySelector(".cart-prod-img_dummy");
-    if (img) measureCartImage(img);
-  });
+  cartProductRows().forEach((row) => measureCartRow(row));
 }
 
 /** hideDrawerOverlay — display none after fade-out; no-op if a drawer reopened mid-fade */
@@ -603,9 +628,9 @@ function closeDrawer(event) {
   setDrawerButtons(null);
   if ((closingMenu || closingCart) && !prefersReducedMotion()) {
     clearMenuRevealHide();
-    const wait =
-      (closingMenu ? menuRevealReverseMs() : cartRevealReverseMs()) -
-      MENU_LEAVE_TAIL_MS;
+    const wait = closingMenu
+      ? menuRevealReverseMs() - MENU_LEAVE_TAIL_MS
+      : cartRevealReverseMs() - CART_LEAVE_TAIL_MS;
     menuRevealHideTimer = setTimeout(() => {
       menuRevealHideTimer = 0;
       if (activeDrawer !== null) return;

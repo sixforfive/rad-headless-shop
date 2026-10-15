@@ -309,9 +309,9 @@ body * {
   --menu-reveal-distance: 4px;
   --menu-reveal-ease: ease-out;
   transition:
-    transform var(--menu-reveal-duration, 0.3s) var(--menu-reveal-ease)
+    transform var(--menu-reveal-duration, 0.15s) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
-    opacity var(--menu-reveal-duration, 0.3s) var(--menu-reveal-ease)
+    opacity var(--menu-reveal-duration, 0.15s) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s);
 }
 
@@ -338,9 +338,9 @@ body * {
   display: block;
   --menu-reveal-ease: cubic-bezier(0.62, 0.05, 0.01, 0.99);
   transition:
-    width var(--menu-reveal-duration, 1.47s) var(--menu-reveal-ease)
+    width var(--menu-reveal-duration, 0.735s) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
-    height var(--menu-reveal-duration, 1.47s) var(--menu-reveal-ease)
+    height var(--menu-reveal-duration, 0.735s) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s);
 }
 
@@ -388,16 +388,20 @@ body * {
   white-space: normal;
 }
 
-.cart-product {
+.cart-drawer .cart-product:not([data-cart-line-template]) {
+  overflow: hidden;
+  min-height: 0;
+  height: 0;
+  --menu-reveal-ease: cubic-bezier(0.62, 0.05, 0.01, 0.99);
   transition:
-    padding-bottom 1.47s cubic-bezier(0.62, 0.05, 0.01, 0.99),
-    border-top-width 1.47s cubic-bezier(0.62, 0.05, 0.01, 0.99);
+    height var(--menu-reveal-duration, 0.735s) var(--menu-reveal-ease)
+      var(--menu-reveal-delay, 0s),
+    padding-bottom 0.735s cubic-bezier(0.62, 0.05, 0.01, 0.99),
+    border-top-width 0.735s cubic-bezier(0.62, 0.05, 0.01, 0.99);
 }
 
-.cart-product .qnt-box {
-  transition:
-    height 1.47s cubic-bezier(0.62, 0.05, 0.01, 0.99),
-    border-width 1.47s cubic-bezier(0.62, 0.05, 0.01, 0.99);
+.cart-drawer.is-revealed .cart-product:not([data-cart-line-template]) {
+  height: var(--cart-row-h, auto);
 }
 
 .cart-drawer.is-revealed .cart-product.is-removing .cart-prod-img_dummy {
@@ -409,15 +413,10 @@ body * {
   transform: translateY(100%);
 }
 
-.cart-product.is-removing {
+.cart-drawer.is-revealed .cart-product.is-removing:not([data-cart-line-template]) {
+  height: 0;
   padding-bottom: 0;
   border-top-width: 0;
-}
-
-.cart-product.is-removing .qnt-box {
-  height: 0;
-  border-width: 0;
-  overflow: hidden;
 }
 
 .error-wrapper [id^="error-"] {
