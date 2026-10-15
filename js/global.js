@@ -574,6 +574,7 @@ function snapCartReveal() {
 /** hideDrawerOverlay — display none after fade-out; no-op if a drawer reopened mid-fade */
 function hideDrawerOverlay() {
   if (activeDrawer !== null) return;
+  setDrawerButtons(null);
   if (drawerWrapper) drawerWrapper.style.display = "none";
   if (menuDrawer) menuDrawer.style.display = "none";
   if (cartDrawer) cartDrawer.style.display = "none";
@@ -672,7 +673,6 @@ function closeDrawer(event) {
   if (closingMenu) playMenuReveal(false);
   if (activeDrawer === "cart") playCartReveal(false);
   activeDrawer = null;
-  setDrawerButtons(null);
   if ((closingMenu || closingCart) && !prefersReducedMotion()) {
     clearMenuRevealHide();
     const wait = closingMenu
