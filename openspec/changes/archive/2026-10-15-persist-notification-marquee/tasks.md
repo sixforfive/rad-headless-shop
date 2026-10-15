@@ -8,4 +8,4 @@
 
 ## 3. First paint
 
-- [ ] 3.1 Paste the Head snippet from `design.md` into Webflow Site Settings → Custom Code → Head
+- [x] 3.1 Paste the Head snippet from `design.md` into Webflow Site Settings → Custom Code → Head
