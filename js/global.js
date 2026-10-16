@@ -207,8 +207,8 @@ const MENU_LEAVE_TAIL_MS = 600;
 const CART_REVEAL_DURATION = 0.375;
 const CART_REVEAL_ORDER3_DURATION = 0.15;
 const CART_REVEAL_GAP = 0.375;
-const CART_OPEN_GAP = 0;
-const CART_CLOSE_GAP = 0;
+const CART_OPEN_GAP = 0.15;
+const CART_CLOSE_GAP = 0.15;
 cartDrawer?.style.setProperty(
   "--cart-row-duration",
   `${CART_REVEAL_DURATION}s`,
@@ -259,6 +259,7 @@ function markMenuRevealFade() {
 /** setRevealTiming — write the delay and duration used by the reveal transition */
 function setRevealTiming(el, delay, duration) {
   el.style.setProperty("--menu-reveal-delay", `${delay}s`);
+  if (duration == null) return;
   el.style.setProperty("--menu-reveal-duration", `${duration}s`);
 }
 
@@ -482,34 +483,31 @@ function writeCartRevealTiming(opening) {
   const titleDur = CART_REVEAL_ORDER3_DURATION;
   const subtotalStart = titleDur + n * CART_REVEAL_DURATION;
   if (opening) {
-    if (titles) setRevealTiming(titles, 0, titleDur);
+    if (titles) setRevealTiming(titles, 0);
     rows.forEach((row, i) => {
       const start = titleDur + i * CART_REVEAL_DURATION;
-      setRevealTiming(row, start, CART_REVEAL_DURATION);
+      setRevealTiming(row, start);
       row
         .querySelectorAll(".menu-reveal-line-inner")
-        .forEach((el) => setRevealTiming(el, start, CART_REVEAL_DURATION));
+        .forEach((el) => setRevealTiming(el, start));
     });
-    subtotal.forEach((el) =>
-      setRevealTiming(el, subtotalStart, CART_REVEAL_DURATION),
-    );
-    if (bottom)
-      setRevealTiming(bottom, subtotalStart + CART_REVEAL_GAP, titleDur);
+    subtotal.forEach((el) => setRevealTiming(el, subtotalStart));
+    if (bottom) setRevealTiming(bottom, subtotalStart + CART_REVEAL_GAP);
     return;
   }
   let t = 0;
-  if (bottom) setRevealTiming(bottom, t, titleDur);
+  if (bottom) setRevealTiming(bottom, t);
   t += titleDur;
-  subtotal.forEach((el) => setRevealTiming(el, t, CART_REVEAL_DURATION));
+  subtotal.forEach((el) => setRevealTiming(el, t));
   t += CART_REVEAL_DURATION;
   for (let i = n - 1; i >= 0; i -= 1) {
-    setRevealTiming(rows[i], t, CART_REVEAL_DURATION);
+    setRevealTiming(rows[i], t);
     rows[i]
       .querySelectorAll(".menu-reveal-line-inner")
-      .forEach((el) => setRevealTiming(el, t, CART_REVEAL_DURATION));
+      .forEach((el) => setRevealTiming(el, t));
     t += CART_REVEAL_DURATION;
   }
-  if (titles) setRevealTiming(titles, t, titleDur);
+  if (titles) setRevealTiming(titles, t);
 }
 
 /** cartRevealReverseMs — length of the close stages, in ms */
