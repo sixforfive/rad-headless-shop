@@ -200,7 +200,7 @@ function showDrawerPanel(kind) {
   if (show) show.style.display = "flex";
 }
 
-const MENU_REVEAL_DURATION = 1.47;
+const MENU_REVEAL_DURATION = 1.5;
 const MENU_REVEAL_ORDER3_DURATION = 0.3;
 const MENU_REVEAL_LINE_STEP = 0.07;
 const MENU_LEAVE_TAIL_MS = 600;

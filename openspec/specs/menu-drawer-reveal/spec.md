@@ -8,7 +8,7 @@ Moves `[menu-reveal]` copy inside `.menu-drawer` in three stages when the menu o
 
 ### Requirement: Orders 1 and 2 reveal as masked lines
 
-When `.menu-drawer` opens, order `1` SHALL reveal before order `2`. Each of those nodes SHALL split into the wrapped rows of its text at the drawer width. Each row SHALL be one line that does not wrap again. Each line SHALL move from `yPercent: 100` to `0` over `1.47s`, staggered `0.07s` in reading order, with ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)`. The node itself SHALL NOT move or fade. Order `2` SHALL start when order `1`'s last line ends. The rested position SHALL NOT be painted on the first frame of the open.
+When `.menu-drawer` opens, order `1` SHALL reveal before order `2`. Each of those nodes SHALL split into the wrapped rows of its text at the drawer width. Each row SHALL be one line that does not wrap again. Each line SHALL move from `yPercent: 100` to `0` over `1.5s`, staggered `0.07s` in reading order, with ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)`. The node itself SHALL NOT move or fade. Order `2` SHALL start when order `1`'s last line ends. The rested position SHALL NOT be painted on the first frame of the open.
 
 #### Scenario: Tagline then about
 

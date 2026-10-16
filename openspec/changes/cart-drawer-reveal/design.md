@@ -1,6 +1,6 @@
 ## Context
 
-See proposal.md. `.drawer-wrapper` already fades over `0.45s` and blurs over `0.9s`. Menu stages live in `js/global.js`: line move `1.47s` with ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)`, order 3 `0.3s` `ease-out` over `--menu-reveal-distance` (`4px`), order 3 starting `0.75s` after the last line stage starts, shell fade `MENU_LEAVE_TAIL_MS` (`600`) before the reverse ends. `closeDrawer` fades the cart immediately. `renderCart` in `js/cart.js` reclones every `.cart-product` and writes `textContent` on `[data-cart-sku]` and `[data-cart-line-price]`.
+See proposal.md. `.drawer-wrapper` already fades over `0.45s` and blurs over `0.9s`. Menu stages live in `js/global.js`: line move `1.5s` with ease `cubic-bezier(0.62, 0.05, 0.01, 0.99)`, order 3 `0.3s` `ease-out` over `--menu-reveal-distance` (`4px`), order 3 starting `0.75s` after the last line stage starts, shell fade `MENU_LEAVE_TAIL_MS` (`600`) before the reverse ends. `closeDrawer` fades the cart immediately. `renderCart` in `js/cart.js` reclones every `.cart-product` and writes `textContent` on `[data-cart-sku]` and `[data-cart-line-price]`.
 
 Published cart, no markup edit: `.cart-list-titles`, `.cart-product` (border-top, 8-column grid), `.cart-prod-img_dummy` (`width: 100%`), `.cart-product_price` (column, `space-between`), `.qnt-box` (`1.5rem`), `.cart-summary` (border-top), `.cart-bottom` (flex-end of `.cart-wrapper`). `.cart-list` scrolls.
 
