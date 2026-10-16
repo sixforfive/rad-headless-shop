@@ -594,7 +594,7 @@ html.is-leaving .gallery-full-screen.is-dimmed {
 #cart-close {
   grid-area: 1 / 1;
   justify-self: start;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease 0.3s;
 }
 
 :has(> #currency-btn:not(.is-none)) > :is(#cart-open, #cart-close) {
