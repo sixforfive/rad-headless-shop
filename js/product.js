@@ -9,6 +9,7 @@
  * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
  * setChosenTick — is-choosen on the tick at Math.round(scrollLeft / clientWidth)
+ * setSpecTarget — #download-spec opens the CMS file in a new tab
  */
 
 /** isMobileViewport — true at max-width 767px */
@@ -216,7 +217,16 @@ function setPaginationTicks() {
   defaultGalleryList?.addEventListener("scroll", setChosenTick);
 }
 
+/** setSpecTarget — #download-spec opens the CMS file in a new tab */
+function setSpecTarget() {
+  const link = document.getElementById("download-spec");
+  if (!(link instanceof HTMLAnchorElement)) return;
+  link.target = "_blank";
+  link.rel = "noopener";
+}
+
 setPaginationTicks();
+setSpecTarget();
 if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 window.radPageReadyFired = true;
 if (typeof radPageReady === "function") radPageReady();
