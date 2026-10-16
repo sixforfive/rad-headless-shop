@@ -590,6 +590,7 @@ html.is-leaving .gallery-full-screen.is-dimmed {
 
 #menu-open,
 #menu-close,
+#cart-title,
 #cart-open,
 #cart-close {
   grid-area: 1 / 1;
@@ -603,6 +604,7 @@ html.is-leaving .gallery-full-screen.is-dimmed {
 
 #menu-open.is-none,
 #menu-close.is-none,
+#cart-title.is-none,
 #cart-open.is-none,
 #cart-close.is-none {
   display: inline-flex;
@@ -611,8 +613,6 @@ html.is-leaving .gallery-full-screen.is-dimmed {
   transition: opacity 0.3s ease;
 }
 
-:has(> #menu-open.is-none):has(> #menu-close.is-none)
-  > :is(#menu-open, #menu-close),
 :has(> #cart-open.is-none):has(> #cart-close.is-none)
   > :is(#cart-open, #cart-close) {
   display: none;
@@ -861,10 +861,12 @@ html.is-dot-cursor * {
   .menu-link,
   #menu-open,
   #menu-close,
+  #cart-title,
   #cart-open,
   #cart-close,
   #menu-open.is-none,
   #menu-close.is-none,
+  #cart-title.is-none,
   #cart-open.is-none,
   #cart-close.is-none,
   [menu-reveal],
@@ -883,6 +885,7 @@ html.is-dot-cursor * {
 
   #menu-open,
   #menu-close,
+  #cart-title,
   #cart-open,
   #cart-close,
   .custom-cursor-label.is-in {
