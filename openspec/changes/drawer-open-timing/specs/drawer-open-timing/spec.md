@@ -28,7 +28,7 @@ When a drawer opens and the overlay was closed, the veil and the page dim SHALL 
 
 ### Requirement: Content starts after the shell
 
-When `.menu-drawer` opens, its reveal stages SHALL start `0.3s` after the open. When `.cart-drawer` opens and the cart has one or more lines, its title, row, subtotal, and bottom sequence SHALL start `0.45s` after the open. During that wait the content SHALL stay in its from-state. An empty cart SHALL fade the shell only. Opening one drawer while the other is already open SHALL still wait before the newly shown content starts: `0.3s` for the menu, `0.45s` for the cart. Reduced motion SHALL show the content at rest on the first frame, with no pause.
+When `.menu-drawer` opens, its reveal stages SHALL start `0.3s` after the open. When `.cart-drawer` opens and the cart has one or more lines, its title, row, subtotal, and bottom sequence SHALL start `0.45s` after the open. When the cart has no lines, `.empty-cart` and `.cart-bottom` SHALL fade in over `0.3s` with ease `ease-out`, starting `0.45s` after the open. During that wait the content SHALL stay in its from-state. Opening one drawer while the other is already open SHALL still wait before the newly shown content starts: `0.3s` for the menu, `0.45s` for the cart. Reduced motion SHALL show the content at rest on the first frame, with no pause.
 
 #### Scenario: Menu content waits
 
@@ -45,8 +45,8 @@ When `.menu-drawer` opens, its reveal stages SHALL start `0.3s` after the open. 
 #### Scenario: Empty cart
 
 - **WHEN** the cart has no lines and the visitor opens the cart
-- **THEN** the veil fades in
-- **AND** no title, row, subtotal, or bottom sequence runs
+- **THEN** `.empty-cart` starts fading in `0.45s` after the open
+- **AND** that fade takes `0.3s` with ease `ease-out`
 
 #### Scenario: Reduced motion open
 
@@ -56,7 +56,7 @@ When `.menu-drawer` opens, its reveal stages SHALL start `0.3s` after the open. 
 
 ### Requirement: Each close meets the end of its content
 
-When the menu closes from `#menu-close` or a click on the drawer backdrop, the veil SHALL start fading `0.6s` before the last line's transition ends. When a cart with lines closes from `#cart-close`, `#keep-shopping`, or a click on the drawer backdrop, the reverse sequence SHALL finish, then the veil SHALL start fading `0.3s` later. An empty cart SHALL fade the veil immediately. Reduced motion SHALL hide the drawer with no reverse and no pause. A menu link that starts a page leave SHALL fade the veil `0.6s` before the last line's transition ends.
+When the menu closes from `#menu-close` or a click on the drawer backdrop, the veil SHALL start fading `0.6s` before the last line's transition ends. When a cart with lines closes from `#cart-close`, `#keep-shopping`, or a click on the drawer backdrop, the reverse sequence SHALL finish, then the veil SHALL start fading `0.3s` later. When an empty cart closes, `.empty-cart` SHALL fade out over `0.3s` with ease `ease-out`, and the veil SHALL start when that fade ends. Reduced motion SHALL hide the drawer with no reverse and no pause. A menu link that starts a page leave SHALL fade the veil `0.6s` before the last line's transition ends.
 
 #### Scenario: Menu close
 
@@ -72,7 +72,8 @@ When the menu closes from `#menu-close` or a click on the drawer backdrop, the v
 #### Scenario: Empty cart close
 
 - **WHEN** the cart has no lines and the visitor closes the cart
-- **THEN** the veil fades out immediately
+- **THEN** `.empty-cart` fades out over `0.3s` with ease `ease-out`
+- **AND** the veil starts when that fade ends
 
 #### Scenario: Menu link leave
 

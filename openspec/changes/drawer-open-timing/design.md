@@ -14,7 +14,7 @@ See proposal.md. The shell and the two sequences live in `js/global.js` and `css
 
 - Cart row, title, and bottom-gap durations. They stay on their own constants.
 - `radMenuLeaveTo`. It already uses `MENU_LEAVE_TAIL_MS`.
-- Dim opacity targets. Empty-cart immediate fade. Reduced-motion snap.
+- Dim opacity targets. Reduced-motion snap.
 
 ## Decisions
 
@@ -28,7 +28,7 @@ const DRAWER_SHELL = 0.45;
 
 `CART_OPEN_GAP` and `CART_CLOSE_GAP` are gone. The menu open reads `DRAWER_OPEN_GAP`. The cart open reads `DRAWER_SHELL`. The cart close reads `DRAWER_CLOSE_GAP`. The menu close does not. Alternative considered: one gap for both drawers. Rejected — the menu's masked line ease already lands when the veil ends, and the cart's short ease does not.
 
-**The open wait is before `is-revealed`, not a delay baked into the stages.** `playMenuReveal(true)` splits, writes timing, flushes, then waits `DRAWER_OPEN_GAP * 1000`. `playCartReveal(true)` keeps its image wait, then waits `DRAWER_SHELL * 1000`. Each has a token. The timeout adds `is-revealed` only if the token and the active drawer still match. Reduced motion reveals in that same turn. Alternative considered: add the wait to every CSS delay. Rejected — the close reverse would sit still before the first line leaves.
+**The open wait is before `is-revealed`, not a delay baked into the stages.** `playMenuReveal(true)` splits, writes timing, flushes, then waits `DRAWER_OPEN_GAP * 1000`. `playCartReveal(true)` keeps its image wait, then waits `DRAWER_SHELL * 1000`. An empty cart skips the row sequence and uses that same wait, then fades `.empty-cart` over `CART_EMPTY_FADE` (`0.3s`) `ease-out`. On close the veil starts when that fade ends. Each has a token. The timeout adds `is-revealed` only if the token and the active drawer still match. Reduced motion reveals in that same turn. Alternative considered: add the wait to every CSS delay. Rejected — the close reverse would sit still before the first line leaves.
 
 **Menu close keeps the tail.** `closeDrawer` waits `menuRevealReverseMs() - MENU_LEAVE_TAIL_MS` before `fadeDrawerOut`. The cart branch waits `cartRevealReverseMs() + DRAWER_CLOSE_GAP * 1000`. Adding `DRAWER_CLOSE_GAP` after the menu reverse left a pause once the line was already clipped. Alternative considered: drive the menu link leave off `DRAWER_CLOSE_GAP`. Rejected — that sequence has to finish the page fade while the drawer is still opaque.
 

@@ -343,6 +343,25 @@ body * {
   transform: none;
 }
 
+.cart-drawer .empty-cart,
+.cart-drawer:not(:has(.cart-product:not([data-cart-line-template])))
+  .cart-bottom {
+  transition: opacity var(--cart-empty-duration, 0.3s) ease-out;
+}
+
+.cart-drawer:not(.is-revealed) .empty-cart,
+.cart-drawer:not(.is-revealed):not(
+    :has(.cart-product:not([data-cart-line-template]))
+  )
+  .cart-bottom {
+  opacity: 0;
+  transform: none;
+}
+
+.cart-drawer.is-revealed .empty-cart {
+  opacity: 1;
+}
+
 .cart-drawer .cart-prod-img_dummy {
   display: block;
 }
@@ -628,6 +647,11 @@ html.is-leaving .gallery-full-screen.is-dimmed {
 .layer.is-blend #add-to-cart,
 .layer.is-blend #quantity,
 .layer.is-blend .next-product {
+  pointer-events: auto;
+}
+
+/* Footer is click-through. The control, icon included, stays live. */
+.back-to-top {
   pointer-events: auto;
 }
 

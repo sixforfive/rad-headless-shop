@@ -8,7 +8,7 @@
  * showDrawerPanel — display:flex on the active drawer, none on the other
  * hideDrawerOverlay — display:none on wrapper and both drawers, unlock scroll
  * openDrawer — fade overlay in, or swap panel if the other is already open; is-hidden on notification
- * closeDrawer — menu or cart reverse, then fade the overlay; empty cart fades immediately
+ * closeDrawer — menu or cart reverse, then fade the overlay; empty cart fades its copy first
  * parseMenuReveal — menu-reveal value → { order, stagger, dir } or null
  * markMenuRevealFade — is-fade and is-from-up/down on order greater than 2
  * writeMenuRevealTiming — order 1 lines from the bottom, then order 2, then both order 3; reverse leaves 3 first
@@ -17,7 +17,7 @@
  * fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the veil
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state, waits DRAWER_OPEN_GAP, then adds is-revealed; closing removes it
- * playCartReveal — cart titles, rows, subtotal, and bottom on the cart clock; close reverses them
+ * playCartReveal — cart titles, rows, subtotal, and bottom on the cart clock; empty copy fades after the veil; close reverses them
  * snapCartReveal — rested row heights while .cart-drawer is already revealed, after images load
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
@@ -210,6 +210,7 @@ const CART_REVEAL_GAP = 0.3;
 const DRAWER_OPEN_GAP = 0.3;
 const DRAWER_CLOSE_GAP = 0.3;
 const DRAWER_SHELL = 0.45;
+const CART_EMPTY_FADE = 0.3;
 cartDrawer?.style.setProperty(
   "--cart-row-duration",
   `${CART_REVEAL_DURATION}s`,
@@ -217,6 +218,10 @@ cartDrawer?.style.setProperty(
 cartDrawer?.style.setProperty(
   "--cart-title-duration",
   `${CART_REVEAL_ORDER3_DURATION}s`,
+);
+cartDrawer?.style.setProperty(
+  "--cart-empty-duration",
+  `${CART_EMPTY_FADE}s`,
 );
 let cartRevealToken = 0;
 let menuRevealToken = 0;
@@ -560,7 +565,18 @@ function playCartReveal(opening) {
   if (!cartDrawer) return;
   cartRevealToken += 1;
   if (!cartLineCount()) {
+    const token = cartRevealToken;
     cartDrawer.classList.remove("is-revealed");
+    if (!opening) return;
+    const show = () => {
+      if (token !== cartRevealToken || activeDrawer !== "cart") return;
+      cartDrawer.classList.add("is-revealed");
+    };
+    if (prefersReducedMotion() || DRAWER_SHELL <= 0) {
+      show();
+      return;
+    }
+    setTimeout(show, DRAWER_SHELL * 1000);
     return;
   }
   if (opening) {
@@ -711,14 +727,17 @@ function closeDrawer(event) {
 
   const closingMenu = activeDrawer === "menu";
   const closingCart = activeDrawer === "cart" && cartLineCount() > 0;
+  const closingEmpty = activeDrawer === "cart" && !cartLineCount();
   if (closingMenu) playMenuReveal(false);
   if (activeDrawer === "cart") playCartReveal(false);
   activeDrawer = null;
-  if ((closingMenu || closingCart) && !prefersReducedMotion()) {
+  if ((closingMenu || closingCart || closingEmpty) && !prefersReducedMotion()) {
     clearMenuRevealHide();
     const wait = closingMenu
       ? menuRevealReverseMs() - MENU_LEAVE_TAIL_MS
-      : cartRevealReverseMs() + DRAWER_CLOSE_GAP * 1000;
+      : closingEmpty
+        ? CART_EMPTY_FADE * 1000
+        : cartRevealReverseMs() + DRAWER_CLOSE_GAP * 1000;
     menuRevealHideTimer = setTimeout(
       () => {
         menuRevealHideTimer = 0;
