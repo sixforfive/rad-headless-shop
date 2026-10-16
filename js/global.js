@@ -1,5 +1,6 @@
 /**
  * global.js — Site-wide behavior shared across all RAD pages.
+ * markWindows — html.is-windows when the visitor is on Windows
  * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
  * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none
  * storedLightsDark — true only when rad-lights is exactly "dark"
@@ -35,6 +36,17 @@
  * radMenuLeaveTo — menu reverses, page fades under the drawer, then the drawer fades, then go
  * interceptPageClicks — same-origin links run radLeaveTo; open-menu links run radMenuLeaveTo
  */
+
+/** markWindows — html.is-windows when the visitor is on Windows */
+function markWindows() {
+  const platform = navigator.userAgentData?.platform;
+  const windows =
+    platform === "Windows" ||
+    (platform == null && /Windows/i.test(navigator.userAgent));
+  if (windows) document.documentElement.classList.add("is-windows");
+}
+
+markWindows();
 
 const FAVICON_LIGHT =
   "https://cdn.prod.website-files.com/6a4bd14da2579cbf8be38a10/6a8ad061ef4915729a2a15d5_daa2da18df75b26e9f2a004232412d6e_dot_light_circ.png";
