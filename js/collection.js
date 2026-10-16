@@ -7,7 +7,8 @@
  * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
  * preloadTextures() -> fetch light and dark srcs
  * bootInfiniteGallery() -> mount canvas or no-op
- * advanceReveal(now, dt) -> fade a decoded image in after its random delay; scale 0.98 to 1 with reveal
+ * galleryFrozen() -> drawer overlay is display grid
+ * advanceReveal(dt) -> each plane fades in after its own random wait; scale 0.98 to 1 with reveal
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
  * wrapDelta(d, period) -> shortest torus delta
@@ -279,9 +280,6 @@ let pointerNdc = null;
 let planeGeometry = null;
 let textureLoader = null;
 let textureCache = null;
-const revealAt = new Map();
-const revealElapsed = new Map();
-const revealStepped = new Set();
 const gpuQueue = [];
 let planeMeshes = null;
 let controller = null;
@@ -291,6 +289,8 @@ let isTouchDevice = false;
 let rafId = 0;
 let hoveredMesh = null;
 let lastTick = 0;
+let drawerEl = null;
+let frozenAt = null;
 const themeBg = new THREE.Color(1, 1, 1);
 const modeMix = { value: 0 };
 let awaitingFade = false;
@@ -829,39 +829,42 @@ function onTouchMove(event) {
   event.preventDefault();
 }
 
-/** advanceReveal(now, dt) -> fade a decoded image in after its random delay; scale 0.98 to 1 with reveal */
-function advanceReveal(now, dt) {
+/** galleryFrozen() -> drawer overlay is display grid */
+function galleryFrozen() {
+  if (!drawerEl) drawerEl = document.querySelector(".drawer-wrapper");
+  return Boolean(drawerEl && drawerEl.style.display === "grid");
+}
+
+/** advanceReveal(dt) -> each plane fades in after its own random wait; scale 0.98 to 1 with reveal */
+function advanceReveal(dt) {
   if (!planeMeshes) return;
   const step = Math.min(dt, REVEAL_STEP_MS);
-  revealStepped.clear();
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
-    const url = urlForIndex(mesh.userData.mediaIndex);
+    const data = mesh.userData;
+    const url = urlForIndex(data.mediaIndex);
     const texture = getTexture(url);
     if (!textureReady(texture) || !texture.userData.onGpu) continue;
     fitPlaneScale(mesh, texture);
-    if (!reduceMotion && mesh.userData.reveal < 1) {
-      if (!revealAt.has(url)) {
-        const wave = Math.floor(Math.random() * 4) / 4;
-        const wait = (wave + Math.random() * 0.08) * REVEAL_DELAY_MS;
-        revealAt.set(url, now + REVEAL_MIN_MS + wait);
-      } else {
-        const start = revealAt.get(url);
-        if (now >= start) {
-          if (!revealStepped.has(url)) {
-            revealElapsed.set(url, (revealElapsed.get(url) || 0) + step);
-            revealStepped.add(url);
-          }
-          const elapsed = revealElapsed.get(url) || 0;
-          const t = themeEaseOut(clamp(elapsed / REVEAL_FADE_MS, 0, 1));
-          if (t > mesh.userData.reveal) mesh.userData.reveal = t;
-          mesh.material.opacity = mesh.userData.reveal;
-        }
+    if (reduceMotion) {
+      data.reveal = 1;
+      mesh.material.opacity = 1;
+    } else if (data.reveal < 1) {
+      if (data.revealWait == null) {
+        data.revealWait = REVEAL_MIN_MS + Math.random() * REVEAL_DELAY_MS;
       }
-    } else if (!reduceMotion) {
+      if (data.revealWait > 0) {
+        data.revealWait = Math.max(0, data.revealWait - step);
+      } else {
+        data.revealElapsed = (data.revealElapsed || 0) + step;
+        const t = themeEaseOut(clamp(data.revealElapsed / REVEAL_FADE_MS, 0, 1));
+        if (t > data.reveal) data.reveal = t;
+        mesh.material.opacity = data.reveal;
+      }
+    } else {
       mesh.material.opacity = 1;
     }
-    const pop = reduceMotion ? 1 : 0.98 + 0.02 * (mesh.userData.reveal || 0);
+    const pop = reduceMotion ? 1 : 0.98 + 0.02 * (data.reveal || 0);
     mesh.scale.x *= pop;
     mesh.scale.y *= pop;
   }
@@ -870,6 +873,21 @@ function advanceReveal(now, dt) {
 function tick(now) {
   rafId = requestAnimationFrame(tick);
   const dt = lastTick ? Math.min(now - lastTick, 50) : 16;
+  const frozen = galleryFrozen();
+  if (frozen) {
+    lastTick = now;
+    if (frozenAt == null) frozenAt = now;
+    const held = controller;
+    held.velocity.x = 0;
+    held.velocity.y = 0;
+    held.targetVel.x = 0;
+    held.targetVel.y = 0;
+    return;
+  }
+  if (frozenAt != null) {
+    if (modeFade) modeFade.start += now - frozenAt;
+    frozenAt = null;
+  }
   lastTick = now;
   const s = controller;
   reduceMotion = prefersReducedMotion();
@@ -905,7 +923,7 @@ function tick(now) {
   camera.position.set(PERIOD_W / 2 + s.drift.x, PERIOD_H / 2 + s.drift.y, 10);
   placeCopies();
   flushGpuQueue();
-  advanceReveal(now, dt);
+  advanceReveal(dt);
   applyHoverDim(dt);
   advanceModeFade(now);
 
