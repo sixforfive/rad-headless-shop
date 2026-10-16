@@ -204,11 +204,11 @@ const MENU_REVEAL_DURATION = 1.47;
 const MENU_REVEAL_ORDER3_DURATION = 0.3;
 const MENU_REVEAL_LINE_STEP = 0.07;
 const MENU_LEAVE_TAIL_MS = 600;
-const CART_REVEAL_DURATION = 0.75;
+const CART_REVEAL_DURATION = 0.6;
 const CART_REVEAL_ORDER3_DURATION = 0.15;
-const CART_REVEAL_GAP = 0.375;
-const CART_OPEN_GAP = 0.375;
-const CART_CLOSE_GAP = 0.375;
+const CART_REVEAL_GAP = 0.3;
+const CART_OPEN_GAP = 0.3;
+const CART_CLOSE_GAP = 0.3;
 cartDrawer?.style.setProperty(
   "--cart-row-duration",
   `${CART_REVEAL_DURATION}s`,
