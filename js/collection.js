@@ -65,8 +65,8 @@ const SHOP_CURSOR = "[SHOP COLLECTION]";
 const HOVER_DIM = 0.5;
 const HOVER_FADE_MS = 300;
 const THEME_FADE_MS = 450;
-const REVEAL_MIN_MS = 0;
-const REVEAL_DELAY_MS = 2400;
+const REVEAL_MIN_MS = 150;
+const REVEAL_DELAY_MS = 1800;
 const REVEAL_FADE_MS = 300;
 const REVEAL_STEP_MS = 16;
 
@@ -848,7 +848,9 @@ function advanceReveal(dt) {
         data.revealWait = Math.max(0, data.revealWait - step);
       } else {
         data.revealElapsed = (data.revealElapsed || 0) + step;
-        const t = themeEaseOut(clamp(data.revealElapsed / REVEAL_FADE_MS, 0, 1));
+        const t = themeEaseOut(
+          clamp(data.revealElapsed / REVEAL_FADE_MS, 0, 1),
+        );
         if (t > data.reveal) data.reveal = t;
         mesh.material.opacity = data.reveal;
       }
