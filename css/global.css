@@ -46,12 +46,11 @@ html.lenis:not(.lenis-stopped) body {
   mix-blend-mode: difference;
 }
 
-/* Windows: 2× type scaled to 1×. DirectWrite stem darkening is a fixed pixel amount. */
+/* Windows: lay the bar out at 2×, then scale to 1×. Child sizes are rem, so 2em never reached them. */
 html.is-windows .navbar {
-  font-size: 2em;
+  zoom: 2;
   transform: scale(0.5);
   transform-origin: left top;
-  width: 200%;
 }
 
 /* Drawer open: drop difference so links stay readable on the overlay. */
