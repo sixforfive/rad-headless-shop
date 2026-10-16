@@ -299,7 +299,9 @@ function readQuantity(wrapper) {
 
 /** lineSku — variant sku or product title from a cart line */
 function lineSku(line) {
-  return String(line?.merchandise?.sku || line?.merchandise?.product?.title || "").trim();
+  return String(
+    line?.merchandise?.sku || line?.merchandise?.product?.title || "",
+  ).trim();
 }
 
 /** addCartLines — userErrors come back in data, not as GraphQL errors */
@@ -368,7 +370,8 @@ async function updateCartLine(lineId, quantity) {
   if (payload?.userErrors?.length) {
     const kind = errorKind(payload.userErrors, "update");
     if (kind === "stock") {
-      const line = lineById(payload.cart, lineId) || lineById(restoredCart, lineId);
+      const line =
+        lineById(payload.cart, lineId) || lineById(restoredCart, lineId);
       return {
         cart: "",
         kind,
@@ -583,7 +586,9 @@ function showCartError(root, kind, skus, stockLeft) {
     }
     const slot = node.querySelector(".error-item-select");
     if (slot && skuText) {
-      slot.textContent = skuText.startsWith("[") ? skuText : "[" + skuText + "]";
+      slot.textContent = skuText.startsWith("[")
+        ? skuText
+        : "[" + skuText + "]";
     }
   } else if (
     root.classList.contains("cart-drawer") &&
@@ -755,10 +760,8 @@ async function onCartRemove(event) {
       return;
     }
     row.style.setProperty("--menu-reveal-delay", "0s");
-    row.style.setProperty("--menu-reveal-duration", "0.735s");
     row.querySelectorAll(".menu-reveal-line-inner").forEach((el) => {
       el.style.setProperty("--menu-reveal-delay", "0s");
-      el.style.setProperty("--menu-reveal-duration", "0.735s");
     });
     row.classList.add("is-removing");
     await waitCartRowCollapse(row);

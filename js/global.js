@@ -17,7 +17,7 @@
  * fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the blur
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
- * playCartReveal — cart titles, rows, subtotal, and bottom on the menu clocks; close reverses them
+ * playCartReveal — cart titles, rows, subtotal, and bottom on the cart clock; close reverses them
  * snapCartReveal — rested row heights while .cart-drawer is already revealed, after images load
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
@@ -162,7 +162,7 @@ function saveNotificationPhase() {
   if (transform && transform !== "none") {
     x = new DOMMatrix(transform).m41;
   }
-  const p = (((-x) / (width / 3)) % 1 + 1) % 1;
+  const p = (((-x / (width / 3)) % 1) + 1) % 1;
   let r = 1;
   item.getAnimations().forEach((animation) => {
     if (animation.animationName === "notification-marquee") {
@@ -204,10 +204,19 @@ const MENU_REVEAL_DURATION = 1.47;
 const MENU_REVEAL_ORDER3_DURATION = 0.3;
 const MENU_REVEAL_LINE_STEP = 0.07;
 const MENU_LEAVE_TAIL_MS = 600;
-const CART_REVEAL_DURATION = MENU_REVEAL_DURATION / 2;
-const CART_REVEAL_ORDER3_DURATION = MENU_REVEAL_ORDER3_DURATION / 2;
+const CART_REVEAL_DURATION = 0.375;
+const CART_REVEAL_ORDER3_DURATION = 0.15;
 const CART_REVEAL_GAP = 0.375;
-const CART_LEAVE_TAIL_MS = MENU_LEAVE_TAIL_MS / 2;
+const CART_OPEN_GAP = 0;
+const CART_CLOSE_GAP = 0;
+cartDrawer?.style.setProperty(
+  "--cart-row-duration",
+  `${CART_REVEAL_DURATION}s`,
+);
+cartDrawer?.style.setProperty(
+  "--cart-title-duration",
+  `${CART_REVEAL_ORDER3_DURATION}s`,
+);
 let cartRevealToken = 0;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
@@ -484,7 +493,8 @@ function writeCartRevealTiming(opening) {
     subtotal.forEach((el) =>
       setRevealTiming(el, subtotalStart, CART_REVEAL_DURATION),
     );
-    if (bottom) setRevealTiming(bottom, subtotalStart + CART_REVEAL_GAP, titleDur);
+    if (bottom)
+      setRevealTiming(bottom, subtotalStart + CART_REVEAL_GAP, titleDur);
     return;
   }
   let t = 0;
@@ -539,14 +549,25 @@ function playCartReveal(opening) {
       cartDrawer.classList.add("is-revealed");
       return;
     }
+    const arm = () => {
+      const start = () => {
+        if (token !== cartRevealToken || activeDrawer !== "cart") return;
+        startCartReveal();
+      };
+      if (CART_OPEN_GAP <= 0) {
+        start();
+        return;
+      }
+      setTimeout(start, CART_OPEN_GAP * 1000);
+    };
     const wait = whenCartRowsReady(cartProductRows());
     if (!wait) {
-      startCartReveal();
+      arm();
       return;
     }
     wait.then(() => {
       if (token !== cartRevealToken || activeDrawer !== "cart") return;
-      startCartReveal();
+      arm();
     });
     return;
   }
@@ -677,12 +698,15 @@ function closeDrawer(event) {
     clearMenuRevealHide();
     const wait = closingMenu
       ? menuRevealReverseMs() - MENU_LEAVE_TAIL_MS
-      : cartRevealReverseMs() - CART_LEAVE_TAIL_MS;
-    menuRevealHideTimer = setTimeout(() => {
-      menuRevealHideTimer = 0;
-      if (activeDrawer !== null) return;
-      fadeDrawerOut();
-    }, Math.max(0, wait));
+      : cartRevealReverseMs() + CART_CLOSE_GAP * 1000;
+    menuRevealHideTimer = setTimeout(
+      () => {
+        menuRevealHideTimer = 0;
+        if (activeDrawer !== null) return;
+        fadeDrawerOut();
+      },
+      Math.max(0, wait),
+    );
     return;
   }
   fadeDrawerOut();

@@ -303,15 +303,15 @@ body * {
   transform: translateY(0);
 }
 
-/* Cart open uses the menu clocks. is-revealed is the rest state. */
+/* Cart open uses the cart clock. is-revealed is the rest state. */
 .cart-list-titles,
 .cart-bottom {
   --menu-reveal-distance: 4px;
   --menu-reveal-ease: ease-out;
   transition:
-    transform var(--menu-reveal-duration, 0.15s) var(--menu-reveal-ease)
+    transform var(--cart-title-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
-    opacity var(--menu-reveal-duration, 0.15s) var(--menu-reveal-ease)
+    opacity var(--cart-title-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s);
 }
 
@@ -336,6 +336,17 @@ body * {
 
 .cart-drawer .cart-prod-img_dummy {
   display: block;
+}
+
+.cart-drawer .menu-reveal-line-inner {
+  transition:
+    transform var(--cart-row-duration) var(--menu-reveal-ease)
+      var(--menu-reveal-delay, 0s),
+    opacity var(--cart-row-duration) var(--menu-reveal-ease)
+      var(--menu-reveal-delay, 0s),
+    background-color 0.45s ease-out,
+    color 0.45s ease-out,
+    border-color 0.45s ease-out;
 }
 
 .cart-drawer.is-revealed .menu-reveal-line-inner {
@@ -379,11 +390,11 @@ body * {
   padding-bottom: 0;
   --menu-reveal-ease: cubic-bezier(0.62, 0.05, 0.01, 0.99);
   transition:
-    height var(--menu-reveal-duration, 0.735s) var(--menu-reveal-ease)
+    height var(--cart-row-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
-    padding-bottom var(--menu-reveal-duration, 0.735s) var(--menu-reveal-ease)
+    padding-bottom var(--cart-row-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
-    border-top-width var(--menu-reveal-duration, 0.735s) var(--menu-reveal-ease)
+    border-top-width var(--cart-row-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s);
 }
 
