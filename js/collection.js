@@ -66,7 +66,7 @@ const HOVER_DIM = 0.5;
 const HOVER_FADE_MS = 300;
 const THEME_FADE_MS = 450;
 const REVEAL_MIN_MS = 0;
-const REVEAL_DELAY_MS = 1800;
+const REVEAL_DELAY_MS = 1200;
 const REVEAL_FADE_MS = 300;
 const REVEAL_STEP_MS = 16;
 
