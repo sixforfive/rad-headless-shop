@@ -108,7 +108,7 @@ async function hydrateVariants() {
     return;
   }
 
-  wrappers.forEach((wrapper) => {
+  document.querySelectorAll("[data-variant-id]").forEach((wrapper) => {
     const variant = variants.get(toGid(wrapper.dataset.variantId));
     if (variant) applyVariant(wrapper, variant);
   });
