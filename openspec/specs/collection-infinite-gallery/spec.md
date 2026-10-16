@@ -233,7 +233,7 @@ On a fine pointer, while the pointer is over an image plane, the canvas SHALL ca
 
 ### Requirement: Each hero image fades in when decoded
 
-On `/`, each placed plane SHALL start invisible and at `0.98` of its fitted size. Decoded images SHALL be uploaded to the GPU one per frame, current mode first. A plane SHALL stay invisible until that upload has happened. After the upload, that plane SHALL wait its own random time of at most `2400ms`, drawn independently of every other plane, then fade to opaque and scale to its fitted size. The fade and the scale SHALL take `300ms` of frame time, SHALL advance by at most `16ms` on a frame, SHALL use ease-out, and SHALL run together. A frame longer than `16ms` SHALL NOT skip the fade ahead. A period copy of an image SHALL NOT share its wait or its fade with another copy of that image, including another tile that shows the same image. An image that has not been uploaded SHALL stay invisible and SHALL NOT block planes whose image has been uploaded. `.collection-hero-logo` SHALL fade in when the page becomes ready, over `0.3s` ease-out, and SHALL NOT move. That fade SHALL NOT wait for hero images to decode, and a hero image fading in SHALL NOT start another fade on the logo. The canvas SHALL be visible while tiles are still arriving.
+On `/`, each placed plane SHALL start invisible and at `0.98` of its fitted size. Decoded images SHALL be uploaded to the GPU one per frame, current mode first. A plane SHALL stay invisible until that upload has happened. After the upload, that plane SHALL wait its own random time of at most `1200ms`, drawn independently of every other plane, then fade to opaque and scale to its fitted size. The fade and the scale SHALL take `300ms` of frame time, SHALL advance by at most `16ms` on a frame, SHALL use ease-out, and SHALL run together. A frame longer than `16ms` SHALL NOT skip the fade ahead. A period copy of an image SHALL NOT share its wait or its fade with another copy of that image, including another tile that shows the same image. An image that has not been uploaded SHALL stay invisible and SHALL NOT block planes whose image has been uploaded. `.collection-hero-logo` SHALL fade in when the page becomes ready, over `0.3s` ease-out, and SHALL NOT move. That fade SHALL NOT wait for hero images to decode, and a hero image fading in SHALL NOT start another fade on the logo. The canvas SHALL be visible while tiles are still arriving.
 
 #### Scenario: One plane arrives
 
@@ -244,7 +244,7 @@ On `/`, each placed plane SHALL start invisible and at `0.98` of its fitted size
 #### Scenario: Copies do not share a wait
 
 - **WHEN** two planes show the same hero image and both images have been uploaded
-- **THEN** each plane waits its own random time of at most `2400ms`
+- **THEN** each plane waits its own random time of at most `1200ms`
 - **AND** one plane's fade does not set the other plane's opacity
 
 #### Scenario: A stuck file does not block the rest
