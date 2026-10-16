@@ -46,11 +46,9 @@ html.lenis:not(.lenis-stopped) body {
   mix-blend-mode: difference;
 }
 
-/* Windows: lay the bar out at 2×, then scale to 1×. Child sizes are rem, so 2em never reached them. */
+/* Windows: hairline stroke eats the glyph edge. Black is a no-op while difference blend is on. */
 html.is-windows .navbar {
-  zoom: 2;
-  transform: scale(0.5);
-  transform-origin: left top;
+  -webkit-text-stroke: 0.35px #000;
 }
 
 /* Drawer open: drop difference so links stay readable on the overlay. */
