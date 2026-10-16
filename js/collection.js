@@ -7,7 +7,6 @@
  * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
  * preloadTextures() -> fetch light and dark srcs
  * bootInfiniteGallery() -> mount canvas or no-op
- * galleryFrozen() -> drawer overlay is display grid
  * advanceReveal(dt) -> each plane fades in after its own random wait; scale 0.98 to 1 with reveal
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
@@ -289,8 +288,6 @@ let isTouchDevice = false;
 let rafId = 0;
 let hoveredMesh = null;
 let lastTick = 0;
-let drawerEl = null;
-let frozenAt = null;
 const themeBg = new THREE.Color(1, 1, 1);
 const modeMix = { value: 0 };
 let awaitingFade = false;
@@ -829,12 +826,6 @@ function onTouchMove(event) {
   event.preventDefault();
 }
 
-/** galleryFrozen() -> drawer overlay is display grid */
-function galleryFrozen() {
-  if (!drawerEl) drawerEl = document.querySelector(".drawer-wrapper");
-  return Boolean(drawerEl && drawerEl.style.display === "grid");
-}
-
 /** advanceReveal(dt) -> each plane fades in after its own random wait; scale 0.98 to 1 with reveal */
 function advanceReveal(dt) {
   if (!planeMeshes) return;
@@ -873,21 +864,6 @@ function advanceReveal(dt) {
 function tick(now) {
   rafId = requestAnimationFrame(tick);
   const dt = lastTick ? Math.min(now - lastTick, 50) : 16;
-  const frozen = galleryFrozen();
-  if (frozen) {
-    lastTick = now;
-    if (frozenAt == null) frozenAt = now;
-    const held = controller;
-    held.velocity.x = 0;
-    held.velocity.y = 0;
-    held.targetVel.x = 0;
-    held.targetVel.y = 0;
-    return;
-  }
-  if (frozenAt != null) {
-    if (modeFade) modeFade.start += now - frozenAt;
-    frozenAt = null;
-  }
   lastTick = now;
   const s = controller;
   reduceMotion = prefersReducedMotion();
