@@ -37,7 +37,6 @@ html.lenis:not(.lenis-stopped) body {
 .layer.is-blend {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: geometricPrecision;
 }
 
 .navbar,
@@ -46,9 +45,10 @@ html.lenis:not(.lenis-stopped) body {
   mix-blend-mode: difference;
 }
 
-/* Windows: hairline stroke eats the glyph edge. Black is a no-op while difference blend is on. */
-html.is-windows .navbar {
-  -webkit-text-stroke: 0.35px #000;
+/* Windows: Regular cut of Unica and Geist. Medium is what DirectWrite draws heavy. */
+html.is-windows .navbar,
+html.is-windows .navbar * {
+  font-weight: 400;
 }
 
 /* Drawer open: drop difference so links stay readable on the overlay. */
@@ -722,7 +722,6 @@ html.is-full-screen .gallery-full-screen {
     mix-blend-mode: difference;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: geometricPrecision;
   }
 }
 
@@ -813,7 +812,6 @@ body.is-scroll-locked {
   mix-blend-mode: difference;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: geometricPrecision;
   opacity: 0;
   transition: opacity 0.15s ease-out;
 }

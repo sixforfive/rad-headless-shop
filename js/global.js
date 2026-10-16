@@ -1,6 +1,6 @@
 /**
  * global.js — Site-wide behavior shared across all RAD pages.
- * markWindows — html.is-windows when the visitor is on Windows
+ * markWindows — html.is-windows so the navbar can use the regular cut
  * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
  * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none
  * storedLightsDark — true only when rad-lights is exactly "dark"
@@ -37,7 +37,7 @@
  * interceptPageClicks — same-origin links run radLeaveTo; open-menu links run radMenuLeaveTo
  */
 
-/** markWindows — html.is-windows when the visitor is on Windows */
+/** markWindows — html.is-windows so the navbar can use the regular cut */
 function markWindows() {
   const platform = navigator.userAgentData?.platform;
   const windows =
