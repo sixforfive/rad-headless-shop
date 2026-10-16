@@ -476,6 +476,8 @@ function writeCartRevealTiming(opening) {
   const rows = cartProductRows();
   const n = rows.length;
   const titles = cartDrawer.querySelector(".cart-list-titles");
+  const list = cartDrawer.querySelector(".cart-list");
+  const summary = cartDrawer.querySelector(".cart-summary");
   const bottom = cartDrawer.querySelector(".cart-bottom");
   const subtotal = [
     ...cartDrawer.querySelectorAll(".cart-summary .menu-reveal-line-inner"),
@@ -484,6 +486,13 @@ function writeCartRevealTiming(opening) {
   const subtotalStart = titleDur + n * CART_REVEAL_DURATION;
   if (opening) {
     if (titles) setRevealTiming(titles, 0);
+    if (list) setRevealTiming(list, 0);
+    if (summary) {
+      setRevealTiming(
+        summary,
+        titleDur + Math.max(0, n - 1) * CART_REVEAL_DURATION,
+      );
+    }
     rows.forEach((row, i) => {
       const start = titleDur + i * CART_REVEAL_DURATION;
       setRevealTiming(row, start);
@@ -500,6 +509,7 @@ function writeCartRevealTiming(opening) {
   t += titleDur;
   subtotal.forEach((el) => setRevealTiming(el, t));
   t += CART_REVEAL_DURATION;
+  const lastRowStart = t;
   for (let i = n - 1; i >= 0; i -= 1) {
     setRevealTiming(rows[i], t);
     rows[i]
@@ -507,6 +517,8 @@ function writeCartRevealTiming(opening) {
       .forEach((el) => setRevealTiming(el, t));
     t += CART_REVEAL_DURATION;
   }
+  if (summary) setRevealTiming(summary, lastRowStart);
+  if (list) setRevealTiming(list, t);
   if (titles) setRevealTiming(titles, t);
 }
 

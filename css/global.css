@@ -304,7 +304,7 @@ body * {
 }
 
 /* Cart open uses the cart clock. is-revealed is the rest state. */
-.cart-list-titles,
+.cart-list,
 .cart-bottom {
   --menu-reveal-distance: 4px;
   --menu-reveal-ease: ease-out;
@@ -315,7 +315,7 @@ body * {
       var(--menu-reveal-delay, 0s);
 }
 
-.cart-drawer:not(.is-revealed) .cart-list-titles {
+.cart-drawer:not(.is-revealed) .cart-list {
   opacity: 0;
   transform: translateY(calc(var(--menu-reveal-distance) * -1));
 }
@@ -328,7 +328,7 @@ body * {
   transform: translateY(var(--menu-reveal-distance));
 }
 
-.cart-drawer.is-revealed .cart-list-titles,
+.cart-drawer.is-revealed .cart-list,
 .cart-drawer.is-revealed .cart-bottom {
   opacity: 1;
   transform: none;
@@ -395,12 +395,38 @@ body * {
     padding-bottom var(--cart-row-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
     border-top-width var(--cart-row-duration) var(--menu-reveal-ease)
+      var(--menu-reveal-delay, 0s),
+    margin-top var(--cart-row-duration) var(--menu-reveal-ease)
+      var(--menu-reveal-delay, 0s);
+}
+
+.cart-drawer
+  .cart-product:not([data-cart-line-template])
+  + .cart-product:not([data-cart-line-template]) {
+  margin-top: -1px;
+}
+
+.cart-drawer.is-revealed
+  .cart-product:not([data-cart-line-template])
+  + .cart-product:not([data-cart-line-template]) {
+  margin-top: 0;
+}
+
+.cart-drawer .cart-summary {
+  margin-top: -1px;
+  --menu-reveal-ease: cubic-bezier(0.62, 0.05, 0.01, 0.99);
+  transition:
+    margin-top var(--cart-row-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s);
 }
 
 .cart-drawer.is-revealed .cart-product:not([data-cart-line-template]) {
   height: var(--cart-row-h, auto);
   padding-bottom: var(--_layout---spacing--space-100);
+}
+
+.cart-drawer.is-revealed .cart-summary {
+  margin-top: 0;
 }
 
 .cart-drawer.is-revealed .cart-product.is-removing .menu-reveal-line-inner {
@@ -796,6 +822,7 @@ html.is-dot-cursor * {
   [menu-reveal].is-from-up,
   [menu-reveal].is-from-down,
   [menu-reveal] .menu-reveal-line-inner,
+  .cart-list,
   .cart-list-titles,
   .cart-bottom,
   .cart-drawer .menu-reveal-line-inner {
@@ -829,6 +856,7 @@ html.is-dot-cursor * {
   #cart-close.is-none,
   [menu-reveal],
   .menu-reveal-line-inner,
+  .cart-list,
   .cart-list-titles,
   .cart-bottom,
   .cart-prod-img_dummy,
