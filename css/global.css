@@ -232,19 +232,31 @@ body * {
   display: none;
 }
 
-/* Overlay fades in; backdrop blur ramps on its own. JS toggles the is-* classes. */
+/* Overlay fades in. Blur lives on ::before so a child transform cannot restart it. */
 .drawer-wrapper {
   opacity: 0;
+  isolation: isolate;
+  transition: opacity 0.45s ease;
+}
+
+.drawer-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   -webkit-backdrop-filter: blur(0px);
   backdrop-filter: blur(0px);
   transition:
-    opacity 0.45s ease,
     backdrop-filter 0.9s ease,
     -webkit-backdrop-filter 0.9s ease;
 }
 
 .drawer-wrapper.is-visible {
   opacity: 1;
+}
+
+.drawer-wrapper.is-visible::before {
   -webkit-backdrop-filter: blur(32px);
   backdrop-filter: blur(32px);
 }
@@ -830,6 +842,7 @@ html.is-dot-cursor * {
   }
 
   .drawer-wrapper,
+  .drawer-wrapper::before,
   html,
   .main-wrapper,
   :has(> .collection-hero-logo) > :not(.collection-hero-logo),
