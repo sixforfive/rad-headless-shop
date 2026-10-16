@@ -45,12 +45,6 @@ html.lenis:not(.lenis-stopped) body {
   mix-blend-mode: difference;
 }
 
-/* Windows: Regular cut of Unica and Geist. Medium is what DirectWrite draws heavy. */
-html.is-windows .navbar,
-html.is-windows .navbar * {
-  font-weight: 400;
-}
-
 /* Drawer open: drop difference so links stay readable on the overlay. */
 .navbar.is-normal {
   mix-blend-mode: normal;
