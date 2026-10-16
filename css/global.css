@@ -37,6 +37,7 @@ html.lenis:not(.lenis-stopped) body {
 .layer.is-blend {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
 }
 
 .navbar,
@@ -716,6 +717,7 @@ html.is-full-screen .gallery-full-screen {
     mix-blend-mode: difference;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
   }
 }
 
@@ -806,6 +808,7 @@ body.is-scroll-locked {
   mix-blend-mode: difference;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
   opacity: 0;
   transition: opacity 0.15s ease-out;
 }
