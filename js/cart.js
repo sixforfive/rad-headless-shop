@@ -13,7 +13,7 @@
  * undoStockClamp — remove a new line or set qty back after Shopify caps stock
  * addCartLines — cartLinesAdd → { cart, kind }; stock cap → undo, kind stock
  * fillLine — sku, image, line id, qty, line price into a cloned row; sku and price keep a reveal mask
- * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty; snap rows when the cart is already revealed
+ * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty; snap rows when the cart is already revealed; fade .empty-cart after the last line
  * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer
  * showCartError — lift is-none, reflow, is-visible on #error-${kind}; stock writes .error-stock-lead + SKU; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
  * setCartBusy — cartBusy flag, aria-busy on add/qty/remove/#checkout-btn, PROCESSING on add/checkout
@@ -473,7 +473,7 @@ function fillLine(el, line) {
   );
 }
 
-/** renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty; snap when already revealed */
+/** renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty; snap when already revealed; fade .empty-cart after the last line */
 function renderCart(cart) {
   if (cart?.id) restoredCart = cart;
   document.querySelectorAll("[data-cart-count]").forEach((el) => {
@@ -488,6 +488,9 @@ function renderCart(cart) {
   const revealed = document
     .querySelector(".cart-drawer")
     ?.classList.contains("is-revealed");
+  const hadLines = Boolean(
+    list?.querySelector(".cart-product:not([data-cart-line-template])"),
+  );
 
   list
     ?.querySelectorAll(".cart-product:not([data-cart-line-template])")
@@ -499,9 +502,13 @@ function renderCart(cart) {
     if (empty) empty.style.display = "flex";
     if (list) list.style.display = "none";
     if (checkoutBtn) checkoutBtn.style.display = "none";
+    if (revealed && hadLines && typeof fadeEmptyCart === "function") {
+      fadeEmptyCart();
+    }
     return;
   }
 
+  if (typeof clearEmptyCartFade === "function") clearEmptyCartFade();
   if (empty) empty.style.display = "none";
   if (list) list.style.display = "flex";
   if (checkoutBtn) checkoutBtn.style.display = "";

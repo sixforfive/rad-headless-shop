@@ -18,6 +18,8 @@
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state, waits DRAWER_OPEN_GAP, then adds is-revealed; closing removes it
  * playCartReveal — cart titles, rows, subtotal, and bottom on the cart clock; empty copy fades after the veil; close reverses them
+ * clearEmptyCartFade — drop a pending empty fade and clear inline opacity on .empty-cart
+ * fadeEmptyCart — after the last line, wait DRAWER_SHELL, then fade .empty-cart on the empty-open clocks
  * snapCartReveal — rested row heights while .cart-drawer is already revealed, after images load
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
  * setMarqueeRate — playbackRate on .notification-item (30/45 hover, 1 leave)
@@ -224,6 +226,7 @@ cartDrawer?.style.setProperty(
   `${CART_EMPTY_FADE}s`,
 );
 let cartRevealToken = 0;
+let emptyCartFadeToken = 0;
 let menuRevealToken = 0;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
@@ -560,10 +563,48 @@ function startCartReveal() {
   cartDrawer.classList.add("is-revealed");
 }
 
+/** clearEmptyCartFade — drop a pending empty fade and clear inline opacity on .empty-cart */
+function clearEmptyCartFade() {
+  emptyCartFadeToken += 1;
+  const empty = document.querySelector(".empty-cart");
+  if (!empty) return;
+  empty.style.opacity = "";
+  empty.style.transition = "";
+}
+
+/** fadeEmptyCart — snap .empty-cart to 0, wait DRAWER_SHELL, then let the empty-open fade run */
+function fadeEmptyCart() {
+  const empty = document.querySelector(".empty-cart");
+  if (!empty || !cartDrawer) return;
+  emptyCartFadeToken += 1;
+  if (prefersReducedMotion()) {
+    empty.style.opacity = "";
+    empty.style.transition = "";
+    return;
+  }
+  const token = emptyCartFadeToken;
+  empty.style.transition = "none";
+  empty.style.opacity = "0";
+  void empty.offsetWidth;
+  empty.style.transition = "";
+  const release = () => {
+    if (token !== emptyCartFadeToken) return;
+    if (!cartDrawer.classList.contains("is-revealed")) return;
+    if (cartLineCount()) return;
+    empty.style.opacity = "";
+  };
+  if (DRAWER_SHELL <= 0) {
+    release();
+    return;
+  }
+  setTimeout(release, DRAWER_SHELL * 1000);
+}
+
 /** playCartReveal — opening flushes the from-state then adds is-revealed; closing removes it */
 function playCartReveal(opening) {
   if (!cartDrawer) return;
   cartRevealToken += 1;
+  clearEmptyCartFade();
   if (!cartLineCount()) {
     const token = cartRevealToken;
     cartDrawer.classList.remove("is-revealed");
