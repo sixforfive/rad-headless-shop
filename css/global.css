@@ -232,11 +232,14 @@ body * {
   display: none;
 }
 
-/* Overlay fades in. Blur lives on ::before so a child transform cannot restart it. */
+/* Veil fades. The blur radius stays at 32px. Wrapper opacity snaps so it does not fade on top of the veil. */
 .drawer-wrapper {
   opacity: 0;
   isolation: isolate;
-  transition: opacity 0.45s ease-out;
+}
+
+.drawer-wrapper.is-visible {
+  opacity: 1;
 }
 
 .drawer-wrapper::before {
@@ -245,20 +248,14 @@ body * {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  -webkit-backdrop-filter: blur(0px);
-  backdrop-filter: blur(0px);
-  transition:
-    backdrop-filter 0.45s ease-out,
-    -webkit-backdrop-filter 0.45s ease-out;
-}
-
-.drawer-wrapper.is-visible {
-  opacity: 1;
+  opacity: 0;
+  -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(32px);
+  transition: opacity 0.45s ease-out;
 }
 
 .drawer-wrapper.is-visible::before {
-  -webkit-backdrop-filter: blur(32px);
-  backdrop-filter: blur(32px);
+  opacity: 1;
 }
 
 /* menu-reveal: order 3 travels --menu-reveal-distance. Line hosts stay put. */

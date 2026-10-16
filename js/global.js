@@ -14,7 +14,7 @@
  * writeMenuRevealTiming — order 1 lines from the bottom, then order 2, then both order 3; reverse leaves 3 first
  * menuRevealReverseMs — length of the close stages, in ms
  * clearMenuRevealHide — drop a pending shell fade
- * fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the blur
+ * fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the veil
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state, waits DRAWER_OPEN_GAP, then adds is-revealed; closing removes it
  * playCartReveal — cart titles, rows, subtotal, and bottom on the cart clock; close reverses them
@@ -209,6 +209,7 @@ const CART_REVEAL_ORDER3_DURATION = 0.15;
 const CART_REVEAL_GAP = 0.3;
 const DRAWER_OPEN_GAP = 0.3;
 const DRAWER_CLOSE_GAP = 0.3;
+const DRAWER_SHELL = 0.45;
 cartDrawer?.style.setProperty(
   "--cart-row-duration",
   `${CART_REVEAL_DURATION}s`,
@@ -575,11 +576,11 @@ function playCartReveal(opening) {
         if (token !== cartRevealToken || activeDrawer !== "cart") return;
         startCartReveal();
       };
-      if (DRAWER_OPEN_GAP <= 0) {
+      if (DRAWER_SHELL <= 0) {
         start();
         return;
       }
-      setTimeout(start, DRAWER_OPEN_GAP * 1000);
+      setTimeout(start, DRAWER_SHELL * 1000);
     };
     const wait = whenCartRowsReady(cartProductRows());
     if (!wait) {
@@ -642,26 +643,24 @@ function clearMenuRevealHide() {
   menuRevealHideTimer = 0;
 }
 
-/** fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the blur */
+/** fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the veil */
 function fadeDrawerOut() {
+  if (drawerWrapper) drawerWrapper.style.opacity = "1";
   drawerWrapper?.classList.remove("is-visible");
   setDrawerButtons(null);
   mainWrapper?.classList.remove("is-dimmed");
   dimGallery?.classList.remove("is-dimmed");
   notificationBarBox?.classList.remove("is-hidden");
   if (prefersReducedMotion() || !drawerWrapper) {
+    if (drawerWrapper) drawerWrapper.style.opacity = "";
     hideDrawerOverlay();
     return;
   }
   drawerWrapper.addEventListener("transitionend", function onFadeOut(event) {
     if (event.target !== drawerWrapper) return;
-    if (
-      event.propertyName !== "backdrop-filter" &&
-      event.propertyName !== "-webkit-backdrop-filter"
-    ) {
-      return;
-    }
+    if (event.propertyName !== "opacity") return;
     drawerWrapper.removeEventListener("transitionend", onFadeOut);
+    drawerWrapper.style.opacity = "";
     hideDrawerOverlay();
   });
 }
@@ -718,7 +717,7 @@ function closeDrawer(event) {
   if ((closingMenu || closingCart) && !prefersReducedMotion()) {
     clearMenuRevealHide();
     const wait = closingMenu
-      ? menuRevealReverseMs() + DRAWER_CLOSE_GAP * 1000
+      ? menuRevealReverseMs() - MENU_LEAVE_TAIL_MS
       : cartRevealReverseMs() + DRAWER_CLOSE_GAP * 1000;
     menuRevealHideTimer = setTimeout(
       () => {
@@ -996,6 +995,7 @@ function resetDrawerState() {
   clearMenuRevealHide();
   activeDrawer = null;
   setDrawerButtons(null);
+  if (drawerWrapper) drawerWrapper.style.opacity = "";
   drawerWrapper?.classList.remove("is-visible");
   mainWrapper?.classList.remove("is-dimmed");
   dimGallery?.classList.remove("is-dimmed");
@@ -1084,8 +1084,10 @@ function radMenuLeaveTo(href) {
     Math.max(0, lineGone - PAGE_LEAVE_MS),
   );
   setTimeout(() => {
+    if (drawerWrapper) drawerWrapper.style.opacity = "1";
     drawerWrapper?.classList.remove("is-visible");
     setTimeout(() => {
+      if (drawerWrapper) drawerWrapper.style.opacity = "";
       hideDrawerOverlay();
       location.href = href;
     }, PAGE_LEAVE_MS);
