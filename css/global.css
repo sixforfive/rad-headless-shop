@@ -567,7 +567,7 @@ html.is-leaving .gallery-full-screen.is-dimmed {
 
 /* Repo hide class. Dark mode always hides the lights plus, not the minus. */
 .link-cart.is-none,
-.link-secondary.is-none:not(#lights-switch-btn),
+.link-secondary.is-none,
 .notification-bar-box.is-none,
 .meta-link.is-plus.is-none,
 .meta-link.is-minus.is-none,
@@ -597,10 +597,6 @@ html.is-leaving .gallery-full-screen.is-dimmed {
   transition: opacity 0.3s ease;
 }
 
-#lights-switch-btn {
-  transition: opacity 0.3s ease;
-}
-
 :has(> #currency-btn:not(.is-none)) > :is(#cart-open, #cart-close) {
   grid-column: 2;
 }
@@ -615,10 +611,11 @@ html.is-leaving .gallery-full-screen.is-dimmed {
   transition: opacity 0.3s ease;
 }
 
-#lights-switch-btn.is-none {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+:has(> #menu-open.is-none):has(> #menu-close.is-none)
+  > :is(#menu-open, #menu-close),
+:has(> #cart-open.is-none):has(> #cart-close.is-none)
+  > :is(#cart-open, #cart-close) {
+  display: none;
 }
 
 /* Blend layer is a click-through overlay; listed chrome stays clickable. */
@@ -866,12 +863,10 @@ html.is-dot-cursor * {
   #menu-close,
   #cart-open,
   #cart-close,
-  #lights-switch-btn,
   #menu-open.is-none,
   #menu-close.is-none,
   #cart-open.is-none,
   #cart-close.is-none,
-  #lights-switch-btn.is-none,
   [menu-reveal],
   .menu-reveal-line-inner,
   .cart-list,
