@@ -16,7 +16,7 @@
  * clearMenuRevealHide — drop a pending shell fade
  * fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the blur
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
- * playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it
+ * playMenuReveal — opening flushes the from-state, waits DRAWER_OPEN_GAP, then adds is-revealed; closing removes it
  * playCartReveal — cart titles, rows, subtotal, and bottom on the cart clock; close reverses them
  * snapCartReveal — rested row heights while .cart-drawer is already revealed, after images load
  * hideNotificationIfEmpty — is-none on .notification-bar-box when no .notification-item
@@ -207,8 +207,8 @@ const MENU_LEAVE_TAIL_MS = 600;
 const CART_REVEAL_DURATION = 0.45;
 const CART_REVEAL_ORDER3_DURATION = 0.15;
 const CART_REVEAL_GAP = 0.3;
-const CART_OPEN_GAP = 0.3;
-const CART_CLOSE_GAP = 0.3;
+const DRAWER_OPEN_GAP = 0.3;
+const DRAWER_CLOSE_GAP = 0.3;
 cartDrawer?.style.setProperty(
   "--cart-row-duration",
   `${CART_REVEAL_DURATION}s`,
@@ -218,6 +218,7 @@ cartDrawer?.style.setProperty(
   `${CART_REVEAL_ORDER3_DURATION}s`,
 );
 let cartRevealToken = 0;
+let menuRevealToken = 0;
 
 /** prefersReducedMotion — true when the visitor asks for less motion */
 function prefersReducedMotion() {
@@ -360,14 +361,24 @@ function splitMenuRevealLines() {
   });
 }
 
-/** playMenuReveal — opening flushes the from-state then adds is-revealed; closing removes it */
+/** playMenuReveal — opening flushes the from-state, waits DRAWER_OPEN_GAP, then adds is-revealed; closing removes it */
 function playMenuReveal(opening) {
   if (!menuDrawer) return;
+  menuRevealToken += 1;
   if (opening) {
+    const token = menuRevealToken;
     if (!prefersReducedMotion()) splitMenuRevealLines();
     if (!prefersReducedMotion()) writeMenuRevealTiming(true);
     void menuDrawer.offsetWidth;
-    menuDrawer.classList.add("is-revealed");
+    const start = () => {
+      if (token !== menuRevealToken || activeDrawer !== "menu") return;
+      menuDrawer.classList.add("is-revealed");
+    };
+    if (prefersReducedMotion() || DRAWER_OPEN_GAP <= 0) {
+      start();
+      return;
+    }
+    setTimeout(start, DRAWER_OPEN_GAP * 1000);
     return;
   }
   if (!prefersReducedMotion()) writeMenuRevealTiming(false);
@@ -564,11 +575,11 @@ function playCartReveal(opening) {
         if (token !== cartRevealToken || activeDrawer !== "cart") return;
         startCartReveal();
       };
-      if (CART_OPEN_GAP <= 0) {
+      if (DRAWER_OPEN_GAP <= 0) {
         start();
         return;
       }
-      setTimeout(start, CART_OPEN_GAP * 1000);
+      setTimeout(start, DRAWER_OPEN_GAP * 1000);
     };
     const wait = whenCartRowsReady(cartProductRows());
     if (!wait) {
@@ -707,8 +718,8 @@ function closeDrawer(event) {
   if ((closingMenu || closingCart) && !prefersReducedMotion()) {
     clearMenuRevealHide();
     const wait = closingMenu
-      ? menuRevealReverseMs() - MENU_LEAVE_TAIL_MS
-      : cartRevealReverseMs() + CART_CLOSE_GAP * 1000;
+      ? menuRevealReverseMs() + DRAWER_CLOSE_GAP * 1000
+      : cartRevealReverseMs() + DRAWER_CLOSE_GAP * 1000;
     menuRevealHideTimer = setTimeout(
       () => {
         menuRevealHideTimer = 0;

@@ -236,7 +236,7 @@ body * {
 .drawer-wrapper {
   opacity: 0;
   isolation: isolate;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.45s ease-out;
 }
 
 .drawer-wrapper::before {
@@ -248,8 +248,8 @@ body * {
   -webkit-backdrop-filter: blur(0px);
   backdrop-filter: blur(0px);
   transition:
-    backdrop-filter 0.9s ease,
-    -webkit-backdrop-filter 0.9s ease;
+    backdrop-filter 0.45s ease-out,
+    -webkit-backdrop-filter 0.45s ease-out;
 }
 
 .drawer-wrapper.is-visible {
