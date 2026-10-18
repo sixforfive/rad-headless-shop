@@ -87,6 +87,12 @@ html.lenis:not(.lenis-stopped) body {
   .layer.is-blend .navbar.is-normal {
     -webkit-text-stroke: 0.35px #000;
   }
+
+  .collection-logo,
+  .collection-hero-logo,
+  .product-info-col {
+    -webkit-text-stroke: 0;
+  }
 }
 
 /* CMS column attrs as vars; auto when Webflow collapses the grid. */
