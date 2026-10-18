@@ -55,42 +55,34 @@ html.lenis:not(.lenis-stopped) body {
   color: var(--_theme---text--primary);
 }
 
-/* 1x and 125% scaling only. Unica 77 Medium has a 126/1000 UPM stem, so at 11.008px
-   it lands on 1.39 device px and blooms under difference. Stroke is centred, so half
-   paints inward: 0.35px removes 25% of the stem. Retina stays untouched. */
 @media (max-resolution: 1.5dppx) {
-  /* Content reads thinner on Windows than on Retina. Stroke in the text's own colour
-     thickens it and stays correct in both themes. */
+  /* Content on solid backgrounds reads thin on Windows. */
   body {
     -webkit-text-stroke: 0.25px currentColor;
   }
 
-  /* Blended white chrome. Black is a no-op under difference, so it erases stem edge. */
+  /* Blended type takes no stroke: at 11px it clots the stem, and an inherited
+     currentColor stroke would be white here and would bold instead of thin. */
   .navbar,
   .second-menu,
   .layer.is-blend,
   .product-info-col,
+  .collection-logo,
+  .collection-hero-logo,
   .gallery-full-screen_close,
   .link-sec-brack.is-zoom,
   html.is-full-screen .product-nav-tab,
   .custom-cursor-label {
-    -webkit-text-stroke: 0.35px #000;
+    -webkit-text-stroke: 0;
   }
 
-  /* Drawer open: navbar drops difference and uses theme text, so treat it as content. */
+  /* Drawer open: navbar leaves the blend, so it takes the content stroke. */
   .navbar.is-normal {
     -webkit-text-stroke: 0.25px currentColor;
   }
 
-  /* Drawer open over an open fullscreen gallery: the layer still blends and forces
-     #fff, so currentColor would be white and would bold. Keep black here. */
+  /* Unless the fullscreen layer is still blending underneath it. */
   .layer.is-blend .navbar.is-normal {
-    -webkit-text-stroke: 0.35px #000;
-  }
-
-  .collection-logo,
-  .collection-hero-logo,
-  .product-info-col {
     -webkit-text-stroke: 0;
   }
 }
