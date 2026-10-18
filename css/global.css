@@ -85,6 +85,10 @@ html.lenis:not(.lenis-stopped) body {
   .layer.is-blend .navbar.is-normal {
     -webkit-text-stroke: 0;
   }
+
+  .back-to-top {
+    -webkit-text-stroke: 0;
+  }
 }
 
 /* CMS column attrs as vars; auto when Webflow collapses the grid. */
