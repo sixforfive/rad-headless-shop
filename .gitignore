@@ -151,5 +151,6 @@ rad-workflow-scripts.md
 # Local reference media
 references/
 
-# OpenSpec change artifacts
+# OpenSpec artifacts
 openspec/changes/
+openspec/specs/
