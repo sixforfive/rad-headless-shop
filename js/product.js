@@ -1,11 +1,15 @@
 /**
  * product.js — Product and merch detail (/product/{slug}, /merch/{slug}).
  * isMobileViewport — true at max-width 767px
+ * isMobileSafari — true on Safari at max-width 767px; false for Chrome, CriOS, Firefox iOS, and Edge iOS
+ * measureLargeViewport — taller of a 100lvh probe and the document client height
+ * pinGalleryLargeViewport — lock the fullscreen gallery to that height on mobile Safari, or clear it
  * prefersReducedMotion — true when the visitor prefers reduced motion
  * syncGalleryChrome — settled is-none, blend, and is-full-screen for the current breakpoint
  * setFullScreenGallery — open or close in one turn; cancels an in-flight chrome fade
  * fadeChromeThenSync — desktop click fades chrome and the fullscreen gallery out, then syncs, then fades them in
  * openGalleryFromClick — fade on desktop; instant on mobile and reduced motion
+ * closeMobileGalleryOnTap — pointerdown stores fullscreen list scrollLeft; click at ≤767 closes if it did not change
  * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
  * setChosenTick — is-choosen on the tick at Math.round(scrollLeft / clientWidth)
@@ -16,6 +20,49 @@
 const mobileQuery = window.matchMedia("(max-width: 767px)");
 function isMobileViewport() {
   return mobileQuery.matches;
+}
+
+/** isMobileSafari — true on Safari at max-width 767px; false for Chrome, CriOS, Firefox iOS, and Edge iOS */
+function isMobileSafari() {
+  const ua = navigator.userAgent;
+  if (/Chrome|Chromium|CriOS|FxiOS|EdgiOS/i.test(ua)) return false;
+  if (!/Safari/i.test(ua)) return false;
+  return isMobileViewport();
+}
+
+/** measureLargeViewport — taller of a 100lvh probe and the document client height */
+function measureLargeViewport() {
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;height:100lvh;visibility:hidden;pointer-events:none;";
+  document.documentElement.appendChild(probe);
+  const probed = probe.offsetHeight;
+  probe.remove();
+  return Math.max(probed, document.documentElement.clientHeight);
+}
+
+/** pinGalleryLargeViewport — lock the fullscreen gallery to that height on mobile Safari, or clear it */
+function pinGalleryLargeViewport() {
+  if (!galleryFullScreen) return;
+  const images = galleryFullScreen.querySelectorAll(
+    ".product-gallery-img.is-full",
+  );
+  if (!isMobileSafari()) {
+    galleryFullScreen.style.height = "";
+    galleryFullScreen.style.minHeight = "";
+    galleryFullScreen.style.top = "";
+    images.forEach((img) => {
+      img.style.minHeight = "";
+    });
+    return;
+  }
+  const px = `${measureLargeViewport()}px`;
+  galleryFullScreen.style.height = px;
+  galleryFullScreen.style.minHeight = px;
+  galleryFullScreen.style.top = "0";
+  images.forEach((img) => {
+    img.style.minHeight = px;
+  });
 }
 
 const galleryFullScreen = document.querySelector(".gallery-full-screen");
@@ -30,6 +77,7 @@ const paginationBar = document.querySelector(".pagination-bar");
 
 let galleryOpen = false;
 let chromeFadeToken = 0;
+let fullScreenScrollLeft = 0;
 const GALLERY_FLAG = "rad-fs-gallery";
 
 /** prefersReducedMotion — true when the visitor prefers reduced motion */
@@ -139,13 +187,27 @@ layer
     openGalleryFromClick(true);
   });
 
-galleryFullScreen
-  ?.querySelector(".product-gallery-list")
-  ?.addEventListener("click", (event) => {
-    if (isMobileViewport()) return;
-    event.preventDefault();
-    openGalleryFromClick(false);
-  });
+const fullScreenGalleryList = galleryFullScreen?.querySelector(
+  ".product-gallery-list",
+);
+
+fullScreenGalleryList?.addEventListener("click", (event) => {
+  if (isMobileViewport()) return;
+  event.preventDefault();
+  openGalleryFromClick(false);
+});
+
+/** closeMobileGalleryOnTap — pointerdown stores scrollLeft; click at ≤767 closes if the list did not scroll */
+galleryFullScreen?.addEventListener("pointerdown", () => {
+  fullScreenScrollLeft = fullScreenGalleryList?.scrollLeft ?? 0;
+});
+
+galleryFullScreen?.addEventListener("click", (event) => {
+  if (!isMobileViewport() || !galleryOpen) return;
+  if ((fullScreenGalleryList?.scrollLeft ?? 0) !== fullScreenScrollLeft) return;
+  event.preventDefault();
+  openGalleryFromClick(false);
+});
 
 document
   .getElementById("full-screen-open")
@@ -170,6 +232,18 @@ document.querySelectorAll(".next-product").forEach((el) => {
       else sessionStorage.removeItem(GALLERY_FLAG);
     } catch (e) {}
   });
+});
+
+pinGalleryLargeViewport();
+let galleryPinWidth = window.innerWidth;
+window.addEventListener("orientationchange", () => {
+  pinGalleryLargeViewport();
+  galleryPinWidth = window.innerWidth;
+});
+window.addEventListener("resize", () => {
+  if (window.innerWidth === galleryPinWidth) return;
+  galleryPinWidth = window.innerWidth;
+  pinGalleryLargeViewport();
 });
 
 try {
