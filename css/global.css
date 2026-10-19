@@ -1,5 +1,6 @@
-/* Theme canvas behind the page. */
+/* Theme canvas behind the page. --rad-css gates the rise until this file applies. */
 html {
+  --rad-css: 1;
   background-color: var(--_theme---background--primary);
 }
 
@@ -894,6 +895,39 @@ html.is-dot-cursor * {
   opacity: 1;
 }
 
+/* Hold ring. Same rules as the Head style. Hidden again by html.is-ready. */
+html:not(.is-ready)::before {
+  content: "";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 10001;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: -0.625rem 0 0 -0.625rem;
+  border: 2px solid #fff;
+  border-right-color: transparent;
+  border-radius: 50%;
+  mix-blend-mode: difference;
+  pointer-events: none;
+  opacity: 0;
+  animation:
+    rad-hold-in 0s linear 5s forwards,
+    rad-hold-spin 0.6s linear 5s infinite;
+}
+
+@keyframes rad-hold-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rad-hold-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Kill the 0.3s fades; marquee is left running (infinite, not a transition). */
 @media (prefers-reduced-motion: reduce) {
   .main-wrapper:not(:has(.collection-hero-logo)),
@@ -949,6 +983,10 @@ html.is-dot-cursor * {
   .layer-cta,
   .product-nav-tab {
     transition-duration: 0s;
+  }
+
+  html:not(.is-ready)::before {
+    animation: rad-hold-in 0s linear 5s forwards;
   }
 
   #menu-open,

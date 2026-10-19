@@ -7,6 +7,7 @@
  * cloneGalleryList — one .is-clone copy of the whole list, appended as its sibling
  * alignCloneGap — clone list margin-top so the seam gap equals the grid row gap
  * originalsSized — every original thumb has layout height
+ * signalShopReady — measure the loop and radPageReady once original thumbs have height
  * loopHeight — clone list getBoundingClientRect.top minus original list top
  * onGalleryScroll — wrap down when scrollY >= loop height; write 00–99 to #gallery-scroll-counter
  * shiftScrollY — momentum-preserving radScrollShift (Lenis) or window.scrollTo
@@ -240,6 +241,20 @@ function setView(view) {
   wrapper.classList.add("is-leaving");
 }
 
+/** signalShopReady — measure the loop and radPageReady once original thumbs have height */
+let shopReady = false;
+function signalShopReady() {
+  if (shopReady) return;
+  const list = shopList();
+  const thumbs = list ? list.querySelectorAll(".product-thumb") : [];
+  if (thumbs.length && !originalsSized()) return;
+  shopReady = true;
+  measureLoopHeight();
+  onGalleryScroll();
+  window.radPageReadyFired = true;
+  if (typeof radPageReady === "function") radPageReady();
+}
+
 /** syncActive — is-active matches whether the grid currently has is-gallery */
 function syncActive() {
   const list = shopList();
@@ -255,10 +270,14 @@ cloneGalleryList();
 syncActive();
 syncScrollCounter();
 padShopEnd();
-measureLoopHeight();
-onGalleryScroll();
-window.radPageReadyFired = true;
-if (typeof radPageReady === "function") radPageReady();
+shopList()
+  ?.querySelectorAll(".product-thumb img")
+  .forEach((img) => {
+    if (img.complete) return;
+    img.addEventListener("load", signalShopReady);
+    img.addEventListener("error", signalShopReady);
+  });
+signalShopReady();
 
 if (typeof radOnScroll === "function") {
   radOnScroll(onGalleryScroll);
@@ -276,6 +295,7 @@ if (galleryList) {
   new ResizeObserver(() => {
     measureLoopHeight();
     onGalleryScroll();
+    signalShopReady();
   }).observe(galleryList);
 }
 

@@ -28,7 +28,7 @@
  * pagePointerId — pathname first segment → #pointer-* id (domain ignored)
  * syncMenuPointer — drop is-none on the matching .menu-drawer .menu-pointer
  * initCursorLabel — two labels rubber-follow [custom-cursor]; copy fades out then in; 12px difference dot replaces pointer
- * revealPage — add html.is-ready after the hidden state is on screen
+ * revealPage — add html.is-ready after --rad-css and the hidden state are on screen
  * radPageReady — page scripts call this after layout; first paint stays hidden until then
  * resetDrawerState — bfcache restore: no drawer, no dim, scroll unlocked
  * radLeaveTo — sink content, keep the drawer, prefetch, then go
@@ -985,7 +985,7 @@ let pageRevealed = false;
 let pageLeaving = false;
 const prefetchedHrefs = new Set();
 
-/** revealPage — add html.is-ready after the hidden state is on screen */
+/** revealPage — add html.is-ready after --rad-css and the hidden state are on screen */
 function revealPage() {
   if (pageRevealed) return;
   pageRevealed = true;
@@ -1004,6 +1004,9 @@ function revealPage() {
   };
 
   const fromStateOn = () => {
+    const cssOn =
+      getComputedStyle(root).getPropertyValue("--rad-css").trim() === "1";
+    if (!cssOn) return false;
     const logo = document.querySelector(".collection-hero-logo");
     if (logo) return parseFloat(getComputedStyle(logo).opacity) === 0;
     const wrapper = document.querySelector(".main-wrapper");
@@ -1029,7 +1032,6 @@ function revealPage() {
     if (!armed) requestAnimationFrame(poll);
   };
   requestAnimationFrame(poll);
-  setTimeout(arm, 2000);
 }
 
 /** radPageReady — layout scripts call this; global.js also exposes it on window */
@@ -1048,7 +1050,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!needsLayout) revealPage();
   });
 });
-setTimeout(revealPage, 2000);
 
 /** resetDrawerState — bfcache restore: no drawer, no dim, scroll unlocked */
 function resetDrawerState() {
