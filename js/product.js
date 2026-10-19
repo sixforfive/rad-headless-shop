@@ -4,8 +4,9 @@
  * prefersReducedMotion — true when the visitor prefers reduced motion
  * syncGalleryChrome — settled is-none, blend, and is-full-screen for the current breakpoint
  * setFullScreenGallery — open or close in one turn; cancels an in-flight chrome fade
- * fadeChromeThenSync — desktop click fades chrome and the fullscreen gallery out, then syncs, then fades them in
- * openGalleryFromClick — fade on desktop; instant on mobile and reduced motion
+ * chromeFadeNode — node whose opacity transitionend ends the fade-out
+ * fadeChromeThenSync — click fades content out, then syncs, then fades the incoming surface in
+ * openGalleryFromClick — fade unless reduced motion; instant on persist boot and breakpoint change
  * closeMobileGalleryOnTap — pointerdown stores fullscreen list scrollLeft; click at ≤767 closes if it did not change
  * persistGalleryFlag — .next-product click writes rad-fs-gallery; boot restores then removes
  * setPaginationTicks — clone .pagination-item to match default-collection images; is-none if < 2
@@ -46,7 +47,7 @@ function syncGalleryChrome(open) {
   root.classList.toggle("is-full-screen", open);
   document.body.classList.toggle("is-full-screen", open);
   if (isMobileViewport()) {
-    layer?.classList.toggle("is-none", open);
+    layer?.classList.remove("is-none");
     layer?.classList.remove("is-blend");
     defaultGalleryCollection?.classList.remove("is-none");
   } else {
@@ -76,16 +77,30 @@ function setFullScreenGallery(open) {
   if (typeof radNestedGallerySync === "function") radNestedGallerySync();
 }
 
-/** fadeChromeThenSync — fade chrome and the fullscreen gallery out, then sync, then fade in */
+/** chromeFadeNode — node whose opacity transitionend ends the fade-out */
+function chromeFadeNode(open) {
+  if (isMobileViewport()) {
+    if (open) {
+      return (
+        layer?.querySelector(":scope > :not(.navbar)") || galleryFullScreen
+      );
+    }
+    return galleryFullScreen;
+  }
+  return (
+    layer ||
+    document.querySelector(".layer-cta") ||
+    document.querySelector(".product-nav-tab")
+  );
+}
+
+/** fadeChromeThenSync — fade content out, then sync, then fade the incoming surface in */
 function fadeChromeThenSync(open) {
   if (!galleryFullScreen) return;
   const token = ++chromeFadeToken;
   galleryOpen = open;
   const root = document.documentElement;
-  const node =
-    layer ||
-    document.querySelector(".layer-cta") ||
-    document.querySelector(".product-nav-tab");
+  const node = chromeFadeNode(open);
   if (!node) {
     syncGalleryChrome(open);
     if (typeof radNestedGallerySync === "function") radNestedGallerySync();
@@ -119,9 +134,9 @@ function fadeChromeThenSync(open) {
   root.classList.add("is-chrome-fading");
 }
 
-/** openGalleryFromClick — fade on desktop; instant on mobile and reduced motion */
+/** openGalleryFromClick — fade unless reduced motion */
 function openGalleryFromClick(open) {
-  if (isMobileViewport() || prefersReducedMotion()) {
+  if (prefersReducedMotion()) {
     setFullScreenGallery(open);
     return;
   }
