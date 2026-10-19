@@ -288,7 +288,7 @@ let isTouchDevice = false;
 let rafId = 0;
 let hoveredMesh = null;
 let lastTick = 0;
-const themeBg = new THREE.Color(1, 1, 1);
+let themeBg;
 const modeMix = { value: 0 };
 let awaitingFade = false;
 let modeFade = null;
@@ -935,6 +935,7 @@ async function mountScene(host) {
   isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
   finePointer = isFinePointer();
   reduceMotion = prefersReducedMotion();
+  themeBg = new THREE.Color(1, 1, 1);
 
   scene = new THREE.Scene();
   camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
