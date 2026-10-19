@@ -1,7 +1,12 @@
 /* Theme canvas behind the page. --rad-css gates the rise until this file applies. */
 html {
   --rad-css: 1;
+  color-scheme: light;
   background-color: var(--_theme---background--primary);
+}
+
+html.dark-mode {
+  color-scheme: dark;
 }
 
 html,
@@ -192,7 +197,6 @@ html.lenis:not(.lenis-stopped) body {
   inset: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.45s ease-out;
 }
 
 .thumb-dark.w-dyn-bind-empty {
@@ -208,7 +212,6 @@ html.lenis:not(.lenis-stopped) body {
   inset: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.45s ease-out;
 }
 
 .hero-photo-dark.is-none {
@@ -247,14 +250,12 @@ html.lenis:not(.lenis-stopped) body {
   aspect-ratio: 2208 / 327;
 }
 
-/* Theme swap: Webflow paints color on descendants, so body * is required. */
-html,
-body,
-body * {
-  transition:
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+/* Lights toggle: one 0.3s root crossfade. Per-node color on body * crawls type
+   and tiles shop thumbs top to bottom in Safari. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+  animation-timing-function: ease-out;
 }
 
 /* X mark from two 1px diagonals; no extra DOM. */
@@ -353,10 +354,7 @@ body * {
     transform var(--menu-reveal-duration, 1.5s) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
     opacity var(--menu-reveal-duration, 1.5s) var(--menu-reveal-ease)
-      var(--menu-reveal-delay, 0s),
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+      var(--menu-reveal-delay, 0s);
 }
 
 .menu-reveal-line {
@@ -433,10 +431,7 @@ body * {
     transform var(--cart-row-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
     opacity var(--cart-row-duration) var(--menu-reveal-ease)
-      var(--menu-reveal-delay, 0s),
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+      var(--menu-reveal-delay, 0s);
 }
 
 .cart-drawer.is-revealed .menu-reveal-line-inner {
@@ -548,11 +543,7 @@ body * {
    Hero tiles fade on the canvas. Other pages rise and sink. */
 .gallery-full-screen {
   opacity: 1;
-  transition:
-    opacity 0.45s ease-out,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+  transition: opacity 0.45s ease-out;
 }
 
 .main-wrapper,
@@ -572,10 +563,7 @@ html:has(.collection-hero-logo) .main-wrapper {
 .products-collection {
   transition:
     opacity 0.3s ease-out,
-    transform 0.3s ease-out,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+    transform 0.3s ease-out;
 }
 
 .products-collection {
@@ -625,11 +613,7 @@ html.is-leaving .footer {
 
 html.is-ready .main-wrapper.is-dimmed {
   opacity: 0.3;
-  transition:
-    opacity 0.45s ease-out,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+  transition: opacity 0.45s ease-out;
 }
 
 .gallery-full-screen.is-dimmed {
@@ -717,24 +701,16 @@ html.is-leaving .gallery-full-screen.is-dimmed {
   pointer-events: auto;
 }
 
-/* Cover the blend and color snap. Keep the theme color timing on these nodes. */
+/* Cover the blend snap. */
 .layer,
 .layer-cta,
 .product-nav-tab {
-  transition:
-    opacity 0.3s ease,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+  transition: opacity 0.3s ease;
 }
 
 html.is-chrome-fading .gallery-full-screen,
 html.is-chrome-reveal .gallery-full-screen {
-  transition:
-    opacity 0.3s ease,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+  transition: opacity 0.3s ease;
 }
 
 html.is-chrome-fading .layer,
@@ -948,6 +924,11 @@ html:not(.is-ready)::before {
 
 /* Kill the 0.3s fades; marquee is left running (infinite, not a transition). */
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0s;
+  }
+
   .main-wrapper:not(:has(.collection-hero-logo)),
   :has(> .collection-hero-logo) > :not(.collection-hero-logo),
   .products-collection.is-leaving,
