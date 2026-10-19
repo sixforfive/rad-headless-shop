@@ -192,7 +192,7 @@ html.lenis:not(.lenis-stopped) body {
   inset: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.45s ease-out;
+  transition: opacity 0.2s ease-out;
 }
 
 .thumb-dark.w-dyn-bind-empty {
@@ -208,7 +208,7 @@ html.lenis:not(.lenis-stopped) body {
   inset: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.45s ease-out;
+  transition: opacity 0.2s ease-out;
 }
 
 .hero-photo-dark.is-none {
@@ -247,9 +247,9 @@ html,
 body,
 body * {
   transition:
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 
 /* X mark from two 1px diagonals; no extra DOM. */
@@ -349,9 +349,9 @@ body * {
       var(--menu-reveal-delay, 0s),
     opacity var(--menu-reveal-duration, 1.5s) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 
 .menu-reveal-line {
@@ -429,9 +429,9 @@ body * {
       var(--menu-reveal-delay, 0s),
     opacity var(--cart-row-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 
 .cart-drawer.is-revealed .menu-reveal-line-inner {
@@ -545,9 +545,9 @@ body * {
   opacity: 1;
   transition:
     opacity 0.45s ease-out,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 
 .main-wrapper,
@@ -568,9 +568,9 @@ html:has(.collection-hero-logo) .main-wrapper {
   transition:
     opacity 0.3s ease-out,
     transform 0.3s ease-out,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 
 .products-collection {
@@ -622,9 +622,9 @@ html.is-ready .main-wrapper.is-dimmed {
   opacity: 0.3;
   transition:
     opacity 0.45s ease-out,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 
 .gallery-full-screen.is-dimmed {
@@ -718,18 +718,18 @@ html.is-leaving .gallery-full-screen.is-dimmed {
 .product-nav-tab {
   transition:
     opacity 0.3s ease,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 
 html.is-chrome-fading .gallery-full-screen,
 html.is-chrome-reveal .gallery-full-screen {
   transition:
     opacity 0.3s ease,
-    background-color 0.45s ease-out,
-    color 0.45s ease-out,
-    border-color 0.45s ease-out;
+    background-color 0.2s ease-out,
+    color 0.2s ease-out,
+    border-color 0.2s ease-out;
 }
 
 html.is-chrome-fading .layer,
