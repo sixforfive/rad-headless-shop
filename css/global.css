@@ -1,7 +1,18 @@
 /* Theme canvas behind the page. --rad-css gates the rise until this file applies. */
+@property --rad-mode-mix {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
 html {
   --rad-css: 1;
+  --rad-mode-mix: 0;
   background-color: var(--_theme---background--primary);
+}
+
+html.dark-mode {
+  --rad-mode-mix: 1;
 }
 
 html,
@@ -192,15 +203,14 @@ html.lenis:not(.lenis-stopped) body {
   inset: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.2s ease-out;
 }
 
 .thumb-dark.w-dyn-bind-empty {
   display: none;
 }
 
-.dark-mode .thumb-dark:not(.w-dyn-bind-empty) {
-  opacity: 1;
+.thumb-dark:not(.w-dyn-bind-empty) {
+  opacity: var(--rad-mode-mix);
 }
 
 .hero-photo-dark {
@@ -208,7 +218,6 @@ html.lenis:not(.lenis-stopped) body {
   inset: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.2s ease-out;
 }
 
 .hero-photo-dark.is-none {
@@ -219,8 +228,8 @@ html.lenis:not(.lenis-stopped) body {
   display: none;
 }
 
-.dark-mode .hero-photo-dark:not(.w-dyn-bind-empty) {
-  opacity: 1;
+.hero-photo-dark:not(.w-dyn-bind-empty) {
+  opacity: var(--rad-mode-mix);
 }
 
 /* Theme fill under the transparent canvas so hover opacity mixes light/dark. */
@@ -242,14 +251,22 @@ html.lenis:not(.lenis-stopped) body {
   opacity: 0;
 }
 
-/* Theme swap: Webflow paints color on descendants, so body * is required. */
-html,
+/* Theme swap: Webflow paints color on descendants, so body * is required.
+   Overlay opacity is --rad-mode-mix on html so every thumb shares one clock. */
+html {
+  transition:
+    --rad-mode-mix 0.3s ease-out,
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out;
+}
+
 body,
 body * {
   transition:
-    background-color 0.2s ease-out,
-    color 0.2s ease-out,
-    border-color 0.2s ease-out;
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out;
 }
 
 /* X mark from two 1px diagonals; no extra DOM. */
@@ -349,9 +366,9 @@ body * {
       var(--menu-reveal-delay, 0s),
     opacity var(--menu-reveal-duration, 1.5s) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
-    background-color 0.2s ease-out,
-    color 0.2s ease-out,
-    border-color 0.2s ease-out;
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out;
 }
 
 .menu-reveal-line {
@@ -429,9 +446,9 @@ body * {
       var(--menu-reveal-delay, 0s),
     opacity var(--cart-row-duration) var(--menu-reveal-ease)
       var(--menu-reveal-delay, 0s),
-    background-color 0.2s ease-out,
-    color 0.2s ease-out,
-    border-color 0.2s ease-out;
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out;
 }
 
 .cart-drawer.is-revealed .menu-reveal-line-inner {
@@ -545,9 +562,9 @@ body * {
   opacity: 1;
   transition:
     opacity 0.45s ease-out,
-    background-color 0.2s ease-out,
-    color 0.2s ease-out,
-    border-color 0.2s ease-out;
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out;
 }
 
 .main-wrapper,
@@ -568,9 +585,9 @@ html:has(.collection-hero-logo) .main-wrapper {
   transition:
     opacity 0.3s ease-out,
     transform 0.3s ease-out,
-    background-color 0.2s ease-out,
-    color 0.2s ease-out,
-    border-color 0.2s ease-out;
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out;
 }
 
 .products-collection {
@@ -622,9 +639,9 @@ html.is-ready .main-wrapper.is-dimmed {
   opacity: 0.3;
   transition:
     opacity 0.45s ease-out,
-    background-color 0.2s ease-out,
-    color 0.2s ease-out,
-    border-color 0.2s ease-out;
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out;
 }
 
 .gallery-full-screen.is-dimmed {
@@ -718,18 +735,18 @@ html.is-leaving .gallery-full-screen.is-dimmed {
 .product-nav-tab {
   transition:
     opacity 0.3s ease,
-    background-color 0.2s ease-out,
-    color 0.2s ease-out,
-    border-color 0.2s ease-out;
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out;
 }
 
 html.is-chrome-fading .gallery-full-screen,
 html.is-chrome-reveal .gallery-full-screen {
   transition:
     opacity 0.3s ease,
-    background-color 0.2s ease-out,
-    color 0.2s ease-out,
-    border-color 0.2s ease-out;
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out;
 }
 
 html.is-chrome-fading .layer,
