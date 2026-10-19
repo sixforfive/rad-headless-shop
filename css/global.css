@@ -1,7 +1,12 @@
 /* Theme canvas behind the page. --rad-css gates the rise until this file applies. */
 html {
   --rad-css: 1;
+  color-scheme: light;
   background-color: var(--_theme---background--primary);
+}
+
+html.dark-mode {
+  color-scheme: dark;
 }
 
 html,

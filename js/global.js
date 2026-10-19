@@ -1,7 +1,8 @@
 /**
  * global.js — Site-wide behavior shared across all RAD pages.
  * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
- * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none; click uses a 0.3s root view transition
+ * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none; click uses a 0.3s root view transition except Safari
+ * isSafariBrowser — Apple Safari only (not CriOS / FxiOS / EdgiOS)
  * storedLightsDark — true only when rad-lights is exactly "dark"
  * scrollToTop — #back-to-top click → radScrollToTop (700ms enter spring, or instant if reduced-motion)
  * setDrawerButtons — is-none on open/close plus lights, cart-title, currency; is-normal on .navbar
@@ -68,6 +69,15 @@ const lightsSwitchBtn = document.getElementById("lights-switch-btn");
 const lightsPlus = lightsSwitchBtn?.querySelector(".meta-link.is-plus");
 const lightsMinus = lightsSwitchBtn?.querySelector(".meta-link.is-minus");
 
+/** isSafariBrowser — Apple Safari only (not CriOS / FxiOS / EdgiOS) */
+function isSafariBrowser() {
+  const ua = navigator.userAgent;
+  return (
+    navigator.vendor === "Apple Computer, Inc." &&
+    !/CriOS|FxiOS|EdgiOS/i.test(ua)
+  );
+}
+
 /** applyLights — .dark-mode on html/body, persist rad-lights, swap plus/minus is-none */
 function applyLights(dark, instant) {
   const flip = () => {
@@ -83,6 +93,7 @@ function applyLights(dark, instant) {
   if (
     instant ||
     reduce ||
+    isSafariBrowser() ||
     typeof document.startViewTransition !== "function"
   ) {
     flip();
