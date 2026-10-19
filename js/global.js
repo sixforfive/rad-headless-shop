@@ -1,7 +1,7 @@
 /**
  * global.js — Site-wide behavior shared across all RAD pages.
  * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
- * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none
+ * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none; click uses a 0.3s root view transition
  * storedLightsDark — true only when rad-lights is exactly "dark"
  * scrollToTop — #back-to-top click → radScrollToTop (700ms enter spring, or instant if reduced-motion)
  * setDrawerButtons — is-none on open/close plus lights, cart-title, currency; is-normal on .navbar
@@ -69,14 +69,26 @@ const lightsPlus = lightsSwitchBtn?.querySelector(".meta-link.is-plus");
 const lightsMinus = lightsSwitchBtn?.querySelector(".meta-link.is-minus");
 
 /** applyLights — .dark-mode on html/body, persist rad-lights, swap plus/minus is-none */
-function applyLights(dark) {
-  document.documentElement.classList.toggle("dark-mode", dark);
-  document.body.classList.toggle("dark-mode", dark);
-  try {
-    localStorage.setItem(LIGHTS_KEY, dark ? "dark" : "light");
-  } catch (e) {}
-  lightsPlus?.classList.toggle("is-none", dark);
-  lightsMinus?.classList.toggle("is-none", !dark);
+function applyLights(dark, instant) {
+  const flip = () => {
+    document.documentElement.classList.toggle("dark-mode", dark);
+    document.body.classList.toggle("dark-mode", dark);
+    try {
+      localStorage.setItem(LIGHTS_KEY, dark ? "dark" : "light");
+    } catch (e) {}
+    lightsPlus?.classList.toggle("is-none", dark);
+    lightsMinus?.classList.toggle("is-none", !dark);
+  };
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (
+    instant ||
+    reduce ||
+    typeof document.startViewTransition !== "function"
+  ) {
+    flip();
+    return;
+  }
+  document.startViewTransition(flip);
 }
 
 /** storedLightsDark — true only when rad-lights is exactly "dark" */
@@ -88,7 +100,7 @@ function storedLightsDark() {
   }
 }
 
-applyLights(storedLightsDark());
+applyLights(storedLightsDark(), true);
 
 lightsSwitchBtn?.addEventListener("click", (event) => {
   event.preventDefault();
