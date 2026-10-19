@@ -1,9 +1,6 @@
 /**
  * product.js — Product and merch detail (/product/{slug}, /merch/{slug}).
  * isMobileViewport — true at max-width 767px
- * isMobileSafari — true on Safari at max-width 767px; false for Chrome, CriOS, Firefox iOS, and Edge iOS
- * currentFullPhotoUrl — src of the full photo at the fullscreen list’s current scroll slot
- * coverSafariGalleryBands — body photo cover on the visible Safari viewport; real photos stay Webflow-sized
  * prefersReducedMotion — true when the visitor prefers reduced motion
  * syncGalleryChrome — settled is-none, blend, and is-full-screen for the current breakpoint
  * setFullScreenGallery — open or close in one turn; cancels an in-flight chrome fade
@@ -20,47 +17,6 @@
 const mobileQuery = window.matchMedia("(max-width: 767px)");
 function isMobileViewport() {
   return mobileQuery.matches;
-}
-
-/** isMobileSafari — true on Safari at max-width 767px; false for Chrome, CriOS, Firefox iOS, and Edge iOS */
-function isMobileSafari() {
-  const ua = navigator.userAgent;
-  if (/Chrome|Chromium|CriOS|FxiOS|EdgiOS/i.test(ua)) return false;
-  if (!/Safari/i.test(ua)) return false;
-  return isMobileViewport();
-}
-
-/** currentFullPhotoUrl — src of the full photo at the fullscreen list’s current scroll slot */
-function currentFullPhotoUrl() {
-  if (!galleryFullScreen) return "";
-  const images = galleryFullScreen.querySelectorAll(
-    ".product-gallery-img.is-full",
-  );
-  if (images.length === 0) return "";
-  const list = galleryFullScreen.querySelector(".product-gallery-list");
-  const width = list?.clientWidth || window.innerWidth;
-  const index = width ? Math.round((list?.scrollLeft || 0) / width) : 0;
-  const img = images[Math.min(Math.max(index, 0), images.length - 1)];
-  return img.currentSrc || img.src || "";
-}
-
-/** coverSafariGalleryBands — body photo cover on the visible Safari viewport; real photos stay Webflow-sized */
-function coverSafariGalleryBands() {
-  let cover = document.querySelector(".gallery-vv-cover");
-  if (!isMobileSafari() || !galleryOpen) {
-    cover?.remove();
-    return;
-  }
-  if (!cover) {
-    cover = document.createElement("div");
-    cover.className = "gallery-vv-cover";
-    document.body.appendChild(cover);
-  }
-  const viewport = window.visualViewport;
-  cover.style.top = `${viewport?.offsetTop || 0}px`;
-  cover.style.height = `${Math.round(viewport?.height || window.innerHeight)}px`;
-  const url = currentFullPhotoUrl();
-  cover.style.backgroundImage = url ? `url("${url}")` : "";
 }
 
 const galleryFullScreen = document.querySelector(".gallery-full-screen");
@@ -98,7 +54,6 @@ function syncGalleryChrome(open) {
     layer?.classList.toggle("is-blend", open);
     defaultGalleryCollection?.classList.toggle("is-none", open);
   }
-  coverSafariGalleryBands();
 }
 
 /** setFullScreenGallery — open or close in one turn; cancels an in-flight chrome fade */
@@ -232,15 +187,6 @@ document.querySelectorAll(".next-product").forEach((el) => {
     } catch (e) {}
   });
 });
-
-coverSafariGalleryBands();
-galleryFullScreen
-  ?.querySelector(".product-gallery-list")
-  ?.addEventListener("scroll", coverSafariGalleryBands);
-window.visualViewport?.addEventListener("resize", coverSafariGalleryBands);
-window.visualViewport?.addEventListener("scroll", coverSafariGalleryBands);
-window.addEventListener("orientationchange", coverSafariGalleryBands);
-window.addEventListener("resize", coverSafariGalleryBands);
 
 try {
   if (sessionStorage.getItem(GALLERY_FLAG) === "1") {
