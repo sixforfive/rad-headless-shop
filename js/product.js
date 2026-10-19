@@ -2,7 +2,8 @@
  * product.js — Product and merch detail (/product/{slug}, /merch/{slug}).
  * isMobileViewport — true at max-width 767px
  * isMobileSafari — true on Safari at max-width 767px; false for Chrome, CriOS, Firefox iOS, and Edge iOS
- * fitGalleryToVisualViewport — size the open gallery to the visible Safari viewport; photos cover it and do not stretch
+ * currentFullPhotoUrl — src of the full photo at the fullscreen list’s current scroll slot
+ * coverSafariGalleryBands — body photo cover on the visible Safari viewport; real photos stay Webflow-sized
  * prefersReducedMotion — true when the visitor prefers reduced motion
  * syncGalleryChrome — settled is-none, blend, and is-full-screen for the current breakpoint
  * setFullScreenGallery — open or close in one turn; cancels an in-flight chrome fade
@@ -29,45 +30,37 @@ function isMobileSafari() {
   return isMobileViewport();
 }
 
-/** fitGalleryToVisualViewport — size the open gallery to the visible Safari viewport; photos cover it and do not stretch */
-function fitGalleryToVisualViewport() {
-  if (!galleryFullScreen) return;
+/** currentFullPhotoUrl — src of the full photo at the fullscreen list’s current scroll slot */
+function currentFullPhotoUrl() {
+  if (!galleryFullScreen) return "";
   const images = galleryFullScreen.querySelectorAll(
     ".product-gallery-img.is-full",
   );
+  if (images.length === 0) return "";
+  const list = galleryFullScreen.querySelector(".product-gallery-list");
+  const width = list?.clientWidth || window.innerWidth;
+  const index = width ? Math.round((list?.scrollLeft || 0) / width) : 0;
+  const img = images[Math.min(Math.max(index, 0), images.length - 1)];
+  return img.currentSrc || img.src || "";
+}
+
+/** coverSafariGalleryBands — body photo cover on the visible Safari viewport; real photos stay Webflow-sized */
+function coverSafariGalleryBands() {
+  let cover = document.querySelector(".gallery-vv-cover");
   if (!isMobileSafari() || !galleryOpen) {
-    galleryFullScreen.style.position = "";
-    galleryFullScreen.style.top = "";
-    galleryFullScreen.style.left = "";
-    galleryFullScreen.style.bottom = "";
-    galleryFullScreen.style.width = "";
-    galleryFullScreen.style.height = "";
-    galleryFullScreen.style.minHeight = "";
-    images.forEach((img) => {
-      img.style.width = "";
-      img.style.height = "";
-      img.style.minHeight = "";
-      img.style.maxHeight = "";
-      img.style.objectFit = "";
-    });
+    cover?.remove();
     return;
   }
+  if (!cover) {
+    cover = document.createElement("div");
+    cover.className = "gallery-vv-cover";
+    document.body.appendChild(cover);
+  }
   const viewport = window.visualViewport;
-  const px = `${Math.round(viewport?.height || window.innerHeight)}px`;
-  galleryFullScreen.style.position = "fixed";
-  galleryFullScreen.style.left = "0";
-  galleryFullScreen.style.bottom = "auto";
-  galleryFullScreen.style.width = "100%";
-  galleryFullScreen.style.top = `${viewport?.offsetTop || 0}px`;
-  galleryFullScreen.style.height = px;
-  galleryFullScreen.style.minHeight = px;
-  images.forEach((img) => {
-    img.style.width = "100%";
-    img.style.height = px;
-    img.style.minHeight = px;
-    img.style.maxHeight = px;
-    img.style.objectFit = "cover";
-  });
+  cover.style.top = `${viewport?.offsetTop || 0}px`;
+  cover.style.height = `${Math.round(viewport?.height || window.innerHeight)}px`;
+  const url = currentFullPhotoUrl();
+  cover.style.backgroundImage = url ? `url("${url}")` : "";
 }
 
 const galleryFullScreen = document.querySelector(".gallery-full-screen");
@@ -105,7 +98,7 @@ function syncGalleryChrome(open) {
     layer?.classList.toggle("is-blend", open);
     defaultGalleryCollection?.classList.toggle("is-none", open);
   }
-  fitGalleryToVisualViewport();
+  coverSafariGalleryBands();
 }
 
 /** setFullScreenGallery — open or close in one turn; cancels an in-flight chrome fade */
@@ -240,11 +233,14 @@ document.querySelectorAll(".next-product").forEach((el) => {
   });
 });
 
-fitGalleryToVisualViewport();
-window.visualViewport?.addEventListener("resize", fitGalleryToVisualViewport);
-window.visualViewport?.addEventListener("scroll", fitGalleryToVisualViewport);
-window.addEventListener("orientationchange", fitGalleryToVisualViewport);
-window.addEventListener("resize", fitGalleryToVisualViewport);
+coverSafariGalleryBands();
+galleryFullScreen
+  ?.querySelector(".product-gallery-list")
+  ?.addEventListener("scroll", coverSafariGalleryBands);
+window.visualViewport?.addEventListener("resize", coverSafariGalleryBands);
+window.visualViewport?.addEventListener("scroll", coverSafariGalleryBands);
+window.addEventListener("orientationchange", coverSafariGalleryBands);
+window.addEventListener("resize", coverSafariGalleryBands);
 
 try {
   if (sessionStorage.getItem(GALLERY_FLAG) === "1") {

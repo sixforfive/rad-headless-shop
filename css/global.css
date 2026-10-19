@@ -782,6 +782,17 @@ html.is-full-screen .gallery-full-screen {
   }
 }
 
+/* Safari toolbar bands: photo cover behind the real list. */
+.gallery-vv-cover {
+  position: fixed;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+
 /* Close sits above the blend stack and must receive clicks. */
 html.is-full-screen .gallery-full-screen .gallery-full-screen_close,
 .gallery-full-screen:not(.is-none) .gallery-full-screen_close {
