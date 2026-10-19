@@ -810,6 +810,10 @@ html.is-full-screen .gallery-full-screen .gallery-full-screen_close,
   body:not(:has(.notification-item)) .empty-cart {
     margin-top: var(--_layout---spacing--space-400);
   }
+
+  body:has(.notification-item) .section_content {
+    padding-top: var(--_layout---spacing--space-600);
+  }
 }
 
 /* Drawer open: lock page scroll. */
