@@ -2,8 +2,7 @@
  * product.js — Product and merch detail (/product/{slug}, /merch/{slug}).
  * isMobileViewport — true at max-width 767px
  * isMobileSafari — true on Safari at max-width 767px; false for Chrome, CriOS, Firefox iOS, and Edge iOS
- * measureLargeViewport — taller of a 100lvh probe and the document client height
- * pinGalleryLargeViewport — lock the fullscreen gallery to that height on mobile Safari, or clear it
+ * fitGalleryToVisualViewport — size the open gallery to the visible Safari viewport; photos cover it and do not stretch
  * prefersReducedMotion — true when the visitor prefers reduced motion
  * syncGalleryChrome — settled is-none, blend, and is-full-screen for the current breakpoint
  * setFullScreenGallery — open or close in one turn; cancels an in-flight chrome fade
@@ -30,38 +29,44 @@ function isMobileSafari() {
   return isMobileViewport();
 }
 
-/** measureLargeViewport — taller of a 100lvh probe and the document client height */
-function measureLargeViewport() {
-  const probe = document.createElement("div");
-  probe.style.cssText =
-    "position:fixed;height:100lvh;visibility:hidden;pointer-events:none;";
-  document.documentElement.appendChild(probe);
-  const probed = probe.offsetHeight;
-  probe.remove();
-  return Math.max(probed, document.documentElement.clientHeight);
-}
-
-/** pinGalleryLargeViewport — lock the fullscreen gallery to that height on mobile Safari, or clear it */
-function pinGalleryLargeViewport() {
+/** fitGalleryToVisualViewport — size the open gallery to the visible Safari viewport; photos cover it and do not stretch */
+function fitGalleryToVisualViewport() {
   if (!galleryFullScreen) return;
   const images = galleryFullScreen.querySelectorAll(
     ".product-gallery-img.is-full",
   );
-  if (!isMobileSafari()) {
+  if (!isMobileSafari() || !galleryOpen) {
+    galleryFullScreen.style.position = "";
+    galleryFullScreen.style.top = "";
+    galleryFullScreen.style.left = "";
+    galleryFullScreen.style.bottom = "";
+    galleryFullScreen.style.width = "";
     galleryFullScreen.style.height = "";
     galleryFullScreen.style.minHeight = "";
-    galleryFullScreen.style.top = "";
     images.forEach((img) => {
+      img.style.width = "";
+      img.style.height = "";
       img.style.minHeight = "";
+      img.style.maxHeight = "";
+      img.style.objectFit = "";
     });
     return;
   }
-  const px = `${measureLargeViewport()}px`;
+  const viewport = window.visualViewport;
+  const px = `${Math.round(viewport?.height || window.innerHeight)}px`;
+  galleryFullScreen.style.position = "fixed";
+  galleryFullScreen.style.left = "0";
+  galleryFullScreen.style.bottom = "auto";
+  galleryFullScreen.style.width = "100%";
+  galleryFullScreen.style.top = `${viewport?.offsetTop || 0}px`;
   galleryFullScreen.style.height = px;
   galleryFullScreen.style.minHeight = px;
-  galleryFullScreen.style.top = "0";
   images.forEach((img) => {
+    img.style.width = "100%";
+    img.style.height = px;
     img.style.minHeight = px;
+    img.style.maxHeight = px;
+    img.style.objectFit = "cover";
   });
 }
 
@@ -100,6 +105,7 @@ function syncGalleryChrome(open) {
     layer?.classList.toggle("is-blend", open);
     defaultGalleryCollection?.classList.toggle("is-none", open);
   }
+  fitGalleryToVisualViewport();
 }
 
 /** setFullScreenGallery — open or close in one turn; cancels an in-flight chrome fade */
@@ -234,17 +240,11 @@ document.querySelectorAll(".next-product").forEach((el) => {
   });
 });
 
-pinGalleryLargeViewport();
-let galleryPinWidth = window.innerWidth;
-window.addEventListener("orientationchange", () => {
-  pinGalleryLargeViewport();
-  galleryPinWidth = window.innerWidth;
-});
-window.addEventListener("resize", () => {
-  if (window.innerWidth === galleryPinWidth) return;
-  galleryPinWidth = window.innerWidth;
-  pinGalleryLargeViewport();
-});
+fitGalleryToVisualViewport();
+window.visualViewport?.addEventListener("resize", fitGalleryToVisualViewport);
+window.visualViewport?.addEventListener("scroll", fitGalleryToVisualViewport);
+window.addEventListener("orientationchange", fitGalleryToVisualViewport);
+window.addEventListener("resize", fitGalleryToVisualViewport);
 
 try {
   if (sessionStorage.getItem(GALLERY_FLAG) === "1") {
