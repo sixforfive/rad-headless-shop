@@ -242,6 +242,11 @@ html.lenis:not(.lenis-stopped) body {
   opacity: 0;
 }
 
+.collection-logo {
+  width: 100%;
+  aspect-ratio: 2208 / 327;
+}
+
 /* Theme swap: Webflow paints color on descendants, so body * is required. */
 html,
 body,

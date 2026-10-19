@@ -5,8 +5,8 @@
  * ----------------------------------------------------------------------------
  * displayUrl(img) -> srcset candidate nearest 800w, else src
  * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
- * preloadTextures() -> fetch light and dark srcs
- * bootInfiniteGallery() -> mount canvas or no-op
+ * preloadTextures() -> fetch current-mode srcs
+ * bootInfiniteGallery() -> reveal, then mount canvas or no-op
  * advanceReveal(dt) -> each plane fades in after its own random wait; scale 0.98 to 1 with reveal
  * clamp(v, min, max) -> bounded number
  * lerp(a, b, t) -> mix
@@ -43,7 +43,7 @@
  * ============================================================================
  */
 
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.min.js";
+let THREE;
 
 const VIEW_H = 90;
 const PERIOD_W = 320;
@@ -528,17 +528,15 @@ function applyModeTextures(fit) {
   startCrossfade();
 }
 
-/** preloadTextures() -> fetch light and dark srcs */
+/** preloadTextures() -> fetch current-mode srcs */
 function preloadTextures() {
+  const srcs = isDarkMode() ? darkSrcs : lightSrcs;
   const seen = new Set();
-  for (let i = 0; i < lightSrcs.length; i++) {
-    const urls = [lightSrcs[i], darkSrcs[i]];
-    for (let j = 0; j < urls.length; j++) {
-      const url = urls[j];
-      if (!url || seen.has(url)) continue;
-      seen.add(url);
-      getTexture(url);
-    }
+  for (let i = 0; i < srcs.length; i++) {
+    const url = srcs[i];
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    getTexture(url);
   }
 }
 
@@ -592,14 +590,18 @@ function makePlaneMesh(tile, ox, oy) {
   return mesh;
 }
 
-function mountPeriod() {
+async function mountPeriod() {
   planeMeshes = [];
   const tiles = buildPeriod(lightSrcs);
-  PERIOD_OFFSETS.forEach((o) => {
-    tiles.forEach((tile) => {
-      scene.add(makePlaneMesh(tile, o.ox, o.oy));
-    });
-  });
+  for (let i = 0; i < PERIOD_OFFSETS.length; i++) {
+    const o = PERIOD_OFFSETS[i];
+    for (let t = 0; t < tiles.length; t++) {
+      scene.add(makePlaneMesh(tiles[t], o.ox, o.oy));
+    }
+    if (i < PERIOD_OFFSETS.length - 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+  }
   applyModeTextures(true);
 }
 
@@ -928,7 +930,7 @@ function bindLightsObserver() {
   });
 }
 
-function mountScene(host) {
+async function mountScene(host) {
   galleryHost = host;
   isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
   finePointer = isFinePointer();
@@ -969,7 +971,7 @@ function mountScene(host) {
   };
 
   preloadTextures();
-  mountPeriod();
+  await mountPeriod();
   resizeRenderer();
 
   galleryCanvas.addEventListener("pointerdown", onPointerDown);
@@ -990,15 +992,19 @@ function mountScene(host) {
   rafId = requestAnimationFrame(tick);
 }
 
-/** bootInfiniteGallery() -> mount canvas or no-op */
-function bootInfiniteGallery() {
+/** bootInfiniteGallery() -> reveal, then mount canvas or no-op */
+async function bootInfiniteGallery() {
   const host = document.querySelector(".collection-hero-gallery");
   if (!host) return;
   lightSrcs = readGallerySrcs(host.querySelector(".hero-gallery-light"));
   darkSrcs = readGallerySrcs(host.querySelector(".hero-gallery-dark"));
-  if (lightSrcs.length) mountScene(host);
   window.radPageReadyFired = true;
   if (typeof window.radPageReady === "function") window.radPageReady();
+  if (!lightSrcs.length) return;
+  THREE = await import(
+    "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.min.js"
+  );
+  await mountScene(host);
 }
 
 bootInfiniteGallery();
