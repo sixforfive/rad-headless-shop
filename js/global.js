@@ -17,7 +17,7 @@
  * writeMenuRevealTiming — order 1 lines from the bottom, then order 2, then both order 3; reverse leaves 3 first
  * menuRevealReverseMs — length of the close stages, in ms
  * clearMenuRevealHide — drop a pending shell fade
- * fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the veil
+ * fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the veil or a fallback timer
  * splitMenuRevealLines — nowrap rows for orders 1 and 2; rebuild when width changes
  * playMenuReveal — opening flushes the from-state, waits DRAWER_OPEN_GAP, then adds is-revealed; closing removes it
  * playCartReveal — cart titles, rows, subtotal, and bottom on the cart clock; empty copy fades after the veil; close reverses them
@@ -770,7 +770,7 @@ function clearMenuRevealHide() {
   menuRevealHideTimer = 0;
 }
 
-/** fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the veil */
+/** fadeDrawerOut — drop is-visible and restore closed chrome, then hide after the veil or a fallback timer */
 function fadeDrawerOut() {
   if (drawerWrapper) drawerWrapper.style.opacity = "1";
   drawerWrapper?.classList.remove("is-visible");
@@ -783,13 +783,22 @@ function fadeDrawerOut() {
     hideDrawerOverlay();
     return;
   }
-  drawerWrapper.addEventListener("transitionend", function onFadeOut(event) {
-    if (event.target !== drawerWrapper) return;
-    if (event.propertyName !== "opacity") return;
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
     drawerWrapper.removeEventListener("transitionend", onFadeOut);
+    clearTimeout(fallback);
     drawerWrapper.style.opacity = "";
     hideDrawerOverlay();
-  });
+  };
+  function onFadeOut(event) {
+    if (event.target !== drawerWrapper) return;
+    if (event.propertyName !== "opacity") return;
+    finish();
+  }
+  drawerWrapper.addEventListener("transitionend", onFadeOut);
+  const fallback = setTimeout(finish, DRAWER_SHELL * 1000 + 50);
 }
 
 /** openDrawer — kind is "menu" | "cart"; swap if the other is already open */
