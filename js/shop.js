@@ -2,7 +2,7 @@
  * shop.js — Shop page (/shop).
  * shopList — the Shop Collection List (not merch)
  * cloneList — the cloned Shop Collection List, or null
- * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb
+ * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb; data-thumb-ratio → --thumb-ratio
  * eagerThumbImages — loading=eager on every thumb img so below-fold thumbs actually fetch
  * cloneGalleryList — one .is-clone copy of the whole list, appended as its sibling
  * alignCloneGap — clone list margin-top so the seam gap equals the grid row gap
@@ -39,7 +39,7 @@ function cloneList() {
   return document.querySelector(".product-list.is-clone");
 }
 
-/** hydrateThumbs — gallery-column-start/end and list-column → CSS vars (end is inclusive, so +1) */
+/** hydrateThumbs — gallery-column-start/end and list-column → CSS vars (end is inclusive, so +1); data-thumb-ratio → --thumb-ratio */
 function hydrateThumbs() {
   document.querySelectorAll(".product-list .product-thumb").forEach((el) => {
     const start = el.getAttribute("gallery-column-start");
@@ -50,6 +50,8 @@ function hydrateThumbs() {
       el.style.setProperty("--gallery-column-end", String(Number(end) + 1));
     }
     if (listCol) el.style.setProperty("--list-column", listCol);
+    const ratio = el.getAttribute("data-thumb-ratio");
+    if (ratio) el.style.setProperty("--thumb-ratio", ratio.replace(":", "/"));
   });
 }
 

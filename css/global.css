@@ -132,6 +132,12 @@ html.lenis:not(.lenis-stopped) body {
   display: none;
 }
 
+/* Thumb image box reserves its CMS ratio before the file loads. */
+.product-thumb img {
+  aspect-ratio: var(--thumb-ratio, auto);
+  object-fit: cover;
+}
+
 @media screen and (max-width: 991px) {
   .product-list.is-merch .product-thumb {
     grid-column: auto;
