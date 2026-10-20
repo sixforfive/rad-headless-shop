@@ -11,7 +11,7 @@
  * errorKind — userErrors + action → no-reach | soldout | stock | no-item
  * lineByMerch / lineById / lineSku — cart line for a variant gid or line id; sku from that line
  * undoStockClamp — remove a new line or set qty back after Shopify caps stock
- * addCartLines — cartLinesAdd → { cart, kind }; stock cap → undo, kind stock
+ * addCartLines — cartLinesAdd → { cart, kind }; stock cap → undo only when the cart snapshot is current, kind stock
  * fillLine — sku, image, line id, qty, line price into a cloned row; sku and price keep a reveal mask
  * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty; snap rows when the cart is already revealed; fade .empty-cart after the last line
  * clearCartErrorTimers — cancel the hide and fade timers of one error root
@@ -304,7 +304,7 @@ function lineSku(line) {
   ).trim();
 }
 
-/** addCartLines — userErrors come back in data, not as GraphQL errors */
+/** addCartLines — userErrors come back in data, not as GraphQL errors. Undo only when the cart snapshot is current */
 async function addCartLines(cartId, merchandiseId, quantity) {
   if (!SHOPIFY.domain || !SHOPIFY.token) {
     return { cart: "", kind: "no-reach" };
@@ -335,16 +335,18 @@ async function addCartLines(cartId, merchandiseId, quantity) {
     return { cart: "", kind };
   }
   if (!payload?.cart?.id) return { cart: "", kind: "no-reach" };
+  const trusted = restoredCart?.id === cartId;
   const prev = lineByMerch(restoredCart, merchandiseId);
   const prevQty = prev?.quantity || 0;
   const next = lineByMerch(payload.cart, merchandiseId);
   if ((next?.quantity || 0) < prevQty + quantity) {
-    await undoStockClamp(cartId, next?.id || prev?.id, prevQty);
+    if (trusted) await undoStockClamp(cartId, next?.id || prev?.id, prevQty);
     return {
       cart: "",
       kind: "stock",
       stockLeft: next?.quantity,
       sku: lineSku(next) || lineSku(prev),
+      fresh: trusted ? null : payload.cart,
     };
   }
   return { cart: payload.cart, kind: "" };
@@ -658,7 +660,7 @@ async function onAddToCart(event) {
       readQuantity(wrapper),
     );
     if (!result.cart) {
-      if (result.kind === "stock") renderCart(restoredCart);
+      if (result.kind === "stock") renderCart(result.fresh || restoredCart);
       showCartError(
         root,
         result.kind || "no-reach",
