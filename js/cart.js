@@ -8,7 +8,7 @@
  * restoreCart — validate a stored id; set restoredCart; clear if expired; keep the key on throw
  * ensureCart — restore if valid, otherwise create and persist
  * readQuantity — quantity from select.value, [data-quantity] or #quantity, or 1
- * errorKind — userErrors + action → no-reach | soldout | stock | no-item
+ * errorKind — userErrors + action → no-reach | soldout | stock | no-item; unknown errors are soldout on add, no-reach otherwise
  * lineByMerch / lineById / lineSku — cart line for a variant gid or line id; sku from that line
  * undoStockClamp — remove a new line or set qty back after Shopify caps stock
  * addCartLines — cartLinesAdd → { cart, kind }; stock cap → undo only when the cart snapshot is current, kind stock
@@ -170,7 +170,7 @@ async function fetchCart(id) {
   return data?.cart ?? null;
 }
 
-/** errorKind — first userError code/field → no-reach | soldout | stock | no-item */
+/** errorKind — first userError code/field → no-reach | soldout | stock | no-item; unknown errors are soldout on add, no-reach otherwise */
 function errorKind(userErrors, action) {
   const first = userErrors && userErrors[0];
   if (!first) return "no-reach";
@@ -187,9 +187,7 @@ function errorKind(userErrors, action) {
   ) {
     return "stock";
   }
-  if (action === "add" || action === "update" || action === "remove") {
-    return "soldout";
-  }
+  if (action === "add") return "soldout";
   return "no-reach";
 }
 
