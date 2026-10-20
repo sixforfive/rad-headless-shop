@@ -21,7 +21,7 @@
  * pickMediaIndex(tile, tiles, n, rand) -> image index
  * buildPeriod(srcs) -> tiles for one wrapping poster
  * urlForIndex(i) -> current-mode src
- * getTexture(url) -> cached THREE.Texture
+ * getTexture(url) -> cached THREE.Texture; image downscaled to 768 (touch) or 1280 px via createImageBitmap before GPU upload.
  * uploadTexture(texture) -> decoded image onto the GPU
  * flushGpuQueue() -> upload one decoded image to the GPU; current mode first
  * setModeMix(value) -> write the shared texture mix
@@ -39,7 +39,8 @@
  * canHoverDim() -> 768+ fine hover (same gate as shop)
  * applyHoverDim(dt) -> mix plane rgb toward theme bg; opacity follows reveal
  * patchHoverMaterial(material) -> uDim / uBg / incoming map in the fragment shader
- * parallaxFactor(w) -> class p (S 0.55 .. XL 1)
+ * parallaxFactorFor(w) -> class p (S 0.55 .. XL 1)
+ * parallaxFactor(w) -> 1 under reduced motion, else class p (S 0.55 .. XL 1)
  * placeCopies() -> mesh positions from pan * p; camera stays home
  * ============================================================================
  */
@@ -284,19 +285,21 @@ const gpuQueue = [];
 let planeMeshes = null;
 let controller = null;
 let reduceMotion = false;
+const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 let finePointer = false;
 let isTouchDevice = false;
 let rafId = 0;
 let hoveredMesh = null;
 let lastTick = 0;
 let themeBg;
+let themeBgMode;
 const modeMix = { value: 0 };
 let awaitingFade = false;
 let modeFade = null;
 let modeToggle = false;
 
 function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return reducedMotionQuery.matches;
 }
 
 function isFinePointer() {
@@ -323,12 +326,12 @@ function urlForIndex(i) {
   return lightSrcs[index];
 }
 
-/** getTexture(url) -> cached THREE.Texture */
+/** getTexture(url) -> cached THREE.Texture; image downscaled to 768 (touch) or 1280 px via createImageBitmap before GPU upload. */
 function getTexture(url) {
   if (!url || !textureLoader) return null;
   const existing = textureCache.get(url);
   if (existing) return existing;
-  const texture = textureLoader.load(url, (tex) => {
+  const texture = textureLoader.load(url, async (tex) => {
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
@@ -337,7 +340,21 @@ function getTexture(url) {
     const image = tex.image;
     tex.image = null;
     tex.version = 0;
-    gpuQueue.push({ tex, image, url });
+    const target = Math.min(image.naturalWidth, isTouchDevice ? 768 : 1280);
+    let queued = image;
+    if (typeof createImageBitmap === "function") {
+      try {
+        queued = await createImageBitmap(image, {
+          resizeWidth: target,
+          resizeQuality: "high",
+          imageOrientation: "flipY",
+        });
+        tex.flipY = false;
+      } catch {
+        queued = image;
+      }
+    }
+    gpuQueue.push({ tex, image: queued, url });
     if (awaitingFade || modeFade || modeToggle) applyModeTextures(false);
     else applyModeTextures(true);
   });
@@ -592,6 +609,7 @@ function makePlaneMesh(tile, ox, oy) {
   mesh.userData.oy = oy;
   mesh.userData.w = tile.w;
   mesh.userData.h = tile.h;
+  mesh.userData.p = parallaxFactorFor(tile.w);
   mesh.userData.mediaIndex = tile.mediaIndex;
   mesh.userData.reveal = 0;
   fitPlaneScale(mesh, null);
@@ -696,9 +714,13 @@ function setMouseNdc(event) {
 /** applyHoverDim(dt) -> mix plane rgb toward theme bg; opacity follows reveal */
 function applyHoverDim(dt) {
   if (!planeMeshes) return;
-  themeBg.setStyle(
-    getComputedStyle(galleryHost || document.documentElement).backgroundColor,
-  );
+  const dark = isDarkMode();
+  if (dark !== themeBgMode) {
+    themeBgMode = dark;
+    themeBg.setStyle(
+      getComputedStyle(galleryHost || document.documentElement).backgroundColor,
+    );
+  }
   const dimming = Boolean(hoveredMesh);
   const maxStep = reduceMotion
     ? 1
@@ -724,9 +746,8 @@ function applyHoverDim(dt) {
   }
 }
 
-/** parallaxFactor(w) -> class p (S 0.55 .. XL 1) */
-function parallaxFactor(w) {
-  if (reduceMotion) return 1;
+/** parallaxFactorFor(w) -> class p (S 0.55 .. XL 1) */
+function parallaxFactorFor(w) {
   const frac = w / SIZE_BASE;
   let best = SIZE_CLASSES[0];
   let bestD = Math.abs(frac - best.frac);
@@ -740,6 +761,12 @@ function parallaxFactor(w) {
   return best.p;
 }
 
+/** parallaxFactor(w) -> 1 under reduced motion, else class p (S 0.55 .. XL 1) */
+function parallaxFactor(w) {
+  if (reduceMotion) return 1;
+  return parallaxFactorFor(w);
+}
+
 /** placeCopies() -> mesh positions from pan * p; camera stays home */
 function placeCopies() {
   if (!planeMeshes || !controller) return;
@@ -749,7 +776,7 @@ function placeCopies() {
   for (let i = 0; i < planeMeshes.length; i++) {
     const mesh = planeMeshes[i];
     const d = mesh.userData;
-    const p = parallaxFactor(d.w);
+    const p = reduceMotion ? 1 : d.p;
     const worldX = d.tileX;
     const worldY = d.tileY;
     const shiftX = panX * p;
@@ -879,7 +906,7 @@ function tick(now) {
   const dt = lastTick ? Math.min(now - lastTick, 50) : 16;
   lastTick = now;
   const s = controller;
-  reduceMotion = prefersReducedMotion();
+  reduceMotion = reducedMotionQuery.matches;
 
   s.targetVel.x = clamp(s.targetVel.x, -MAX_VELOCITY, MAX_VELOCITY);
   s.targetVel.y = clamp(s.targetVel.y, -MAX_VELOCITY, MAX_VELOCITY);
