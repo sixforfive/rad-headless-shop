@@ -4,18 +4,17 @@ This repo is the CSS and JavaScript that runs on the published Webflow site, bec
 
 ## Files
 
-| Path | Role |
-|---|---|
-| `css/global.css` | Site-wide styles |
-| `js/global.js` | Drawers, lights, favicon, cursor label, page enter and leave |
-| `js/smooth-scroll.js` | Smooth scroll on the window and the product gallery column |
-| `js/shop.js` | Shop grid placement and the Gallery/List switch |
-| `js/collection.js` | Home page only: infinite hero canvas from the hero gallery images (`type="module"`, imports `three@0.182.0`) |
-| `js/product.js` | Product and merch detail: fullscreen gallery, snap, ticks |
-| `js/merch.js` | Merch listing grid column |
-| `js/faq.js` | Empty |
-| `js/cart.js` | Cart stored in the browser, add and edit lines, drawer contents, checkout |
-| `js/shopify.js` | Asks Shopify for price and stock and writes them onto the page |
+| Path                  | Role                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `css/global.css`      | Site-wide styles                                                                                             |
+| `js/global.js`        | Drawers, lights, favicon, cursor label, page enter and leave                                                 |
+| `js/smooth-scroll.js` | Smooth scroll on the window and the product gallery column                                                   |
+| `js/shop.js`          | Shop grid placement and the Gallery/List switch                                                              |
+| `js/collection.js`    | Home page only: infinite hero canvas from the hero gallery images (`type="module"`, imports `three@0.182.0`) |
+| `js/product.js`       | Product and merch detail: fullscreen gallery, snap, ticks                                                    |
+| `js/merch.js`         | Merch listing grid column                                                                                    |
+| `js/cart.js`          | Cart stored in the browser, add and edit lines, drawer contents, checkout                                    |
+| `js/shopify.js`       | Asks Shopify for price and stock and writes them onto the page                                               |
 
 ## How the Shopify keys get onto the page
 
@@ -31,11 +30,11 @@ This repo is the CSS and JavaScript that runs on the published Webflow site, bec
 </script>
 ```
 
-| Key | Required | Purpose |
-|---|---|---|
-| `domain` | yes | Storefront API host |
-| `token` | yes | Public Storefront access token |
-| `apiVersion` | no | Defaults to `2026-07` |
+| Key          | Required | Purpose                        |
+| ------------ | -------- | ------------------------------ |
+| `domain`     | yes      | Storefront API host            |
+| `token`      | yes      | Public Storefront access token |
+| `apiVersion` | no       | Defaults to `2026-07`          |
 
 If that object is missing, the page keeps its static markup and does not call Shopify.
 
