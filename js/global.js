@@ -1041,7 +1041,8 @@ function revealPage() {
     if (armed || document.visibilityState === "hidden") return;
     if (!fromStateOn()) return;
     const home = !!document.querySelector(".collection-hero-logo");
-    if (!home && document.readyState !== "complete") return;
+    const reserved = !!document.querySelector(".product-thumb[data-thumb-ratio]");
+    if (!home && !reserved && document.readyState !== "complete") return;
     arm();
   };
 

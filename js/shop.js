@@ -3,7 +3,6 @@
  * shopList — the Shop Collection List (not merch)
  * cloneList — the cloned Shop Collection List, or null
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb; data-thumb-ratio → --thumb-ratio
- * eagerThumbImages — loading=eager on every thumb img so below-fold thumbs actually fetch
  * cloneGalleryList — one .is-clone copy of the whole list, appended as its sibling
  * alignCloneGap — clone list margin-top so the seam gap equals the grid row gap
  * originalsSized — every original thumb has layout height
@@ -52,15 +51,6 @@ function hydrateThumbs() {
     if (listCol) el.style.setProperty("--list-column", listCol);
     const ratio = el.getAttribute("data-thumb-ratio");
     if (ratio) el.style.setProperty("--thumb-ratio", ratio.replace(":", "/"));
-  });
-}
-
-/** eagerThumbImages — loading=eager on every shop thumb img */
-function eagerThumbImages() {
-  const list = shopList();
-  if (!list) return;
-  list.querySelectorAll(".product-thumb img").forEach((img) => {
-    img.loading = "eager";
   });
 }
 
@@ -267,7 +257,6 @@ function syncActive() {
 }
 
 hydrateThumbs();
-eagerThumbImages();
 cloneGalleryList();
 syncActive();
 syncScrollCounter();
