@@ -6,6 +6,7 @@
  * displayUrl(img) -> srcset candidate nearest 800w, else src
  * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
  * preloadTextures() -> fetch current-mode srcs
+ * preloadOtherMode() -> after load and idle, fetch the inactive theme textures
  * bootInfiniteGallery() -> reveal, then mount canvas or no-op
  * advanceReveal(dt) -> each plane fades in after its own random wait; scale 0.98 to 1 with reveal
  * clamp(v, min, max) -> bounded number
@@ -540,6 +541,14 @@ function preloadTextures() {
   }
 }
 
+/** preloadOtherMode() -> after load and idle, fetch the inactive theme textures */
+function preloadOtherMode() {
+  const srcs = isDarkMode() ? lightSrcs : darkSrcs;
+  srcs.forEach((url) => {
+    if (url) getTexture(url);
+  });
+}
+
 /** patchHoverMaterial(material) -> uDim / uBg / incoming map in the fragment shader */
 function patchHoverMaterial(material) {
   material.userData.dim = 0;
@@ -990,6 +999,12 @@ async function mountScene(host) {
     new ResizeObserver(resizeRenderer).observe(host);
   }
   bindLightsObserver();
+  const idle = () =>
+    "requestIdleCallback" in window
+      ? requestIdleCallback(preloadOtherMode, { timeout: 2000 })
+      : setTimeout(preloadOtherMode, 500);
+  if (document.readyState === "complete") idle();
+  else window.addEventListener("load", idle, { once: true });
   rafId = requestAnimationFrame(tick);
 }
 

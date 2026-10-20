@@ -213,6 +213,21 @@ html.lenis:not(.lenis-stopped) body {
   opacity: 1;
 }
 
+/* Until html.is-theme-loaded, only the active theme's thumb renders, so the other is not fetched. */
+html:not(.dark-mode):not(.is-theme-loaded) .thumb-dark {
+  display: none;
+}
+
+html.dark-mode:not(.is-theme-loaded)
+  .thumb-img-holder:has(> .thumb-dark:not(.w-dyn-bind-empty))
+  > .thumb-light {
+  display: none;
+}
+
+html.dark-mode:not(.is-theme-loaded) .thumb-dark:not(.w-dyn-bind-empty) {
+  position: static;
+}
+
 .hero-photo-dark {
   position: absolute;
   inset: 0;

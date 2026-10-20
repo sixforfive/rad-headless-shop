@@ -2,6 +2,8 @@
  * global.js — Site-wide behavior shared across all RAD pages.
  * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
  * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none; click uses a 0.3s root view transition except Safari
+ * releaseThemeImages — add html.is-theme-loaded so the inactive theme thumbs fetch
+ * scheduleThemeImages — run releaseThemeImages after window load and idle
  * isSafariBrowser — Apple Safari only (not CriOS / FxiOS / EdgiOS)
  * storedLightsDark — true only when rad-lights is exactly "dark"
  * scrollToTop — #back-to-top click → radScrollToTop (700ms enter spring, or instant if reduced-motion)
@@ -115,8 +117,26 @@ applyLights(storedLightsDark(), true);
 
 lightsSwitchBtn?.addEventListener("click", (event) => {
   event.preventDefault();
+  releaseThemeImages();
   applyLights(!document.body.classList.contains("dark-mode"));
 });
+
+/** releaseThemeImages — add html.is-theme-loaded so the inactive theme thumbs fetch */
+function releaseThemeImages() {
+  document.documentElement.classList.add("is-theme-loaded");
+}
+
+/** scheduleThemeImages — run releaseThemeImages after window load and idle */
+function scheduleThemeImages() {
+  const idle = () =>
+    "requestIdleCallback" in window
+      ? requestIdleCallback(releaseThemeImages, { timeout: 2000 })
+      : setTimeout(releaseThemeImages, 500);
+  if (document.readyState === "complete") idle();
+  else window.addEventListener("load", idle, { once: true });
+}
+
+scheduleThemeImages();
 
 /** scrollToTop — #back-to-top click → radScrollToTop, or instant if reduced-motion */
 function scrollToTop(event) {
