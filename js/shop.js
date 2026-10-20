@@ -3,7 +3,7 @@
  * shopList — the Shop Collection List (not merch)
  * cloneList — the cloned Shop Collection List, or null
  * hydrateThumbs — CMS column attrs → CSS variables on each .product-thumb; data-thumb-ratio → --thumb-ratio
- * cloneGalleryList — one .is-clone copy of the whole list, appended as its sibling
+ * cloneGalleryList — one .is-clone copy of the whole list, appended as its sibling, built from outerHTML so lazy and hidden images do not fetch
  * alignCloneGap — clone list margin-top so the seam gap equals the grid row gap
  * originalsSized — every original thumb has layout height
  * signalShopReady — measure the loop and radPageReady once original thumbs have height
@@ -54,17 +54,17 @@ function hydrateThumbs() {
   });
 }
 
-/** cloneGalleryList — copy the whole list into a sibling grid; skip if already cloned */
+/** cloneGalleryList — copy the whole list into a sibling grid; skip if already cloned, built from outerHTML so lazy and hidden images do not fetch */
 function cloneGalleryList() {
   const list = shopList();
   if (!list || cloneList()) return;
-  const clone = list.cloneNode(true);
+  list.insertAdjacentHTML("afterend", list.outerHTML);
+  const clone = list.nextElementSibling;
   clone.classList.add("is-clone");
   clone.setAttribute("aria-hidden", "true");
   clone.removeAttribute("id");
   clone.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
   clone.querySelectorAll("a").forEach((a) => a.setAttribute("tabindex", "-1"));
-  list.insertAdjacentElement("afterend", clone);
 }
 
 /** alignCloneGap — correct the measured seam gap to the grid's own row gap */
