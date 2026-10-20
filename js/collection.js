@@ -6,7 +6,7 @@
  * displayUrl(img) -> srcset candidate nearest 800w, else src
  * readGallerySrcs(list) -> display URLs in DOM order, skip empty/placeholder
  * preloadTextures() -> fetch current-mode srcs
- * preloadOtherMode() -> after load and idle, fetch the inactive theme textures
+ * preloadOtherMode() -> after current textures decode (max 4s) and idle, fetch the inactive theme textures
  * bootInfiniteGallery() -> reveal, then mount canvas or no-op
  * advanceReveal(dt) -> each plane fades in after its own random wait; scale 0.98 to 1 with reveal
  * clamp(v, min, max) -> bounded number
@@ -541,7 +541,7 @@ function preloadTextures() {
   }
 }
 
-/** preloadOtherMode() -> after load and idle, fetch the inactive theme textures */
+/** preloadOtherMode() -> after current textures decode (max 4s) and idle, fetch the inactive theme textures */
 function preloadOtherMode() {
   const srcs = isDarkMode() ? lightSrcs : darkSrcs;
   srcs.forEach((url) => {
@@ -999,12 +999,18 @@ async function mountScene(host) {
     new ResizeObserver(resizeRenderer).observe(host);
   }
   bindLightsObserver();
-  const idle = () =>
+  const startOther = () =>
     "requestIdleCallback" in window
       ? requestIdleCallback(preloadOtherMode, { timeout: 2000 })
       : setTimeout(preloadOtherMode, 500);
-  if (document.readyState === "complete") idle();
-  else window.addEventListener("load", idle, { once: true });
+  const waitCurrent = (tries) => {
+    if (targetsReady() || tries <= 0) {
+      startOther();
+      return;
+    }
+    setTimeout(() => waitCurrent(tries - 1), 250);
+  };
+  waitCurrent(16);
   rafId = requestAnimationFrame(tick);
 }
 

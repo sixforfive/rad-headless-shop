@@ -3,7 +3,7 @@
  * setFavicon — tab icon follows prefers-color-scheme (light PNG / dark PNG)
  * applyLights — .dark-mode on html/body, rad-lights in localStorage, plus/minus is-none; click uses a 0.3s root view transition except Safari
  * releaseThemeImages — add html.is-theme-loaded so the inactive theme thumbs fetch
- * scheduleThemeImages — run releaseThemeImages after window load and idle
+ * scheduleThemeImages — after load, wait for in-view active theme thumbs (max 4s), then idle, then releaseThemeImages
  * isSafariBrowser — Apple Safari only (not CriOS / FxiOS / EdgiOS)
  * storedLightsDark — true only when rad-lights is exactly "dark"
  * scrollToTop — #back-to-top click → radScrollToTop (700ms enter spring, or instant if reduced-motion)
@@ -126,14 +126,41 @@ function releaseThemeImages() {
   document.documentElement.classList.add("is-theme-loaded");
 }
 
-/** scheduleThemeImages — run releaseThemeImages after window load and idle */
+/** scheduleThemeImages — after load, wait for in-view active theme thumbs (max 4s), then idle, then releaseThemeImages */
 function scheduleThemeImages() {
   const idle = () =>
     "requestIdleCallback" in window
       ? requestIdleCallback(releaseThemeImages, { timeout: 2000 })
       : setTimeout(releaseThemeImages, 500);
-  if (document.readyState === "complete") idle();
-  else window.addEventListener("load", idle, { once: true });
+  const afterLoad = () => {
+    const active = document.documentElement.classList.contains("dark-mode")
+      ? ".thumb-img-holder > .thumb-dark:not(.w-dyn-bind-empty)"
+      : ".thumb-img-holder > .thumb-light";
+    const margin = window.innerHeight;
+    const pending = [...document.querySelectorAll(active)].filter((img) => {
+      const r = img.getBoundingClientRect();
+      return r.width > 0 && r.bottom > -margin && r.top < window.innerHeight + margin && !img.complete;
+    });
+    if (!pending.length) {
+      idle();
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      idle();
+    };
+    Promise.all(
+      pending.map((img) => new Promise((resolve) => {
+        img.addEventListener("load", resolve, { once: true });
+        img.addEventListener("error", resolve, { once: true });
+      })),
+    ).then(finish);
+    setTimeout(finish, 4000);
+  };
+  if (document.readyState === "complete") afterLoad();
+  else window.addEventListener("load", afterLoad, { once: true });
 }
 
 scheduleThemeImages();
