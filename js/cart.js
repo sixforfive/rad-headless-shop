@@ -14,6 +14,7 @@
  * addCartLines — cartLinesAdd → { cart, kind }; stock cap → undo, kind stock
  * fillLine — sku, image, line id, qty, line price into a cloned row; sku and price keep a reveal mask
  * renderCart — persist restoredCart; count, empty state or cloned lines + subtotal in .cart-drawer; hide #checkout-btn when empty; snap rows when the cart is already revealed; fade .empty-cart after the last line
+ * clearCartErrorTimers — cancel the hide and fade timers of one error root
  * hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer
  * showCartError — lift is-none, reflow, is-visible on #error-${kind}; stock writes .error-stock-lead + SKU; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s
  * setCartBusy — cartBusy flag, aria-busy on add/qty/remove/#checkout-btn, PROCESSING on add/checkout
@@ -33,8 +34,7 @@ const CART_ERROR_HIDE_MS = 8000;
 const CART_ERROR_FADE_MS = 300;
 let restoredCart = null;
 let cartBusy = false;
-let cartErrorTimer = null;
-let cartErrorFadeTimer = null;
+const cartErrorTimers = new WeakMap();
 
 /** readCartId — rad-cart-id from localStorage, or "" */
 function readCartId() {
@@ -535,38 +535,35 @@ function renderCart(cart) {
   if (revealed && typeof snapCartReveal === "function") snapCartReveal();
 }
 
+/** clearCartErrorTimers — cancel the hide and fade timers of one error root */
+function clearCartErrorTimers(root) {
+  const t = root && cartErrorTimers.get(root);
+  if (!t) return;
+  clearTimeout(t.hide);
+  clearTimeout(t.fade);
+  cartErrorTimers.delete(root);
+}
+
 /** hideCartErrors — drop is-visible on [id^=error-]; is-none on .error-wrapper after 0.3s fade; clear hide timer */
 function hideCartErrors(root) {
-  if (cartErrorTimer) {
-    clearTimeout(cartErrorTimer);
-    cartErrorTimer = null;
-  }
-  if (cartErrorFadeTimer) {
-    clearTimeout(cartErrorFadeTimer);
-    cartErrorFadeTimer = null;
-  }
+  clearCartErrorTimers(root);
   if (!root) return;
   root.querySelectorAll('[id^="error-"]').forEach((el) => {
     el.classList.remove("is-visible");
   });
   const wrapper = root.querySelector(".error-wrapper");
   if (!wrapper) return;
-  cartErrorFadeTimer = setTimeout(() => {
-    cartErrorFadeTimer = null;
-    wrapper.classList.add("is-none");
-  }, CART_ERROR_FADE_MS);
+  cartErrorTimers.set(root, {
+    fade: setTimeout(() => {
+      cartErrorTimers.delete(root);
+      wrapper.classList.add("is-none");
+    }, CART_ERROR_FADE_MS),
+  });
 }
 
 /** showCartError — lift is-none, reflow, is-visible on #error-${kind}; stock writes .error-stock-lead + SKU; drawer soldout/no-item write SKUs into .error-item-select; hide after 8s */
 function showCartError(root, kind, skus, stockLeft) {
-  if (cartErrorTimer) {
-    clearTimeout(cartErrorTimer);
-    cartErrorTimer = null;
-  }
-  if (cartErrorFadeTimer) {
-    clearTimeout(cartErrorFadeTimer);
-    cartErrorFadeTimer = null;
-  }
+  clearCartErrorTimers(root);
   if (!root) return;
   const wrapper = root.querySelector(".error-wrapper");
   root.querySelectorAll('[id^="error-"]').forEach((el) => {
@@ -604,10 +601,11 @@ function showCartError(root, kind, skus, stockLeft) {
     const slot = node.querySelector(".error-item-select");
     if (slot) slot.textContent = skuText;
   }
-  cartErrorTimer = setTimeout(() => {
-    cartErrorTimer = null;
-    hideCartErrors(root);
-  }, CART_ERROR_HIDE_MS);
+  cartErrorTimers.set(root, {
+    hide: setTimeout(() => {
+      hideCartErrors(root);
+    }, CART_ERROR_HIDE_MS),
+  });
 }
 
 /** setCartBusy — cartBusy flag, aria-busy on add/qty/remove/#checkout-btn, PROCESSING on add/checkout */
