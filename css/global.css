@@ -671,6 +671,10 @@ html.is-leaving .gallery-full-screen.is-dimmed {
   column-gap: var(--_layout---spacing--space-150);
 }
 
+:has(> #cart-open):has(> #cart-close) {
+  justify-content: end;
+}
+
 #menu-open,
 #menu-close,
 #cart-title,
